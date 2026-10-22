@@ -305,13 +305,23 @@ function ensure_cms_schema_migrated($pdo) {
         )");
 
         // Create indexes where appropriate
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_login_identifier ON cms_login_attempts(identifier);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_login_ip ON cms_login_attempts(ip_address);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_sessions_user ON cms_sessions(user_id);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_audit_created ON cms_audit_logs(created_at);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_posts_status ON blog_posts(status);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);");
-        @$pdo->exec("CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);");
+        // MySQL does not support IF NOT EXISTS for indexes, so each one is attempted independently
+        $indexStatements = [
+            "CREATE INDEX idx_login_identifier ON cms_login_attempts(identifier)",
+            "CREATE INDEX idx_login_ip ON cms_login_attempts(ip_address)",
+            "CREATE INDEX idx_sessions_user ON cms_sessions(user_id)",
+            "CREATE INDEX idx_audit_created ON cms_audit_logs(created_at)",
+            "CREATE INDEX idx_posts_status ON blog_posts(status)",
+            "CREATE INDEX idx_products_sku ON products(sku)",
+            "CREATE INDEX idx_products_status ON products(status)",
+        ];
+        foreach ($indexStatements as $indexSql) {
+            try {
+                $pdo->exec($indexSql);
+            } catch (Exception $indexError) {
+                // Index already exists or is unsupported; safe to ignore
+            }
+        }
 
         // Seed Default Roles, Super Admin, Categories, and Products if empty
         seed_cms_defaults($pdo);
@@ -428,7 +438,7 @@ function seed_cms_defaults($pdo) {
     if ((int)$settingsCountStmt->fetchColumn() === 0) {
         $defaults = [
             'site_name' => 'KONSTRUCTZ Machinery',
-            'site_url' => 'https://cwqv.com',
+            'site_url' => 'https://stonekrusher.com',
             'admin_email' => 'sales@cwqv.com',
             'max_failed_logins' => '10',
             'lockout_duration_minutes' => '15',

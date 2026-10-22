@@ -295,6 +295,7 @@ def main():
         "--exclude=.user.ini",
         "--exclude=.htaccess.old*",
         "--exclude=*.sql",
+        "--exclude=uploads/",
     ]
 
     target_destination = f"{SSH_USER}@{SSH_HOST}:{REMOTE_PUBLIC}/"

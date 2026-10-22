@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function CmsSettings({ csrfToken }) {
   const [settings, setSettings] = useState({
     site_name: 'KONSTRUCTZ Machinery',
-    site_url: 'https://cwqv.com',
+    site_url: 'https://stonekrusher.com',
     admin_email: 'sales@cwqv.com',
     max_failed_logins: '10',
     lockout_duration_minutes: '15',
