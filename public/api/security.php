@@ -6,7 +6,12 @@
 require_once __DIR__ . '/db.php';
 
 class Security {
-    private static $csrfSecretKey = 'sk_csrf_salt_k98q21#m!z9';
+    /**
+     * Resolve CSRF secret key from environment or default salt
+     */
+    public static function getCsrfSecret() {
+        return getenv('CMS_CSRF_SALT') ?: (defined('CMS_CSRF_SALT') ? CMS_CSRF_SALT : 'sk_csrf_salt_k98q21#m!z9');
+    }
 
     /**
      * Send standard modern security headers
@@ -26,26 +31,38 @@ class Security {
     public static function getClientIp() {
         $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
 
-        // Check if behind Cloudflare or trusted reverse proxy
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-            $cfIp = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
-            if (filter_var($cfIp, FILTER_VALIDATE_IP)) {
-                return $cfIp;
-            }
+        $trustedProxiesEnv = getenv('TRUSTED_PROXIES') ?: '';
+        $trustedList = array_filter(array_map('trim', explode(',', $trustedProxiesEnv)));
+
+        // Check if REMOTE_ADDR is an explicitly configured trusted proxy or private/loopback
+        $isTrustedProxy = false;
+        if (!empty($trustedList) && in_array($remoteAddr, $trustedList, true)) {
+            $isTrustedProxy = true;
+        } else {
+            // Private/local loopback addresses allowed if no explicit trusted list
+            $isTrustedProxy = empty($trustedList) && filter_var(
+                $remoteAddr,
+                FILTER_VALIDATE_IP,
+                FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+            ) === false;
         }
 
-        // For X-Forwarded-For, only accept if REMOTE_ADDR is private/local loopback
-        $isLocalOrProxy = filter_var(
-            $remoteAddr,
-            FILTER_VALIDATE_IP,
-            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-        ) === false;
+        if ($isTrustedProxy) {
+            // Check Cloudflare connecting IP
+            if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+                $cfIp = trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+                if (filter_var($cfIp, FILTER_VALIDATE_IP)) {
+                    return $cfIp;
+                }
+            }
 
-        if ($isLocalOrProxy && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-            $firstIp = trim($ips[0]);
-            if (filter_var($firstIp, FILTER_VALIDATE_IP)) {
-                return $firstIp;
+            // Check X-Forwarded-For
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $firstIp = trim($ips[0]);
+                if (filter_var($firstIp, FILTER_VALIDATE_IP)) {
+                    return $firstIp;
+                }
             }
         }
 
@@ -393,7 +410,7 @@ class Security {
      * Generate CSRF token tied to session
      */
     public static function generateCsrfToken($sessionToken) {
-        return hash_hmac('sha256', $sessionToken, self::$csrfSecretKey);
+        return hash_hmac('sha256', $sessionToken, self::getCsrfSecret());
     }
 
     /**
@@ -529,9 +546,22 @@ class Security {
             return true;
         }
 
-        $headerCsrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        $headerCsrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($_SERVER['HTTP_X_XSRF_TOKEN'] ?? '');
         if (empty($headerCsrf) && !empty($_POST['_csrf'])) {
             $headerCsrf = $_POST['_csrf'];
+        }
+        if (empty($headerCsrf) && !empty($_POST['csrf_token'])) {
+            $headerCsrf = $_POST['csrf_token'];
+        }
+
+        if (empty($headerCsrf)) {
+            $raw = file_get_contents('php://input');
+            if (!empty($raw)) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $headerCsrf = $decoded['csrf_token'] ?? ($decoded['_csrf'] ?? '');
+                }
+            }
         }
 
         $expectedCsrf = $currentUser['csrf_token'] ?? '';
@@ -543,6 +573,19 @@ class Security {
         }
 
         return true;
+    }
+
+    /**
+     * Check if a specific CSRF token string matches current user's expected token
+     */
+    public static function verifyCsrfToken($token, $currentUser = null) {
+        if (!$currentUser) {
+            $currentUser = self::getCurrentUser();
+        }
+        if (!$currentUser || empty($token)) {
+            return false;
+        }
+        return hash_equals($currentUser['csrf_token'] ?? '', (string)$token);
     }
 
     /**

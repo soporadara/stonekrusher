@@ -32,3 +32,19 @@ __pycache__/
 *.sqlite-shm
 *.sqlite-wal
 *.sqlite-journal
+
+# Database and sensitive data storage files
+data/*.db
+data/*.db-*
+data/test*
+*.db-shm
+*.db-wal
+*.db-journal
+public/medialibrary/.users.json
+public/medialibrary/.feature_db.sqlite
+public/uploads/*
+public/medialibrary/.trash/
+public/medialibrary/.trash_index.json
+public/uploads/*
+!public/uploads/.htaccess
+

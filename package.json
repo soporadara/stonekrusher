@@ -8,7 +8,12 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node generate-product-pages.js && node generate-category-pages.js && node generate-blog-routes.js && node generate-legal-pages.js && node generate-sitemap.js && node ping-search-engines.js && vite build && node post-build-seo.js",
+    "dev:php": "php -S 127.0.0.1:8008 -t public",
+    "build": "node generate-product-pages.js && node generate-category-pages.js && node generate-blog-routes.js && node generate-legal-pages.js && node generate-sitemap.js && vite build && node post-build-seo.js",
+    "build:notify": "npm run build && node ping-search-engines.js",
+    "ping:search-engines": "node ping-search-engines.js",
+    "test": "php tests/test_cms_security.php",
+    "test:security": "php tests/test_cms_security.php",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.js"

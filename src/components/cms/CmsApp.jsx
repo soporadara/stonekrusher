@@ -7,9 +7,13 @@ import CmsBlogManager from './CmsBlogManager';
 import CmsCategoryManager from './CmsCategoryManager';
 import CmsProductManager from './CmsProductManager';
 import CmsMediaLibrary from './CmsMediaLibrary';
+import CmsCrmLeads from './CmsCrmLeads';
+import CmsSupportTracker from './CmsSupportTracker';
+import CmsSeoSuite from './CmsSeoSuite';
 import CmsSecurityCenter from './CmsSecurityCenter';
 import CmsUserManager from './CmsUserManager';
 import CmsSettings from './CmsSettings';
+import CmsSystemStatus from './CmsSystemStatus';
 import CmsProfileModal from './CmsProfileModal';
 
 export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
@@ -19,6 +23,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
 
   // Layout & Theme State
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [tabOptions, setTabOptions] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'dark');
@@ -69,7 +74,10 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth.php?action=logout', { method: 'POST' });
+      await fetch('/api/auth.php?action=logout', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': csrfToken }
+      });
     } catch {
       // non-fatal
     }
@@ -77,9 +85,21 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     setCsrfToken('');
   };
 
+  const handleNavigate = (tab, options = {}) => {
+    setTabOptions(options);
+    if (options.postId) {
+      setEditingPostId(options.postId);
+    } else if (options.mode === 'create') {
+      setEditingPostId(null);
+    }
+    setActiveTab(tab);
+    setMobileDrawerOpen(false);
+  };
+
   const handleSelectPostFromDashboard = (postId) => {
     setEditingPostId(postId);
     setActiveTab('posts');
+    setTabOptions({});
   };
 
   if (authChecking) {
@@ -101,16 +121,73 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     );
   }
 
-  const navItems = [
-    { id: 'overview', label: 'Dashboard', icon: '📊', group: 'Core' },
-    { id: 'posts', label: 'Blog Articles', icon: '📝', group: 'Content' },
-    { id: 'categories', label: 'Categories & Topics', icon: '🏷️', group: 'Content' },
-    { id: 'products', label: 'Machinery Catalog', icon: '🚜', group: 'Catalog' },
-    { id: 'media', label: 'Media Library', icon: '🖼️', group: 'Assets' },
-    { id: 'security', label: 'Security Center', icon: '🛡️', group: 'Governance' },
-    { id: 'users', label: 'Users & Roles', icon: '👥', group: 'Governance' },
-    { id: 'settings', label: 'CMS Configuration', icon: '⚙️', group: 'System' },
+  // Permission Verification
+  const canAccess = (requiredPerm) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'super_admin') return true;
+    if (!requiredPerm) return true;
+    const perms = Array.isArray(currentUser.permissions) ? currentUser.permissions : [];
+    if (perms.includes('*')) return true;
+    return perms.includes(requiredPerm);
+  };
+
+  // Structured Professional Navigation Groups
+  const navGroups = [
+    {
+      title: 'Overview',
+      items: [
+        { id: 'overview', label: 'Dashboard', icon: '📊', perm: 'posts.view' }
+      ]
+    },
+    {
+      title: 'Content',
+      items: [
+        { id: 'posts', label: 'Blog Posts', icon: '📝', perm: 'posts.view' },
+        { id: 'categories', label: 'Categories & Topics', icon: '🏷️', perm: 'categories.manage' }
+      ]
+    },
+    {
+      title: 'Catalog',
+      items: [
+        { id: 'products', label: 'Products', icon: '🚜', perm: 'products.view' },
+        { id: 'media', label: 'Media Library', icon: '🖼️', perm: 'media.view' }
+      ]
+    },
+    {
+      title: 'Customer Operations',
+      items: [
+        { id: 'crm', label: 'CRM Leads & Inquiries', icon: '📋', perm: 'posts.view' },
+        { id: 'support', label: 'Support Tickets', icon: '🎫', perm: 'posts.view' }
+      ]
+    },
+    {
+      title: 'Marketing & SEO',
+      items: [
+        { id: 'seo', label: 'SEO Management', icon: '🌐', perm: 'settings.manage' }
+      ]
+    },
+    {
+      title: 'Administration',
+      items: [
+        { id: 'users', label: 'Users & Roles', icon: '👥', perm: 'users.view' },
+        { id: 'security', label: 'Security Center', icon: '🛡️', perm: 'security.view' },
+        { id: 'settings', label: 'Website Settings', icon: '⚙️', perm: 'settings.manage' },
+        { id: 'system', label: 'System & DB Status', icon: '🗄️', perm: 'settings.manage' }
+      ]
+    }
   ];
+
+  // Current active navigation item metadata
+  let activeGroupTitle = 'Overview';
+  let activeItemLabel = 'Dashboard';
+  for (const group of navGroups) {
+    const found = group.items.find(i => i.id === activeTab);
+    if (found) {
+      activeGroupTitle = group.title;
+      activeItemLabel = found.label;
+      break;
+    }
+  }
 
   return (
     <div className={`cms-root cms-theme-${theme}`}>
@@ -123,7 +200,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             {!sidebarCollapsed && (
               <div className="cms-brand-text">
                 <span className="cms-brand-title">KONSTRUCTZ</span>
-                <span className="cms-brand-subtitle">Console CMS</span>
+                <span className="cms-brand-subtitle">StoneKrusher CMS</span>
               </div>
             )}
           </div>
@@ -137,20 +214,29 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         </div>
 
         <nav className="cms-sidebar-nav">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              className={`cms-nav-item ${activeTab === item.id ? 'active' : ''}`}
-              onClick={() => {
-                setActiveTab(item.id);
-                setMobileDrawerOpen(false);
-              }}
-              title={sidebarCollapsed ? item.label : undefined}
-            >
-              <span className="cms-nav-icon">{item.icon}</span>
-              {!sidebarCollapsed && <span>{item.label}</span>}
-            </button>
-          ))}
+          {navGroups.map((group, gIdx) => {
+            const visibleItems = group.items.filter(item => canAccess(item.perm));
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={gIdx} style={{ display: 'flex', flexDirection: 'column' }}>
+                {!sidebarCollapsed && (
+                  <div className="cms-nav-group-label">{group.title}</div>
+                )}
+                {visibleItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`cms-nav-item ${activeTab === item.id ? 'active' : ''}`}
+                    onClick={() => handleNavigate(item.id)}
+                    title={sidebarCollapsed ? `${group.title} › ${item.label}` : undefined}
+                  >
+                    <span className="cms-nav-icon">{item.icon}</span>
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="cms-sidebar-footer">
@@ -191,9 +277,9 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             <div className="cms-breadcrumbs">
               <span>StoneKrusher CMS</span>
               <span>/</span>
-              <span className="crumb-active">
-                {navItems.find(i => i.id === activeTab)?.label || 'Console'}
-              </span>
+              <span>{activeGroupTitle}</span>
+              <span>/</span>
+              <span className="crumb-active">{activeItemLabel}</span>
             </div>
           </div>
 
@@ -207,7 +293,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
 
-            {/* User Profile */}
+            {/* User Profile Menu */}
             <div
               className="cms-user-menu"
               onClick={() => setShowProfileModal(true)}
@@ -224,7 +310,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
                   {currentUser.full_name || currentUser.username}
                   {currentUser.is_google_linked && (
                     <span style={{ marginLeft: '6px', fontSize: '0.65rem', padding: '1px 6px', borderRadius: '999px', background: 'var(--cms-success-bg)', color: 'var(--cms-success)', fontWeight: '600' }}>
-                      Google Linked
+                      Google
                     </span>
                   )}
                 </span>
@@ -255,14 +341,8 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         <main className="cms-content">
           {activeTab === 'overview' && (
             <CmsDashboard
-              onNavigateTab={(tab) => {
-                if (tab === 'posts_new') {
-                  setEditingPostId(null);
-                  setActiveTab('posts');
-                } else {
-                  setActiveTab(tab);
-                }
-              }}
+              csrfToken={csrfToken}
+              onNavigateTab={handleNavigate}
               onSelectPost={handleSelectPostFromDashboard}
             />
           )}
@@ -271,6 +351,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             <CmsBlogManager
               csrfToken={csrfToken}
               editingPostId={editingPostId}
+              initialStatusFilter={tabOptions.status || ''}
               onClearEditingId={() => setEditingPostId(null)}
             />
           )}
@@ -280,23 +361,48 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
           )}
 
           {activeTab === 'products' && (
-            <CmsProductManager csrfToken={csrfToken} />
+            <CmsProductManager
+              csrfToken={csrfToken}
+              initialStatusFilter={tabOptions.status || ''}
+            />
           )}
 
           {activeTab === 'media' && (
             <CmsMediaLibrary csrfToken={csrfToken} />
           )}
 
-          {activeTab === 'security' && (
-            <CmsSecurityCenter csrfToken={csrfToken} currentUser={currentUser} />
+          {activeTab === 'crm' && (
+            <CmsCrmLeads
+              csrfToken={csrfToken}
+              initialFilterStatus={tabOptions.status || 'all'}
+            />
+          )}
+
+          {activeTab === 'support' && (
+            <CmsSupportTracker
+              csrfToken={csrfToken}
+              initialFilterStatus={tabOptions.status || 'all'}
+            />
+          )}
+
+          {activeTab === 'seo' && (
+            <CmsSeoSuite csrfToken={csrfToken} />
           )}
 
           {activeTab === 'users' && (
             <CmsUserManager csrfToken={csrfToken} currentUser={currentUser} />
           )}
 
+          {activeTab === 'security' && (
+            <CmsSecurityCenter csrfToken={csrfToken} currentUser={currentUser} />
+          )}
+
           {activeTab === 'settings' && (
             <CmsSettings csrfToken={csrfToken} />
+          )}
+
+          {activeTab === 'system' && (
+            <CmsSystemStatus csrfToken={csrfToken} />
           )}
         </main>
 

@@ -547,7 +547,6 @@ const productsArray = Array.isArray(laravelProducts)
 
 const seenProductNames = new Set();
 // Retained as a migration fallback for older equipment JSON snapshots.
-// eslint-disable-next-line no-unused-vars
 const importedCatalogProducts = productsArray
   .filter(p => p.category !== 'Mini Excavator Attachments' && p.category !== 'Skid Steer Attachments')
   .filter(p => {
@@ -670,7 +669,9 @@ const homePageProductIds = ['featured-12', 'featured-13', 'featured-6', 'feature
 export const featuredProducts = homePageProductIds
   .map(id => featuredCatalogProducts.find(p => p.id === id))
   .filter(Boolean);
-export const catalogProducts = [...featuredCatalogProducts, ...csvEquipmentProducts];
+const existingCatalogSlugs = new Set([...featuredCatalogProducts, ...csvEquipmentProducts].map(p => productSlug(p.name || '')));
+const uniqueImported = importedCatalogProducts.filter(p => !existingCatalogSlugs.has(productSlug(p.name || '')));
+export const catalogProducts = [...featuredCatalogProducts, ...csvEquipmentProducts, ...uniqueImported];
 
 const getAttachmentIdentity = (product) => (
   getEcwidIdFromUrl(product.externalUrl || product.checkoutUrl || product.hash || '')

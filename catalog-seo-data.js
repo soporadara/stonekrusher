@@ -91,5 +91,51 @@ export const loadCsvProducts = () => {
       brand: row.Brands || row['Meta: brand'] || 'TYPHON'
     };
   });
-  return [...featuredProductsSeo, ...csvList];
+
+  // Load synced equipment products from CMS (src/data/equipment-products.json)
+  let cmsProducts = [];
+  try {
+    if (fs.existsSync('src/data/equipment-products.json')) {
+      const raw = fs.readFileSync('src/data/equipment-products.json', 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        cmsProducts = parsed.filter(p => p.status === 'Published' || !p.status);
+      }
+    }
+  } catch {
+    // Graceful fallback
+  }
+
+  const mergedMap = new Map();
+  // Add featured
+  for (const p of featuredProductsSeo) {
+    mergedMap.set(p.slug, p);
+  }
+  // Add CSV
+  for (const p of csvList) {
+    mergedMap.set(p.slug, p);
+  }
+  // Merge CMS synced products (authoritative updates or new products)
+  for (const p of cmsProducts) {
+    if (!p.slug) continue;
+    const existing = mergedMap.get(p.slug) || {};
+    const images = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : (existing.images || []));
+    mergedMap.set(p.slug, {
+      ...existing,
+      ...p,
+      name: p.name || existing.name,
+      slug: p.slug,
+      sku: p.sku || existing.sku || '',
+      category: getNormalizedCategory(p.category || existing.category || '', p.name || existing.name || ''),
+      price: typeof p.price === 'number' ? p.price : (Number(p.price) || existing.price),
+      image: p.image || images[0] || existing.image,
+      images,
+      desc: p.desc || p.description || existing.desc || '',
+      fullDesc: p.fullDesc || p.desc || p.description || existing.fullDesc || '',
+      brand: p.brand || existing.brand || 'TYPHON',
+      checkoutUrl: p.checkoutUrl || p.externalUrl || existing.checkoutUrl || '/store'
+    });
+  }
+
+  return [...mergedMap.values()];
 };

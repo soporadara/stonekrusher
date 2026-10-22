@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CmsMediaLibrary from './CmsMediaLibrary';
 
-export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId }) {
+function sanitizeHtml(html = '') {
+  if (!html) return '';
+  return String(html)
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|src)\s*=\s*(['"]?)\s*javascript:[^"'\s>]*/gi, '$1=$2#')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+}
+
+export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId, initialStatusFilter = '' }) {
   // Navigation / View state
   const [view, setView] = useState('list'); // 'list' | 'editor'
   const [posts, setPosts] = useState([]);
@@ -9,7 +18,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -631,7 +640,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                     <hr className="cms-preview-divider" />
                     <div
                       className="cms-preview-body"
-                      dangerouslySetInnerHTML={{ __html: form.content || '<p><em>No content written yet.</em></p>' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(form.content) || '<p><em>No content written yet.</em></p>' }}
                     />
                   </div>
                 )}

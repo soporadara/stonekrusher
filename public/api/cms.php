@@ -27,6 +27,81 @@ if (in_array($method, ['POST', 'PUT', 'DELETE', 'PATCH'])) {
     Security::validateCsrf($currentUser);
 }
 
+function format_bytes_cms($bytes) {
+    if (!$bytes || $bytes <= 0) return '0 B';
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $i = (int)floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), 1) . ' ' . ($units[$i] ?? 'B');
+}
+
+function sanitize_cms_html($html) {
+    if (empty($html)) return '';
+    // Strip dangerous script tags and content
+    $clean = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/i', '', $html);
+    // Strip on* event handlers (onerror, onclick, onload, etc.)
+    $clean = preg_replace('/\s+on[a-z]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean);
+    // Strip javascript: URLs in href/src
+    $clean = preg_replace('/(href|src)\s*=\s*([\'"]?)\s*javascript:[^"\'\s>]*/i', '$1=$2#', $clean);
+    // Strip style tags that could include expressions
+    $clean = preg_replace('/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/i', '', $clean);
+    return $clean;
+}
+
+function sync_blog_posts_to_json($pdo) {
+    $dataDir = dirname(__DIR__, 2) . '/data';
+    $publicApiDir = __DIR__;
+    try {
+        $stmt = $pdo->query("SELECT data_json FROM blog_posts WHERE status = 'Published' ORDER BY updated_at DESC");
+        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $posts = [];
+        foreach ($rows as $r) {
+            $dec = json_decode($r, true);
+            if ($dec) $posts[] = $dec;
+        }
+        $jsonContent = json_encode($posts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+        @file_put_contents($dataDir . '/blog-posts.json', $jsonContent);
+        @file_put_contents($publicApiDir . '/blog-posts-data.json', $jsonContent);
+        @file_put_contents($publicApiDir . '/blog-posts-default.json', $jsonContent);
+        return count($posts);
+    } catch (Exception $e) {
+        error_log("Blog sync error: " . $e->getMessage());
+        return 0;
+    }
+}
+
+function sync_products_to_catalog($pdo) {
+    $catFile = dirname(__DIR__, 2) . '/src/data/equipment-products.json';
+    try {
+        $stmt = $pdo->query("SELECT data_json, name, slug, sku, category, price, image_url, gallery_json, description, status FROM products WHERE status = 'Published' ORDER BY updated_at DESC");
+        $rows = $stmt->fetchAll();
+        $prods = [];
+        foreach ($rows as $r) {
+            $item = [];
+            if (!empty($r['data_json'])) {
+                $item = json_decode($r['data_json'], true) ?: [];
+            }
+            $item['name'] = $r['name'];
+            $item['slug'] = $r['slug'];
+            $item['sku'] = $r['sku'] ?: ($item['sku'] ?? '');
+            $item['category'] = $r['category'] ?: ($item['category'] ?? 'Machinery');
+            $item['price'] = is_numeric($r['price']) ? (float)$r['price'] : ($r['price'] ?: ($item['price'] ?? 0));
+            $item['image'] = $r['image_url'] ?: ($item['image'] ?? '');
+            $item['desc'] = $r['description'] ?: ($item['desc'] ?? '');
+            $item['status'] = $r['status'] ?: 'Published';
+            if (!empty($r['gallery_json'])) {
+                $item['images'] = json_decode($r['gallery_json'], true) ?: ($item['images'] ?? []);
+            }
+            $prods[] = $item;
+        }
+        $jsonContent = json_encode($prods, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+        @file_put_contents($catFile, $jsonContent);
+        return count($prods);
+    } catch (Exception $e) {
+        error_log("Product sync error: " . $e->getMessage());
+        return 0;
+    }
+}
+
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true) ?: $_POST;
 $pdo = get_cms_pdo();
@@ -35,7 +110,7 @@ $now = time();
 switch ($action) {
 
     // =========================================================
-    // 1. DASHBOARD OVERVIEW METRICS
+    // 1. DASHBOARD OVERVIEW METRICS (AUTHORITATIVE & REAL)
     // =========================================================
     case 'dashboard_metrics':
         Security::requirePermission($currentUser, 'posts.view');
@@ -52,40 +127,109 @@ switch ($action) {
 
         // Catalog & Media counts
         $productCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE status != 'Archived'")->fetchColumn();
-        $categoryCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_categories")->fetchColumn();
+        $productPublishedCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE status = 'Published'")->fetchColumn();
+        $productCategoriesCount = (int)$pdo->query("SELECT COUNT(DISTINCT category) FROM products WHERE category IS NOT NULL AND category != ''")->fetchColumn();
+        $blogCategoryCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_categories")->fetchColumn();
+        
         $mediaCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_media")->fetchColumn();
+        $mediaSizeBytes = (int)$pdo->query("SELECT COALESCE(SUM(file_size), 0) FROM cms_media")->fetchColumn();
 
         // CRM & Inquiries counts
         $inquiriesCount = 0;
         $inquiriesNew = 0;
+        $inquiriesContacted = 0;
+        $inquiriesQuoted = 0;
         $inquiriesWon = 0;
-        $pipelineValue = 0;
+        $inquiriesLost = 0;
+        $pipelineValue = 0.0;
         try {
             $inquiriesCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries")->fetchColumn();
             $inquiriesNew = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'New'")->fetchColumn();
+            $inquiriesContacted = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Contacted'")->fetchColumn();
+            $inquiriesQuoted = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Quoted'")->fetchColumn();
             $inquiriesWon = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Won'")->fetchColumn();
+            $inquiriesLost = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Lost'")->fetchColumn();
             $pipelineValue = (float)$pdo->query("SELECT COALESCE(SUM(estimated_value), 0) FROM cms_inquiries WHERE status NOT IN ('Lost')")->fetchColumn();
-        } catch (Exception $e) {
-            // Table might be initializing
-        }
+        } catch (Exception $e) {}
 
         // Support Tickets counts
         $ticketsCount = 0;
         $ticketsOpen = 0;
+        $ticketsInProgress = 0;
         $ticketsResolved = 0;
+        $ticketsHighPriority = 0;
         try {
             $ticketsCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets")->fetchColumn();
             $ticketsOpen = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'Open'")->fetchColumn();
+            $ticketsInProgress = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'In Progress'")->fetchColumn();
             $ticketsResolved = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'Resolved'")->fetchColumn();
-        } catch (Exception $e) {
-            // Table initializing
-        }
+            $ticketsHighPriority = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE priority = 'High' AND status != 'Resolved'")->fetchColumn();
+        } catch (Exception $e) {}
+
+        $resolutionRate = $ticketsCount > 0 ? round(($ticketsResolved / $ticketsCount) * 100) : 0;
 
         // Security counts
         $activeBlocksCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_security_blocks WHERE expires_at IS NULL OR expires_at > {$now}")->fetchColumn();
         $failedLogins24h = (int)$pdo->query("SELECT COUNT(*) FROM cms_login_attempts WHERE success = 0 AND created_at > " . ($now - 86400))->fetchColumn();
         $activeLockouts = (int)$pdo->query("SELECT COUNT(*) FROM cms_users WHERE locked_until > {$now}")->fetchColumn();
         $activeSessions = (int)$pdo->query("SELECT COUNT(*) FROM cms_sessions WHERE is_revoked = 0 AND expires_at > {$now}")->fetchColumn();
+
+        // System & Database Health
+        $dbDriver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $dbSizeFormatted = 'N/A';
+        if ($dbDriver === 'sqlite') {
+            $sqlitePath = dirname(__DIR__, 2) . '/data/site.db';
+            if (file_exists($sqlitePath)) {
+                $dbSizeFormatted = format_bytes_cms(filesize($sqlitePath));
+            }
+        }
+        $opcacheActive = function_exists('opcache_get_status') && !empty(opcache_get_status()['opcache_enabled']);
+
+        // External Analytics Integrations Status (Honest reporting)
+        $ga4Id = Security::getSetting('ga4_measurement_id', '');
+        $gscUrl = Security::getSetting('gsc_site_url', '');
+        $analyticsIntegrations = [
+            'ga4' => [
+                'name' => 'Google Analytics 4',
+                'connected' => !empty($ga4Id),
+                'id' => $ga4Id ?: null,
+                'status_label' => !empty($ga4Id) ? 'Connected' : 'Not Configured'
+            ],
+            'gsc' => [
+                'name' => 'Google Search Console',
+                'connected' => !empty($gscUrl),
+                'url' => $gscUrl ?: null,
+                'status_label' => !empty($gscUrl) ? 'Connected' : 'Not Configured'
+            ]
+        ];
+
+        // Real 7-day activity tracking from persisted timestamps
+        $activity7d = [];
+        for ($dayOffset = 6; $dayOffset >= 0; $dayOffset--) {
+            $dayStart = strtotime("today -{$dayOffset} days 00:00:00");
+            $dayEnd = strtotime("today -{$dayOffset} days 23:59:59");
+            $dayLabel = date('D', $dayStart);
+            $dateStr = date('Y-m-d', $dayStart);
+
+            $inqDay = 0;
+            $updatesDay = 0;
+            try {
+                $inqStmt = $pdo->prepare("SELECT COUNT(*) FROM cms_inquiries WHERE created_at BETWEEN ? AND ?");
+                $inqStmt->execute([$dayStart, $dayEnd]);
+                $inqDay = (int)$inqStmt->fetchColumn();
+
+                $auditStmt = $pdo->prepare("SELECT COUNT(*) FROM cms_audit_logs WHERE created_at BETWEEN ? AND ?");
+                $auditStmt->execute([$dayStart, $dayEnd]);
+                $updatesDay = (int)$auditStmt->fetchColumn();
+            } catch (Exception $e) {}
+
+            $activity7d[] = [
+                'date' => $dateStr,
+                'day' => $dayLabel,
+                'inquiries' => $inqDay,
+                'activity' => $updatesDay
+            ];
+        }
 
         // Recent posts (5)
         $recentPosts = $pdo->query("SELECT id, slug, title, category, status, published_date, updated_at FROM blog_posts ORDER BY updated_at DESC LIMIT 5")->fetchAll();
@@ -99,35 +243,67 @@ switch ($action) {
             $recentInquiries = $pdo->query("SELECT id, name, company, email, machine_model, estimated_value, status, created_at FROM cms_inquiries ORDER BY created_at DESC LIMIT 5")->fetchAll();
         } catch (Exception $e) {}
 
+        // Recent tickets (5)
+        $recentTickets = [];
+        try {
+            $recentTickets = $pdo->query("SELECT id, ticket_number, customer_name, subject, priority, status, created_at FROM cms_support_tickets ORDER BY created_at DESC LIMIT 5")->fetchAll();
+        } catch (Exception $e) {}
+
         echo json_encode([
             'success' => true,
             'metrics' => [
                 'posts' => $postCounts,
-                'products' => $productCount,
-                'categories' => $categoryCount,
-                'media' => $mediaCount,
+                'products' => [
+                    'total' => $productCount,
+                    'published' => $productPublishedCount,
+                    'categories' => $productCategoriesCount
+                ],
+                'categories' => [
+                    'blog' => $blogCategoryCount,
+                    'catalog' => $productCategoriesCount
+                ],
+                'media' => [
+                    'total' => $mediaCount,
+                    'size_bytes' => $mediaSizeBytes,
+                    'size_formatted' => format_bytes_cms($mediaSizeBytes)
+                ],
                 'inquiries' => [
                     'total' => $inquiriesCount,
                     'new' => $inquiriesNew,
+                    'contacted' => $inquiriesContacted,
+                    'quoted' => $inquiriesQuoted,
                     'won' => $inquiriesWon,
-                    'pipeline_value' => $pipelineValue > 0 ? $pipelineValue : 103950.00
+                    'lost' => $inquiriesLost,
+                    'pipeline_value' => $pipelineValue
                 ],
                 'support' => [
                     'total' => $ticketsCount,
                     'open' => $ticketsOpen,
+                    'in_progress' => $ticketsInProgress,
                     'resolved' => $ticketsResolved,
-                    'resolution_rate' => $ticketsCount > 0 ? round(($ticketsResolved / $ticketsCount) * 100) : 85
+                    'high_priority' => $ticketsHighPriority,
+                    'resolution_rate' => $resolutionRate
                 ],
                 'security' => [
                     'active_blocks' => $activeBlocksCount,
                     'failed_logins_24h' => $failedLogins24h,
                     'active_lockouts' => $activeLockouts,
                     'active_sessions' => $activeSessions
-                ]
+                ],
+                'system' => [
+                    'db_driver' => $dbDriver,
+                    'db_size_formatted' => $dbSizeFormatted,
+                    'php_version' => PHP_VERSION,
+                    'opcache_active' => $opcacheActive,
+                    'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? 'PHP Engine'
+                ],
+                'analytics' => $analyticsIntegrations,
+                'activity_chart' => $activity7d
             ],
             'recent_posts' => $recentPosts,
             'recent_activity' => $recentActivity,
-            'recent_inquiries' => $recentInquiries
+            'recent_inquiries' => $recentInquiries,
+            'recent_tickets' => $recentTickets
         ]);
         exit;
 
@@ -250,7 +426,7 @@ switch ($action) {
         $author = trim($input['author'] ?? $currentUser['full_name'] ?: 'Admin KONSTRUCTZ');
         $featuredImage = trim($input['featured_image'] ?? ($input['image'] ?? ''));
         $excerpt = trim($input['excerpt'] ?? ($input['desc'] ?? ''));
-        $content = (string)($input['content'] ?? '');
+        $content = sanitize_cms_html((string)($input['content'] ?? ''));
         $status = trim($input['status'] ?? 'Draft');
         $tagsJson = is_array($input['tags'] ?? null) ? json_encode($input['tags']) : ($input['tags_json'] ?? '[]');
         $pubDate = trim($input['published_date'] ?? ($input['publishedDate'] ?? date('Y-m-d')));
@@ -339,6 +515,8 @@ switch ($action) {
             Security::logAudit($currentUser['id'], 'post.update', 'post', $postId, ['title' => $title, 'status' => $status]);
         }
 
+        sync_blog_posts_to_json($pdo);
+
         echo json_encode([
             'success' => true,
             'message' => $isNew ? 'Post created successfully.' : 'Post updated successfully.',
@@ -352,6 +530,7 @@ switch ($action) {
 
         $pdo->prepare("UPDATE blog_posts SET status = 'Trash', updated_at = ? WHERE id = ?")->execute([$now, $id]);
         Security::logAudit($currentUser['id'], 'post.trash', 'post', $id);
+        sync_blog_posts_to_json($pdo);
 
         echo json_encode(['success' => true, 'message' => 'Post moved to trash.']);
         exit;
@@ -362,6 +541,7 @@ switch ($action) {
 
         $pdo->prepare("UPDATE blog_posts SET status = 'Draft', updated_at = ? WHERE id = ?")->execute([$now, $id]);
         Security::logAudit($currentUser['id'], 'post.restore', 'post', $id);
+        sync_blog_posts_to_json($pdo);
 
         echo json_encode(['success' => true, 'message' => 'Post restored to drafts.']);
         exit;
@@ -373,6 +553,7 @@ switch ($action) {
         $pdo->prepare("DELETE FROM blog_posts WHERE id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM blog_revisions WHERE post_id = ?")->execute([$id]);
         Security::logAudit($currentUser['id'], 'post.delete_permanent', 'post', $id);
+        sync_blog_posts_to_json($pdo);
 
         echo json_encode(['success' => true, 'message' => 'Post permanently deleted.']);
         exit;
@@ -696,7 +877,14 @@ switch ($action) {
             Security::logAudit($currentUser['id'], 'product.update', 'product', $prodId, ['name' => $name]);
         }
 
-        echo json_encode(['success' => true, 'message' => 'Product saved successfully.', 'product' => $fullObj]);
+        $publishedCount = sync_products_to_catalog($pdo);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Product saved and synced to live catalog successfully.',
+            'product' => $fullObj,
+            'catalog_published_count' => $publishedCount
+        ]);
         exit;
 
     case 'product_delete':
@@ -705,6 +893,7 @@ switch ($action) {
 
         $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$id]);
         Security::logAudit($currentUser['id'], 'product.delete', 'product', $id);
+        sync_products_to_catalog($pdo);
 
         echo json_encode(['success' => true, 'message' => 'Product deleted successfully.']);
         exit;
@@ -1313,7 +1502,6 @@ switch ($action) {
 
     case 'inquiry_save':
         Security::requirePermission($currentUser, 'posts.create');
-        Security::verifyCsrfToken($input['csrf_token'] ?? '');
         $id = trim($input['id'] ?? '');
         $name = trim($input['name'] ?? '');
         $email = trim($input['email'] ?? '');
@@ -1348,8 +1536,7 @@ switch ($action) {
 
     case 'inquiry_delete':
         Security::requirePermission($currentUser, 'posts.delete');
-        Security::verifyCsrfToken($input['csrf_token'] ?? '');
-        $id = trim($input['id'] ?? '');
+        $id = trim($input['id'] ?? ($_GET['id'] ?? ''));
         if ($id !== '') {
             $pdo->prepare("DELETE FROM cms_inquiries WHERE id = ?")->execute([$id]);
             Security::logAudit($currentUser['id'], 'inquiry.delete', 'inquiry', $id);
@@ -1385,7 +1572,6 @@ switch ($action) {
 
     case 'support_ticket_save':
         Security::requirePermission($currentUser, 'posts.create');
-        Security::verifyCsrfToken($input['csrf_token'] ?? '');
         $id = trim($input['id'] ?? '');
         $customerName = trim($input['customer_name'] ?? '');
         $customerEmail = trim($input['customer_email'] ?? '');
@@ -1421,8 +1607,7 @@ switch ($action) {
 
     case 'support_ticket_delete':
         Security::requirePermission($currentUser, 'posts.delete');
-        Security::verifyCsrfToken($input['csrf_token'] ?? '');
-        $id = trim($input['id'] ?? '');
+        $id = trim($input['id'] ?? ($_GET['id'] ?? ''));
         if ($id !== '') {
             $pdo->prepare("DELETE FROM cms_support_tickets WHERE id = ?")->execute([$id]);
             Security::logAudit($currentUser['id'], 'ticket.delete', 'support_ticket', $id);
@@ -1431,11 +1616,36 @@ switch ($action) {
         exit;
 
     // =========================================================
-    // 9. QUICK SERVER CACHE PURGE
+    // 9. QUICK SERVER CACHE PURGE & CATALOG PUBLISH
     // =========================================================
+    case 'catalog_publish':
+        Security::requirePermission($currentUser, 'products.edit');
+
+        $prodCount = sync_products_to_catalog($pdo);
+        $blogCount = sync_blog_posts_to_json($pdo);
+
+        if (function_exists('clearstatcache')) {
+            clearstatcache(true);
+        }
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
+
+        Security::logAudit($currentUser['id'], 'catalog.publish', 'catalog', null, [
+            'products_synced' => $prodCount,
+            'blog_posts_synced' => $blogCount
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Published catalog successfully synced ({$prodCount} active products, {$blogCount} blog articles).",
+            'products_synced' => $prodCount,
+            'blog_posts_synced' => $blogCount
+        ]);
+        exit;
+
     case 'cache_purge':
-        Security::requirePermission($currentUser, 'settings.edit');
-        Security::verifyCsrfToken($input['csrf_token'] ?? '');
+        Security::requirePermission($currentUser, 'settings.manage');
 
         if (function_exists('opcache_reset')) {
             @opcache_reset();
@@ -1450,6 +1660,104 @@ switch ($action) {
             'success' => true,
             'message' => 'LiteSpeed Web Server Cache and PHP OPcache flushed successfully.'
         ]);
+    case 'seo_stats':
+        Security::requirePermission($currentUser, 'posts.view');
+
+        $rootDir = dirname(__DIR__, 2);
+        $sitemapFile = $rootDir . '/public/sitemap.xml';
+        $sitemapIndex = $rootDir . '/public/sitemap_index.xml';
+        $robotsFile = $rootDir . '/public/robots.txt';
+        $llmsFile = $rootDir . '/public/llms.txt';
+        $productsDir = $rootDir . '/public/products';
+
+        $sitemapCount = 0;
+        if (file_exists($sitemapFile)) {
+            $sitemapContent = file_get_contents($sitemapFile);
+            $sitemapCount = substr_count($sitemapContent, '<loc>');
+        }
+
+        $staticProductPagesCount = 0;
+        if (is_dir($productsDir)) {
+            $files = glob($productsDir . '/*/index.html');
+            $staticProductPagesCount = is_array($files) ? count($files) : 0;
+        }
+
+        $equipmentCategoriesCount = (int)$pdo->query("SELECT COUNT(DISTINCT category) FROM products WHERE category IS NOT NULL AND category != ''")->fetchColumn();
+        $blogPostCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Published'")->fetchColumn();
+
+        $siteUrl = Security::getSetting('site_url', 'https://stonekrusher.com');
+        $ga4Id = Security::getSetting('ga4_measurement_id', '');
+        $gscUrl = Security::getSetting('gsc_site_url', '');
+
+        echo json_encode([
+            'success' => true,
+            'seo' => [
+                'sitemap_urls' => $sitemapCount,
+                'sitemap_exists' => file_exists($sitemapFile),
+                'sitemap_index_exists' => file_exists($sitemapIndex),
+                'sitemap_last_modified' => file_exists($sitemapFile) ? date('Y-m-d H:i:s', filemtime($sitemapFile)) : null,
+                'robots_exists' => file_exists($robotsFile),
+                'llms_exists' => file_exists($llmsFile),
+                'crawlable_products' => $staticProductPagesCount,
+                'categories_count' => $equipmentCategoriesCount,
+                'published_posts' => $blogPostCount,
+                'site_url' => $siteUrl,
+                'ga4_connected' => !empty($ga4Id),
+                'gsc_connected' => !empty($gscUrl),
+                'indexnow_key_location' => $siteUrl . '/4e2c9180ab5f4f899b418a032d8471e6.txt'
+            ]
+        ]);
+        exit;
+
+    case 'seo_ping':
+        Security::requirePermission($currentUser, 'settings.manage');
+
+        $siteUrl = Security::getSetting('site_url', 'https://stonekrusher.com');
+        $host = parse_url($siteUrl, PHP_URL_HOST) ?: 'stonekrusher.com';
+        $apiKey = '4e2c9180ab5f4f899b418a032d8471e6';
+        $sitemapUrl = $siteUrl . '/sitemap.xml';
+
+        // IndexNow ping
+        $indexNowPayload = json_encode([
+            'host' => $host,
+            'key' => $apiKey,
+            'keyLocation' => "{$siteUrl}/{$apiKey}.txt",
+            'urlList' => [
+                $siteUrl,
+                "{$siteUrl}/equipment/",
+                "{$siteUrl}/equipment/attachments/",
+                "{$siteUrl}/blog/",
+                $sitemapUrl
+            ]
+        ]);
+
+        $ch = curl_init('https://www.bing.com/indexnow');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json; charset=utf-8']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $indexNowPayload);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+
+        Security::logAudit($currentUser['id'], 'seo.ping', 'seo', null, [
+            'http_code' => $httpCode,
+            'curl_error' => $curlErr
+        ]);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            echo json_encode([
+                'success' => true,
+                'message' => "IndexNow ping successfully accepted (HTTP {$httpCode}). Search crawlers notified."
+            ]);
+        } else {
+            echo json_encode([
+                'success' => false,
+                'error' => $curlErr ? "Ping connection error: {$curlErr}" : "Search engine returned HTTP {$httpCode}"
+            ]);
+        }
         exit;
 
     default:

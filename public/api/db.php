@@ -8,23 +8,27 @@ if (file_exists(__DIR__ . '/config.php')) {
     require_once __DIR__ . '/config.php';
 }
 
-function get_cms_pdo() {
+function get_cms_pdo($customPath = null, $forceDriver = null) {
     static $pdoInstance = null;
-    if ($pdoInstance !== null) {
+    if ($customPath === null && $forceDriver === null && $pdoInstance !== null) {
         return $pdoInstance;
     }
 
+    $driver = strtolower($forceDriver ?: (defined('DB_DRIVER') ? DB_DRIVER : (getenv('DB_DRIVER') ?: 'sqlite')));
     $dbHost = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: 'localhost');
+    $dbPort = defined('DB_PORT') ? DB_PORT : (getenv('DB_PORT') ?: '3306');
     $dbName = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: 'u534600013_konstructz');
     $dbUser = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: '');
     $dbPass = defined('DB_PASS') ? DB_PASS : (getenv('DB_PASS') ?: '');
 
-    $connected = false;
+    $instance = null;
 
-    // 1. Attempt MySQL connection if credentials are configured
-    if (!empty($dbUser)) {
+    if ($driver === 'mysql') {
+        if (empty($dbUser)) {
+            throw new RuntimeException("MySQL driver specified but DB_USER is empty. Configure credentials in .env or set DB_DRIVER=sqlite for local development.");
+        }
         try {
-            $dsn = "mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4";
+            $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
             $mysqlInitCommand = defined('Pdo\Mysql::ATTR_INIT_COMMAND')
                 ? \Pdo\Mysql::ATTR_INIT_COMMAND
                 : (defined('PDO::MYSQL_ATTR_INIT_COMMAND') ? constant('PDO::MYSQL_ATTR_INIT_COMMAND') : 1002);
@@ -35,40 +39,45 @@ function get_cms_pdo() {
                 PDO::ATTR_EMULATE_PREPARES => false,
                 $mysqlInitCommand => "SET NAMES utf8mb4"
             ];
-            $pdoInstance = new PDO($dsn, $dbUser, $dbPass, $options);
-            $connected = true;
+            $instance = new PDO($dsn, $dbUser, $dbPass, $options);
         } catch (Exception $e) {
-            // MySQL unavailable or credentials mismatch, fallback to SQLite
-            $connected = false;
+            error_log("CRITICAL: MySQL connection failed: " . $e->getMessage());
+            throw new RuntimeException("MySQL database connection failed: " . $e->getMessage() . ". Ensure MySQL is running or configure DB_DRIVER=sqlite for local development.");
         }
-    }
+    } else {
+        // SQLite mode (Local Development / Testing)
+        $sqliteRel = $customPath ?: (defined('DB_FILE') ? DB_FILE : (getenv('DB_FILE') ?: 'data/site.db'));
+        $sqlitePath = ($sqliteRel[0] === '/' || (strlen($sqliteRel) > 2 && $sqliteRel[1] === ':'))
+            ? $sqliteRel
+            : (dirname(__DIR__, 2) . '/' . ltrim($sqliteRel, '/'));
 
-    // 2. Fallback to SQLite (data/site.db)
-    if (!$connected) {
-        $dataDir = dirname(__DIR__, 2) . '/data';
+        $dataDir = dirname($sqlitePath);
         if (!is_dir($dataDir)) {
             @mkdir($dataDir, 0755, true);
         }
-        $sqlitePath = $dataDir . '/site.db';
+
         try {
-            $pdoInstance = new PDO("sqlite:{$sqlitePath}", null, null, [
+            $instance = new PDO("sqlite:{$sqlitePath}", null, null, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_TIMEOUT => 5
             ]);
-            $pdoInstance->exec("PRAGMA journal_mode = WAL;");
-            $pdoInstance->exec("PRAGMA foreign_keys = ON;");
-            $connected = true;
+            $instance->exec("PRAGMA journal_mode = WAL;");
+            $instance->exec("PRAGMA foreign_keys = ON;");
+            $instance->exec("PRAGMA busy_timeout = 5000;");
         } catch (Exception $e) {
             error_log("Database connection error: " . $e->getMessage());
-            return null;
+            throw new RuntimeException("SQLite connection failed: " . $e->getMessage());
         }
     }
 
-    if ($pdoInstance) {
-        ensure_cms_schema_migrated($pdoInstance);
+    if ($instance) {
+        ensure_cms_schema_migrated($instance);
     }
 
-    return $pdoInstance;
+    $pdoInstance = $instance;
+
+    return $instance;
 }
 
 function ensure_cms_schema_migrated($pdo) {
@@ -482,13 +491,23 @@ function seed_cms_defaults($pdo) {
     // 2. Seed Default Super Admin User if none exists
     $userCountStmt = $pdo->query("SELECT COUNT(*) FROM cms_users");
     if ((int)$userCountStmt->fetchColumn() === 0) {
-        $defaultPassword = 'Admin@StoneKrusher2026!';
-        $hashed = password_hash($defaultPassword, PASSWORD_DEFAULT);
+        $initialUsername = getenv('CMS_INITIAL_ADMIN_USERNAME') ?: 'admin';
+        $initialEmail = getenv('CMS_INITIAL_ADMIN_EMAIL') ?: 'admin@cwqv.com';
+        $initialPassword = getenv('CMS_INITIAL_ADMIN_PASSWORD') ?: '';
+
+        if (empty($initialPassword)) {
+            // Generate a secure random password if none provided via environment
+            $initialPassword = 'Admin@' . bin2hex(random_bytes(6)) . '!';
+            $noticeFile = dirname(__DIR__, 2) . '/data/.initial_admin_setup.txt';
+            @file_put_contents($noticeFile, "CMS Initial Administrator Provisioned:\nUsername: {$initialUsername}\nEmail: {$initialEmail}\nTemporary Password: {$initialPassword}\nPlease log in and change your password immediately.\n");
+        }
+
+        $hashed = password_hash($initialPassword, PASSWORD_DEFAULT);
         $stmt = $pdo->prepare("INSERT INTO cms_users (id, username, email, password_hash, full_name, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             'usr-admin-initial',
-            'admin',
-            'admin@cwqv.com',
+            $initialUsername,
+            $initialEmail,
             $hashed,
             'KONSTRUCTZ Super Admin',
             'super_admin',

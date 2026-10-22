@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-export default function CmsCrmLeads({ csrfToken }) {
+export default function CmsCrmLeads({ csrfToken, initialFilterStatus = 'all' }) {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInquiry, setSelectedInquiry] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [notice, setNotice] = useState('');
+  const [errorNotice, setErrorNotice] = useState('');
 
   // New Lead Form State
   const [formData, setFormData] = useState({
@@ -26,14 +27,17 @@ export default function CmsCrmLeads({ csrfToken }) {
   const fetchInquiries = async () => {
     try {
       setLoading(true);
+      setErrorNotice('');
       const url = `/api/cms.php?action=inquiries_list&status=${filterStatus}&search=${encodeURIComponent(searchTerm)}`;
       const res = await fetch(url);
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setInquiries(json.inquiries || []);
+      } else {
+        setErrorNotice(json.error || 'Failed to load inquiries list');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Error connecting to inquiries API');
     } finally {
       setLoading(false);
     }
@@ -48,9 +52,13 @@ export default function CmsCrmLeads({ csrfToken }) {
     if (!item) return;
 
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=inquiry_save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({
           ...item,
           status: newStatus,
@@ -58,22 +66,28 @@ export default function CmsCrmLeads({ csrfToken }) {
         })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setInquiries(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i));
         setNotice(`Lead status updated to ${newStatus}`);
         setTimeout(() => setNotice(''), 3000);
+      } else {
+        setErrorNotice(json.error || 'Failed to update lead status');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error updating lead status');
     }
   };
 
   const handleSaveNewLead = async (e) => {
     e.preventDefault();
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=inquiry_save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({
           ...formData,
           estimated_value: parseFloat(formData.estimated_value) || 0,
@@ -81,7 +95,7 @@ export default function CmsCrmLeads({ csrfToken }) {
         })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setShowAddModal(false);
         setFormData({
           name: '',
@@ -98,27 +112,37 @@ export default function CmsCrmLeads({ csrfToken }) {
         fetchInquiries();
         setNotice('New quote lead recorded successfully!');
         setTimeout(() => setNotice(''), 3500);
+      } else {
+        setErrorNotice(json.error || 'Failed to save quote lead');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error saving quote lead');
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this inquiry record?')) return;
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=inquiry_delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({ id, csrf_token: csrfToken })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setInquiries(prev => prev.filter(i => i.id !== id));
         setSelectedInquiry(null);
+        setNotice('Inquiry deleted successfully.');
+        setTimeout(() => setNotice(''), 3000);
+      } else {
+        setErrorNotice(json.error || 'Failed to delete inquiry');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error deleting inquiry');
     }
   };
 
@@ -171,6 +195,12 @@ export default function CmsCrmLeads({ csrfToken }) {
       {notice && (
         <div style={{ padding: '10px 16px', background: 'rgba(96, 122, 78, 0.2)', border: '1px solid var(--cms-primary)', color: 'var(--cms-primary)', borderRadius: '10px', fontWeight: '600', fontSize: '0.88rem' }}>
           {notice}
+        </div>
+      )}
+
+      {errorNotice && (
+        <div style={{ padding: '10px 16px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '10px', fontWeight: '600', fontSize: '0.88rem' }}>
+          {errorNotice}
         </div>
       )}
 

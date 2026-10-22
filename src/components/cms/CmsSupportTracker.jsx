@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 
-export default function CmsSupportTracker({ csrfToken }) {
+export default function CmsSupportTracker({ csrfToken, initialFilterStatus = 'all' }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [filterPriority, setFilterPriority] = useState('all');
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [notice, setNotice] = useState('');
+  const [errorNotice, setErrorNotice] = useState('');
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -25,14 +26,17 @@ export default function CmsSupportTracker({ csrfToken }) {
   const fetchTickets = async () => {
     try {
       setLoading(true);
+      setErrorNotice('');
       const url = `/api/cms.php?action=support_tickets_list&status=${filterStatus}&priority=${filterPriority}`;
       const res = await fetch(url);
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setTickets(json.tickets || []);
+      } else {
+        setErrorNotice(json.error || 'Failed to load support tickets');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Error connecting to support tickets API');
     } finally {
       setLoading(false);
     }
@@ -44,9 +48,13 @@ export default function CmsSupportTracker({ csrfToken }) {
 
   const handleStatusChange = async (ticket, newStatus) => {
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=support_ticket_save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({
           ...ticket,
           status: newStatus,
@@ -54,29 +62,35 @@ export default function CmsSupportTracker({ csrfToken }) {
         })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, status: newStatus } : t));
         setNotice(`Ticket ${ticket.ticket_number} status updated to ${newStatus}`);
         setTimeout(() => setNotice(''), 3000);
+      } else {
+        setErrorNotice(json.error || 'Failed to update ticket status');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error updating ticket status');
     }
   };
 
   const handleSaveTicket = async (e) => {
     e.preventDefault();
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=support_ticket_save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({
           ...formData,
           csrf_token: csrfToken
         })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setShowNewModal(false);
         setFormData({
           customer_name: '',
@@ -93,27 +107,37 @@ export default function CmsSupportTracker({ csrfToken }) {
         fetchTickets();
         setNotice('Support ticket created successfully!');
         setTimeout(() => setNotice(''), 3500);
+      } else {
+        setErrorNotice(json.error || 'Failed to create support ticket');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error creating support ticket');
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this support ticket?')) return;
     try {
+      setErrorNotice('');
       const res = await fetch('/api/cms.php?action=support_ticket_delete', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
         body: JSON.stringify({ id, csrf_token: csrfToken })
       });
       const json = await res.json();
-      if (json.success) {
+      if (res.ok && json.success) {
         setTickets(prev => prev.filter(t => t.id !== id));
         setSelectedTicket(null);
+        setNotice('Support ticket deleted successfully.');
+        setTimeout(() => setNotice(''), 3000);
+      } else {
+        setErrorNotice(json.error || 'Failed to delete support ticket');
       }
-    } catch {
-      // non-fatal
+    } catch (err) {
+      setErrorNotice(err.message || 'Network error deleting support ticket');
     }
   };
 
@@ -140,6 +164,12 @@ export default function CmsSupportTracker({ csrfToken }) {
       {notice && (
         <div style={{ padding: '10px 16px', background: 'rgba(96, 122, 78, 0.2)', border: '1px solid var(--cms-primary)', color: 'var(--cms-primary)', borderRadius: '10px', fontWeight: '600', fontSize: '0.88rem' }}>
           {notice}
+        </div>
+      )}
+
+      {errorNotice && (
+        <div style={{ padding: '10px 16px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '10px', fontWeight: '600', fontSize: '0.88rem' }}>
+          {errorNotice}
         </div>
       )}
 
