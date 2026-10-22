@@ -15,10 +15,24 @@ $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
 // Check if client IP is banned
 if (Security::isIpBlocked($ip)) {
-    http_response_code(403);
-    echo json_encode([
-        'error' => 'Access denied: Your IP address has been administratively blocked due to security violations.'
-    ]);
+    Security::denyBlockedIp($ip);
+}
+
+/**
+ * Send a failed-sign-in response that tells the user how many tries remain
+ * (or that the device is now blocked after too many failures).
+ */
+function respond_login_failure($status, $message, $attempt) {
+    if (is_array($attempt) && !empty($attempt['blocked'])) {
+        Security::denyBlockedIp(Security::getClientIp());
+    }
+    http_response_code($status);
+    $body = ['error' => $message];
+    if (is_array($attempt)) {
+        $body['attempts_remaining'] = (int)$attempt['remaining'];
+        $body['attempts_limit'] = (int)$attempt['limit'];
+    }
+    echo json_encode($body);
     exit;
 }
 
@@ -89,19 +103,15 @@ switch ($action) {
                 exit;
             } else {
                 // Failed password
-                Security::recordLoginAttempt($identifier, $ip, $userAgent, false, 'invalid_password', $user);
+                $attempt = Security::recordLoginAttempt($identifier, $ip, $userAgent, false, 'invalid_password', $user);
             }
         } else {
             // User not found - record attempt without revealing non-existence
-            Security::recordLoginAttempt($identifier, $ip, $userAgent, false, 'user_not_found', null);
+            $attempt = Security::recordLoginAttempt($identifier, $ip, $userAgent, false, 'user_not_found', null);
         }
 
         // Generic error to prevent user enumeration
-        http_response_code(401);
-        echo json_encode([
-            'error' => 'Invalid email/username or password.'
-        ]);
-        exit;
+        respond_login_failure(401, 'Invalid email/username or password.', $attempt ?? null);
 
     case 'google_config':
         // Public: the OAuth Client ID is not a secret and is needed by the browser to render the button.
@@ -133,10 +143,8 @@ switch ($action) {
         $claimError = Security::validateGoogleClaims($claims, $googleClientId);
 
         if ($claimError !== null) {
-            Security::recordLoginAttempt('google-sign-in', $ip, $userAgent, false, 'google_' . $claimError, null);
-            http_response_code(401);
-            echo json_encode(['error' => 'Google sign-in could not be verified. Please try again.']);
-            exit;
+            $attempt = Security::recordLoginAttempt('google-sign-in', $ip, $userAgent, false, 'google_' . $claimError, null);
+            respond_login_failure(401, 'Google sign-in could not be verified. Please try again.', $attempt);
         }
 
         $googleEmail = strtolower(trim($claims['email']));
@@ -147,12 +155,8 @@ switch ($action) {
         $now = time();
 
         if (!$user) {
-            Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_no_matching_account', null);
-            http_response_code(403);
-            echo json_encode([
-                'error' => 'This Google account is not authorized for the CMS. Ask an administrator to add your email address first.'
-            ]);
-            exit;
+            $attempt = Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_no_matching_account', null);
+            respond_login_failure(403, 'This Google account is not authorized for the CMS. Ask an administrator to add your email address first.', $attempt);
         }
 
         if (!empty($user['locked_until']) && $user['locked_until'] > $now) {

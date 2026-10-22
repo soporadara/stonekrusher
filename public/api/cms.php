@@ -1201,7 +1201,7 @@ switch ($action) {
             'site_name', 'site_url', 'admin_email', 'max_failed_logins',
             'lockout_duration_minutes', 'session_lifetime_hours',
             'audit_log_retention_days', 'default_theme', 'enable_2fa', 'posts_per_page',
-            'google_client_id'
+            'google_client_id', 'ip_block_failed_logins', 'ip_block_hours'
         ];
 
         if (isset($input['google_client_id'])) {

@@ -118,15 +118,16 @@ $pdo->prepare("INSERT INTO cms_users (id, username, email, password_hash, full_n
 $testUser = $pdo->query("SELECT * FROM cms_users WHERE id = '{$testUid}'")->fetch();
 
 // 9 failed attempts -> should NOT be locked
+// (documentation-range IP so the new device auto-block never touches localhost)
 for ($i = 1; $i <= 9; $i++) {
-    Security::recordLoginAttempt('lockout_test', '127.0.0.1', 'Tester', false, 'bad_pass', $testUser);
+    Security::recordLoginAttempt('lockout_test', '198.51.100.20', 'Tester', false, 'bad_pass', $testUser);
     $testUser = $pdo->query("SELECT * FROM cms_users WHERE id = '{$testUid}'")->fetch();
 }
 assert_test("After 9 failed attempts, user failed counter is 9", $testUser['failed_login_attempts'] == 9);
 assert_test("After 9 failed attempts, user is NOT locked", empty($testUser['locked_until']) || $testUser['locked_until'] <= time());
 
 // 10th failed attempt -> LOCKOUT TRIGGERED
-Security::recordLoginAttempt('lockout_test', '127.0.0.1', 'Tester', false, 'bad_pass', $testUser);
+Security::recordLoginAttempt('lockout_test', '198.51.100.20', 'Tester', false, 'bad_pass', $testUser);
 $testUser = $pdo->query("SELECT * FROM cms_users WHERE id = '{$testUid}'")->fetch();
 
 assert_test("After 10 consecutive failed attempts, account IS LOCKED", !empty($testUser['locked_until']) && $testUser['locked_until'] > time());
@@ -141,6 +142,8 @@ assert_test("Security audit log entry created for account lockout", (bool)$audit
 $pdo->prepare("DELETE FROM cms_users WHERE id = ?")->execute([$testUid]);
 $pdo->prepare("DELETE FROM cms_login_attempts WHERE identifier = 'lockout_test'")->execute();
 $pdo->prepare("DELETE FROM cms_audit_logs WHERE user_id = ?")->execute([$testUid]);
+$pdo->prepare("DELETE FROM cms_login_attempts WHERE ip_address = '198.51.100.20'")->execute();
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = '198.51.100.20'")->execute();
 
 // ---------------------------------------------------------
 // SUITE 4: FIREWALL IP BLOCKING & UNBLOCKING
@@ -333,6 +336,74 @@ assert_test("Google Client ID is empty until configured", Security::getGoogleCli
 $pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('google_client_id', ?, ?)")->execute([$gid, time()]);
 assert_test("Google Client ID read from CMS settings", Security::getGoogleClientId() === $gid);
 $pdo->prepare("DELETE FROM cms_settings WHERE setting_key = 'google_client_id'")->execute();
+
+// ---------------------------------------------------------
+// SUITE 11: DEVICE (IP) AUTO-BLOCK AFTER 10 FAILED SIGN-INS
+// ---------------------------------------------------------
+echo "\nSUITE 11: Device Auto-Block After 10 Failed Sign-ins\n";
+
+$devIp = '198.51.100.77';
+$pdo->prepare("DELETE FROM cms_settings WHERE setting_key IN ('ip_block_failed_logins','ip_block_hours')")->execute();
+$pdo->prepare("DELETE FROM cms_login_attempts WHERE ip_address = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$devIp]);
+
+assert_test("Default device-block threshold is 10 failed sign-ins", Security::getIpBlockThreshold() === 10);
+
+$firstResult = Security::recordLoginAttempt('nobody@example.com', $devIp, 'Tester', false, 'user_not_found', null);
+assert_test("First failure reports 9 attempts remaining", $firstResult['remaining'] === 9 && $firstResult['limit'] === 10);
+
+$lastResult = $firstResult;
+for ($i = 2; $i <= 9; $i++) {
+    $lastResult = Security::recordLoginAttempt('nobody@example.com', $devIp, 'Tester', false, 'user_not_found', null);
+}
+assert_test("After 9 failures the device is NOT blocked", !Security::isIpBlocked($devIp) && $lastResult['blocked'] === false);
+assert_test("After 9 failures exactly 1 attempt is reported as remaining", $lastResult['remaining'] === 1);
+
+$tenth = Security::recordLoginAttempt('nobody@example.com', $devIp, 'Tester', false, 'user_not_found', null);
+assert_test("10th failure blocks the device", $tenth['blocked'] === true && Security::isIpBlocked($devIp));
+
+$blockRow = Security::getIpBlock($devIp);
+assert_test("Auto-block is recorded as a system block with an expiry", $blockRow && $blockRow['created_by'] === 'system' && (int)$blockRow['expires_at'] > time());
+assert_test("Default auto-block lasts about 24 hours", $blockRow && abs(((int)$blockRow['expires_at'] - time()) - 86400) < 120);
+$autoAudit = $pdo->prepare("SELECT COUNT(*) FROM cms_audit_logs WHERE action = 'security.ip_auto_blocked' AND details_json LIKE ?");
+$autoAudit->execute(['%' . $devIp . '%']);
+assert_test("Automatic block is written to the audit log", (int)$autoAudit->fetchColumn() === 1);
+
+// Admin lifts the block: the counter must restart instead of re-blocking on the next typo
+// (history is back-dated because timestamps have 1-second resolution)
+$pdo->prepare("UPDATE cms_login_attempts SET created_at = created_at - 20 WHERE ip_address = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$devIp]);
+Security::logAudit(null, 'security.ip_unblocked', 'block', 'blk-x', ['target' => $devIp]);
+$pdo->prepare("UPDATE cms_audit_logs SET created_at = created_at - 10 WHERE action = 'security.ip_unblocked' AND details_json LIKE ?")->execute(['%' . $devIp . '%']);
+$afterUnblock = Security::recordLoginAttempt('nobody@example.com', $devIp, 'Tester', false, 'user_not_found', null);
+assert_test("After an admin unblock the failure counter restarts", $afterUnblock['blocked'] === false && $afterUnblock['remaining'] === 9);
+
+// A configurable threshold and permanent blocks
+$pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('ip_block_failed_logins', '3', ?)")->execute([time()]);
+$pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('ip_block_hours', '0', ?)")->execute([time()]);
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_login_attempts WHERE ip_address = ?")->execute([$devIp]);
+assert_test("Threshold is configurable from CMS settings", Security::getIpBlockThreshold() === 3);
+Security::recordLoginAttempt('x', $devIp, 'Tester', false, 'bad', null);
+Security::recordLoginAttempt('x', $devIp, 'Tester', false, 'bad', null);
+$third = Security::recordLoginAttempt('x', $devIp, 'Tester', false, 'bad', null);
+$permBlock = Security::getIpBlock($devIp);
+assert_test("Configured threshold of 3 blocks on the 3rd failure", $third['blocked'] === true && $permBlock !== null);
+assert_test("ip_block_hours = 0 creates a block with no expiry", $permBlock && empty($permBlock['expires_at']));
+
+// A successful sign-in clears the counter
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_login_attempts WHERE ip_address = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_settings WHERE setting_key IN ('ip_block_failed_logins','ip_block_hours')")->execute();
+Security::recordLoginAttempt('x', $devIp, 'Tester', false, 'bad', null);
+Security::recordLoginAttempt('x', $devIp, 'Tester', false, 'bad', null);
+$pdo->prepare("INSERT INTO cms_login_attempts (id, identifier, ip_address, user_agent, success, failure_reason, created_at) VALUES (?, 'x', ?, 'Tester', 1, NULL, ?)")
+    ->execute(['att-test-' . bin2hex(random_bytes(6)), $devIp, time() + 1]);
+assert_test("A successful sign-in resets the device failure counter", Security::countIpFailedLogins($devIp) === 0);
+
+$pdo->prepare("DELETE FROM cms_login_attempts WHERE ip_address = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$devIp]);
+$pdo->prepare("DELETE FROM cms_audit_logs WHERE details_json LIKE ?")->execute(['%' . $devIp . '%']);
 
 // ---------------------------------------------------------
 // SUMMARY

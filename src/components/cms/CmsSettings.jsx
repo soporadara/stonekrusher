@@ -12,7 +12,9 @@ export default function CmsSettings({ csrfToken }) {
     default_theme: 'dark',
     enable_2fa: '0',
     posts_per_page: '10',
-    google_client_id: ''
+    google_client_id: '',
+    ip_block_failed_logins: '10',
+    ip_block_hours: '24'
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -144,6 +146,33 @@ export default function CmsSettings({ csrfToken }) {
                 onChange={(e) => setSettings({ ...settings, lockout_duration_minutes: e.target.value })}
               />
               <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)' }}>Default: 15 minutes</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="cms-form-group">
+              <label>Failed Sign-ins Before a Device Is Blocked</label>
+              <input
+                type="number"
+                min="3"
+                max="100"
+                className="cms-input"
+                value={settings.ip_block_failed_logins}
+                onChange={(e) => setSettings({ ...settings, ip_block_failed_logins: e.target.value })}
+              />
+              <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)' }}>Default: 10 attempts. The device (IP) can no longer open the CMS.</span>
+            </div>
+            <div className="cms-form-group">
+              <label>Device Block Duration (Hours)</label>
+              <input
+                type="number"
+                min="0"
+                max="8760"
+                className="cms-input"
+                value={settings.ip_block_hours}
+                onChange={(e) => setSettings({ ...settings, ip_block_hours: e.target.value })}
+              />
+              <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)' }}>Default: 24 hours. Use 0 to block until an admin lifts it in Security.</span>
             </div>
           </div>
 

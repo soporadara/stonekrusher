@@ -53,16 +53,103 @@ class Security {
     }
 
     /**
+     * Fetch the active block row for an IP address (null when not blocked)
+     */
+    public static function getIpBlock($ip) {
+        $pdo = get_cms_pdo();
+        if (!$pdo) return null;
+
+        $now = time();
+        $stmt = $pdo->prepare("SELECT * FROM cms_security_blocks WHERE type = 'ip' AND target = ? AND (expires_at IS NULL OR expires_at > ?) ORDER BY created_at DESC");
+        $stmt->execute([$ip, $now]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
      * Check if an IP address is blocked
      */
     public static function isIpBlocked($ip) {
+        return self::getIpBlock($ip) !== null;
+    }
+
+    /**
+     * Number of failed sign-ins from this device (IP) that count toward an automatic block.
+     * The counter restarts after a successful sign-in, after a block was applied
+     * and after an administrator lifts a block.
+     */
+    public static function countIpFailedLogins($ip) {
         $pdo = get_cms_pdo();
-        if (!$pdo) return false;
+        if (!$pdo) return 0;
+
+        $bound = time() - 86400; // 24 hour rolling window
+
+        $stmt = $pdo->prepare("SELECT MAX(created_at) FROM cms_login_attempts WHERE ip_address = ? AND success = 1");
+        $stmt->execute([$ip]);
+        $bound = max($bound, (int)$stmt->fetchColumn());
+
+        $stmt = $pdo->prepare("SELECT MAX(created_at) FROM cms_security_blocks WHERE type = 'ip' AND target = ?");
+        $stmt->execute([$ip]);
+        $bound = max($bound, (int)$stmt->fetchColumn());
+
+        $stmt = $pdo->prepare("SELECT MAX(created_at) FROM cms_audit_logs WHERE action = 'security.ip_unblocked' AND details_json LIKE ?");
+        $stmt->execute(['%"target":' . json_encode($ip) . '%']);
+        $bound = max($bound, (int)$stmt->fetchColumn());
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM cms_login_attempts WHERE ip_address = ? AND success = 0 AND created_at > ?");
+        $stmt->execute([$ip, $bound]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Failed sign-ins from one device that trigger an automatic IP block (default 10)
+     */
+    public static function getIpBlockThreshold() {
+        $n = (int)self::getSetting('ip_block_failed_logins', 10);
+        return $n >= 3 ? $n : 10;
+    }
+
+    /**
+     * Automatically block a device after too many failed sign-ins.
+     * Duration comes from the `ip_block_hours` setting (default 24, 0 = until an admin lifts it).
+     */
+    public static function blockIpAutomatically($ip, $failedCount) {
+        $pdo = get_cms_pdo();
+        if (!$pdo) return null;
 
         $now = time();
-        $stmt = $pdo->prepare("SELECT * FROM cms_security_blocks WHERE type = 'ip' AND target = ? AND (expires_at IS NULL OR expires_at > ?)");
-        $stmt->execute([$ip, $now]);
-        return (bool)$stmt->fetch();
+        $hours = (int)self::getSetting('ip_block_hours', 24);
+        $expiresAt = $hours > 0 ? $now + ($hours * 3600) : null;
+        $id = 'blk-' . bin2hex(random_bytes(8));
+
+        $stmt = $pdo->prepare("INSERT INTO cms_security_blocks (id, type, target, reason, created_by, expires_at, created_at) VALUES (?, 'ip', ?, ?, 'system', ?, ?)");
+        $stmt->execute([$id, $ip, "Automatic block: {$failedCount} consecutive failed sign-in attempts", $expiresAt, $now]);
+
+        self::logAudit(null, 'security.ip_auto_blocked', 'block', $id, [
+            'target' => $ip,
+            'failed_attempts' => $failedCount,
+            'expires_at' => $expiresAt
+        ]);
+
+        return $expiresAt;
+    }
+
+    /**
+     * Output the JSON body shown to a blocked device and stop the request
+     */
+    public static function denyBlockedIp($ip) {
+        $block = self::getIpBlock($ip);
+        $until = $block && !empty($block['expires_at']) ? (int)$block['expires_at'] : null;
+        http_response_code(403);
+        echo json_encode([
+            'error' => 'This device has been blocked after too many failed sign-in attempts.',
+            'blocked' => true,
+            'blocked_until' => $until,
+            'retry_after' => $until ? max(0, $until - time()) : null,
+            'attempts_limit' => self::getIpBlockThreshold(),
+            'permanent' => $block ? empty($block['expires_at']) : false
+        ]);
+        exit;
     }
 
     /**
@@ -173,11 +260,13 @@ class Security {
     }
 
     /**
-     * Record a login attempt and apply lockout policy
+     * Record a login attempt and apply lockout policy.
+     * For failed attempts returns ['blocked' => bool, 'remaining' => int, 'limit' => int, 'blocked_until' => ?int]
+     * so the caller can tell the user how many tries are left before the device is blocked.
      */
     public static function recordLoginAttempt($identifier, $ip, $userAgent, $success, $failureReason = null, $userRow = null) {
         $pdo = get_cms_pdo();
-        if (!$pdo) return;
+        if (!$pdo) return null;
 
         $now = time();
         $attemptId = 'att-' . bin2hex(random_bytes(16));
@@ -231,6 +320,17 @@ class Security {
                 'reason' => $failureReason
             ]);
         }
+
+        if ($success) return null;
+
+        // Device-level defense: block this IP once it reaches the failed-login threshold
+        $limit = self::getIpBlockThreshold();
+        $failedCount = self::countIpFailedLogins($ip);
+        if ($failedCount >= $limit) {
+            $expiresAt = self::blockIpAutomatically($ip, $failedCount);
+            return ['blocked' => true, 'remaining' => 0, 'limit' => $limit, 'blocked_until' => $expiresAt];
+        }
+        return ['blocked' => false, 'remaining' => $limit - $failedCount, 'limit' => $limit, 'blocked_until' => null];
     }
 
     /**
