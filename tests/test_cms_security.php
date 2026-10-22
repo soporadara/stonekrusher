@@ -406,6 +406,64 @@ $pdo->prepare("DELETE FROM cms_security_blocks WHERE target = ?")->execute([$dev
 $pdo->prepare("DELETE FROM cms_audit_logs WHERE details_json LIKE ?")->execute(['%' . $devIp . '%']);
 
 // ---------------------------------------------------------
+// SUITE 12: GOOGLE ACCOUNT LINKING, UNLINKING & LOGIN INTEGRATION
+// ---------------------------------------------------------
+echo "\nSUITE 12: Google Account Linking & CMS Profile Integration\n";
+
+$linkUid = 'usr-link-test-' . bin2hex(random_bytes(4));
+$linkPassHash = password_hash('LinkPass@2026', PASSWORD_DEFAULT);
+$pdo->prepare("INSERT INTO cms_users (id, username, email, password_hash, full_name, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'editor', 'active', ?, ?)")
+    ->execute([$linkUid, 'link_tester', 'link_tester@example.com', $linkPassHash, 'Link Tester', time(), time()]);
+
+$uRow = $pdo->query("SELECT * FROM cms_users WHERE id = '{$linkUid}'")->fetch();
+assert_test("User created without linked Google account", empty($uRow['google_id']) && empty($uRow['google_email']));
+
+// 1. Password login works before linking Google
+assert_test("Email/password login works before Google link", password_verify('LinkPass@2026', $uRow['password_hash']));
+
+// 2. Unlinked Google lookup fails
+$gSub = 'google-sub-987654';
+$gEmail = 'googleuser@gmail.com';
+$unlinkedStmt = $pdo->prepare("SELECT * FROM cms_users WHERE (google_id IS NOT NULL AND google_id = ?) OR (google_email IS NOT NULL AND LOWER(google_email) = LOWER(?))");
+$unlinkedStmt->execute([$gSub, $gEmail]);
+assert_test("Unlinked Google account cannot match any user", $unlinkedStmt->fetch() === false);
+
+// 3. Link Google account to profile
+$pdo->prepare("UPDATE cms_users SET google_id = ?, google_email = ?, google_linked_at = ?, updated_at = ? WHERE id = ?")
+    ->execute([$gSub, $gEmail, time(), time(), $linkUid]);
+
+$linkedStmt = $pdo->prepare("SELECT * FROM cms_users WHERE (google_id IS NOT NULL AND google_id = ?) OR (google_email IS NOT NULL AND LOWER(google_email) = LOWER(?))");
+$linkedStmt->execute([$gSub, $gEmail]);
+$matchedUser = $linkedStmt->fetch();
+assert_test("After linking in profile, Google account matches user", $matchedUser && $matchedUser['id'] === $linkUid);
+
+// 4. Create session and verify getCurrentUser returns linked state
+$sess = Security::createSession($matchedUser, '198.51.100.30', 'Agent');
+$_COOKIE['cms_token'] = $sess['token'];
+$resolved = Security::getCurrentUser();
+assert_test("Session resolves is_google_linked = true", $resolved && $resolved['is_google_linked'] === true);
+assert_test("Session returns linked google_email", $resolved && $resolved['google_email'] === $gEmail);
+unset($_COOKIE['cms_token']);
+
+// 5. Email/password STILL works while Google is linked
+$refreshedUser = $pdo->query("SELECT * FROM cms_users WHERE id = '{$linkUid}'")->fetch();
+assert_test("Email/password login STILL works after Google is linked", password_verify('LinkPass@2026', $refreshedUser['password_hash']));
+
+// 6. Unlink Google account
+$pdo->prepare("UPDATE cms_users SET google_id = NULL, google_email = NULL, google_linked_at = NULL, updated_at = ? WHERE id = ?")
+    ->execute([time(), $linkUid]);
+$unlinkedAgain = $pdo->prepare("SELECT * FROM cms_users WHERE (google_id IS NOT NULL AND google_id = ?) OR (google_email IS NOT NULL AND LOWER(google_email) = LOWER(?))");
+$unlinkedAgain->execute([$gSub, $gEmail]);
+assert_test("After unlinking in profile, Google login is rejected again", $unlinkedAgain->fetch() === false);
+
+// 7. Email/password STILL works after unlinking
+assert_test("Email/password login STILL works after unlinking", password_verify('LinkPass@2026', $refreshedUser['password_hash']));
+
+// Cleanup
+$pdo->prepare("DELETE FROM cms_sessions WHERE user_id = ?")->execute([$linkUid]);
+$pdo->prepare("DELETE FROM cms_users WHERE id = ?")->execute([$linkUid]);
+
+// ---------------------------------------------------------
 // SUMMARY
 // ---------------------------------------------------------
 echo "\n=========================================================\n";

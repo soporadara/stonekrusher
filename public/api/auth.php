@@ -148,15 +148,18 @@ switch ($action) {
         }
 
         $googleEmail = strtolower(trim($claims['email']));
+        $googleSub = trim((string)($claims['sub'] ?? ''));
         $pdo = get_cms_pdo();
-        $stmt = $pdo->prepare("SELECT * FROM cms_users WHERE LOWER(email) = LOWER(?)");
-        $stmt->execute([$googleEmail]);
+
+        // Security requirement: Must be linked inside profile first
+        $stmt = $pdo->prepare("SELECT * FROM cms_users WHERE (google_id IS NOT NULL AND google_id = ?) OR (google_email IS NOT NULL AND LOWER(google_email) = LOWER(?))");
+        $stmt->execute([$googleSub, $googleEmail]);
         $user = $stmt->fetch();
         $now = time();
 
         if (!$user) {
-            $attempt = Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_no_matching_account', null);
-            respond_login_failure(403, 'This Google account is not authorized for the CMS. Ask an administrator to add your email address first.', $attempt);
+            $attempt = Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_not_linked', null);
+            respond_login_failure(403, 'This Google account is not linked to any CMS profile. Please sign in with your email and password first, then link your Google account in your profile.', $attempt);
         }
 
         if (!empty($user['locked_until']) && $user['locked_until'] > $now) {
@@ -176,7 +179,7 @@ switch ($action) {
         }
 
         Security::recordLoginAttempt($googleEmail, $ip, $userAgent, true, null, $user);
-        Security::logAudit($user['id'], 'user.login_google', 'user', $user['id'], ['ip' => $ip]);
+        Security::logAudit($user['id'], 'user.login_google', 'user', $user['id'], ['ip' => $ip, 'google_email' => $googleEmail]);
         $sessionData = Security::createSession($user, $ip, $userAgent, !empty($input['remember']));
 
         echo json_encode([
@@ -209,9 +212,140 @@ switch ($action) {
                 'full_name' => $currentUser['full_name'],
                 'role' => $currentUser['role'],
                 'role_display' => $currentUser['role_display'],
-                'permissions' => $currentUser['permissions']
+                'permissions' => $currentUser['permissions'],
+                'google_email' => $currentUser['google_email'] ?? null,
+                'google_linked_at' => $currentUser['google_linked_at'] ?? null,
+                'is_google_linked' => !empty($currentUser['is_google_linked'])
             ],
             'csrf_token' => $currentUser['csrf_token']
+        ]);
+        exit;
+
+    case 'google_link':
+        if ($method !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed.']);
+            exit;
+        }
+
+        $currentUser = Security::requireAuth();
+        Security::validateCsrf($currentUser);
+
+        $googleClientId = Security::getGoogleClientId();
+        if ($googleClientId === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Google sign-in is not configured on this server.']);
+            exit;
+        }
+
+        $credential = (string)($input['credential'] ?? '');
+        $claims = Security::fetchGoogleTokenClaims($credential);
+        $claimError = Security::validateGoogleClaims($claims, $googleClientId);
+
+        if ($claimError !== null) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Google account verification failed. Please try again.']);
+            exit;
+        }
+
+        $googleEmail = strtolower(trim($claims['email']));
+        $googleSub = trim((string)($claims['sub'] ?? ''));
+
+        $pdo = get_cms_pdo();
+        // Check if this Google account is already linked to another CMS profile
+        $dupStmt = $pdo->prepare("SELECT id, username FROM cms_users WHERE ((google_id IS NOT NULL AND google_id = ?) OR (google_email IS NOT NULL AND LOWER(google_email) = LOWER(?))) AND id != ?");
+        $dupStmt->execute([$googleSub, $googleEmail, $currentUser['id']]);
+        $existing = $dupStmt->fetch();
+        if ($existing) {
+            http_response_code(409);
+            echo json_encode(['error' => "This Google account ({$googleEmail}) is already linked to CMS profile '{$existing['username']}'."]);
+            exit;
+        }
+
+        $now = time();
+        $pdo->prepare("UPDATE cms_users SET google_id = ?, google_email = ?, google_linked_at = ?, updated_at = ? WHERE id = ?")
+            ->execute([$googleSub, $googleEmail, $now, $now, $currentUser['id']]);
+
+        Security::logAudit($currentUser['id'], 'user.google_linked', 'user', $currentUser['id'], [
+            'google_email' => $googleEmail,
+            'google_sub' => $googleSub
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Google account ({$googleEmail}) successfully linked to your CMS profile!",
+            'google_email' => $googleEmail,
+            'google_linked_at' => $now
+        ]);
+        exit;
+
+    case 'google_unlink':
+        if ($method !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed.']);
+            exit;
+        }
+
+        $currentUser = Security::requireAuth();
+        Security::validateCsrf($currentUser);
+
+        $pdo = get_cms_pdo();
+        $now = time();
+        $pdo->prepare("UPDATE cms_users SET google_id = NULL, google_email = NULL, google_linked_at = NULL, updated_at = ? WHERE id = ?")
+            ->execute([$now, $currentUser['id']]);
+
+        Security::logAudit($currentUser['id'], 'user.google_unlinked', 'user', $currentUser['id']);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Google account has been unlinked from your CMS profile.'
+        ]);
+        exit;
+
+    case 'update_profile':
+        if ($method !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed.']);
+            exit;
+        }
+
+        $currentUser = Security::requireAuth();
+        Security::validateCsrf($currentUser);
+
+        $fullName = trim((string)($input['full_name'] ?? ''));
+        $email = strtolower(trim((string)($input['email'] ?? '')));
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A valid administrative email address is required.']);
+            exit;
+        }
+
+        $pdo = get_cms_pdo();
+        $dupStmt = $pdo->prepare("SELECT id FROM cms_users WHERE LOWER(email) = LOWER(?) AND id != ?");
+        $dupStmt->execute([$email, $currentUser['id']]);
+        if ($dupStmt->fetch()) {
+            http_response_code(400);
+            echo json_encode(['error' => 'This email address is already in use by another user account.']);
+            exit;
+        }
+
+        $now = time();
+        $pdo->prepare("UPDATE cms_users SET full_name = ?, email = ?, updated_at = ? WHERE id = ?")
+            ->execute([$fullName, $email, $now, $currentUser['id']]);
+
+        Security::logAudit($currentUser['id'], 'user.profile_updated', 'user', $currentUser['id'], [
+            'email' => $email,
+            'full_name' => $fullName
+        ]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Profile details updated successfully.',
+            'user' => [
+                'full_name' => $fullName,
+                'email' => $email
+            ]
         ]);
         exit;
 

@@ -385,7 +385,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                   <div className="cms-login-divider"><span>or continue with</span></div>
                   <div className={`cms-login-google-btn${googleLoading ? ' is-loading' : ''}`} ref={googleButtonRef} aria-label="Sign in with Google" />
                   {googleLoading && <p className="cms-login-google-status">Verifying your Google account...</p>}
-                  <p className="cms-login-google-hint">Only email addresses already added to the CMS can sign in with Google.</p>
+                  <p className="cms-login-google-hint">Sign in with your linked Google account, or sign in above with your email and password.</p>
                 </div>
               )}
             </form>

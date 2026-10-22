@@ -95,9 +95,38 @@ function ensure_cms_schema_migrated($pdo) {
             failed_login_attempts INT DEFAULT 0,
             locked_until BIGINT NULL,
             last_login_at BIGINT NULL,
+            google_id VARCHAR(255) NULL,
+            google_email VARCHAR(255) NULL,
+            google_linked_at BIGINT NULL,
             created_at BIGINT NOT NULL,
             updated_at BIGINT NOT NULL
         )");
+
+        // Safe column check & migration for cms_users
+        $existingUserCols = [];
+        if ($isMysql) {
+            $q = $pdo->query("SHOW COLUMNS FROM cms_users");
+            while ($row = $q->fetch()) {
+                $existingUserCols[] = strtolower($row['Field']);
+            }
+        } else {
+            $q = $pdo->query("PRAGMA table_info(cms_users)");
+            while ($row = $q->fetch()) {
+                $existingUserCols[] = strtolower($row['name']);
+            }
+        }
+
+        $userColsToAdd = [
+            'google_id' => "VARCHAR(255) NULL",
+            'google_email' => "VARCHAR(255) NULL",
+            'google_linked_at' => "BIGINT NULL"
+        ];
+
+        foreach ($userColsToAdd as $col => $definition) {
+            if (!in_array(strtolower($col), $existingUserCols)) {
+                $pdo->exec("ALTER TABLE cms_users ADD COLUMN {$col} {$definition}");
+            }
+        }
 
         // 2. Custom Roles Table
         $pdo->exec("CREATE TABLE IF NOT EXISTS cms_roles (

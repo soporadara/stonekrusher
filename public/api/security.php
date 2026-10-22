@@ -381,7 +381,10 @@ class Security {
                 'email' => $user['email'],
                 'full_name' => $user['full_name'],
                 'role' => $user['role'],
-                'status' => $user['status']
+                'status' => $user['status'],
+                'google_email' => $user['google_email'] ?? null,
+                'google_linked_at' => $user['google_linked_at'] ?? null,
+                'is_google_linked' => !empty($user['google_id']) || !empty($user['google_email'])
             ]
         ];
     }
@@ -416,7 +419,8 @@ class Security {
         }
 
         $now = time();
-        $stmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status, u.locked_until 
+        $stmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status, u.locked_until,
+                                       u.google_id, u.google_email, u.google_linked_at
                                FROM cms_sessions s
                                JOIN cms_users u ON s.user_id = u.id
                                WHERE s.id = ? AND s.is_revoked = 0 AND s.expires_at > ?");
@@ -464,7 +468,10 @@ class Security {
             'full_name' => $row['full_name'],
             'role' => $row['role'],
             'role_display' => $roleData['display_name'] ?? $row['role'],
-            'permissions' => $permissions
+            'permissions' => $permissions,
+            'google_email' => $row['google_email'] ?? null,
+            'google_linked_at' => $row['google_linked_at'] ?? null,
+            'is_google_linked' => !empty($row['google_id']) || !empty($row['google_email'])
         ];
     }
 
