@@ -409,12 +409,12 @@ for (const product of uniqueProducts) {
         ${product.brand ? `<p><strong>Brand:</strong> ${escapeHtml(product.brand)}</p>` : ''}
         
         <div class="price-tag">
-          ${product.category === 'Konstructz' || product.brand === 'TYPHON' || product.brand === 'KONSTRUCTZ' || product.vendor === 'TYPHON' || !Number.isFinite(price) || price <= 0 ? 'Request Quote for Pricing' : `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          ${!Number.isFinite(price) || price <= 0 ? 'Request Quote for Pricing' : `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
         </div>
 
         <p>${escapeHtml(description)}</p>
 
-        <a class="cta-btn" href="${escapeHtml(inventoryUrl)}">${product.category === 'Konstructz' || product.brand === 'TYPHON' || product.brand === 'KONSTRUCTZ' || product.vendor === 'TYPHON' || !Number.isFinite(price) || price <= 0 ? 'Request a Quote' : 'View Details &amp; Order'}</a>
+        <a class="cta-btn" href="${escapeHtml(inventoryUrl)}">${!Number.isFinite(price) || price <= 0 ? 'Request a Quote' : 'View Details &amp; Order'}</a>
 
         <table class="specs-table">
           <tr><th>Brand</th><td>${escapeHtml(product.brand || 'TYPHON')}</td></tr>

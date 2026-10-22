@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import './App.css'
 import { attachmentProducts, catalogProducts, featuredProducts } from './data/catalog'
 import ProductCard from './components/ProductCard'
+import FullScreenLightbox from './components/FullScreenLightbox'
 import StoreEmbed, { clearStoreCheckout, preloadStore } from './components/StoreEmbed'
 import deployedBlogPosts from '../data/blog-posts.json'
 import typhonFactoryEngineerAsset from './assets/typhon_factory_engineer.png'
@@ -444,7 +445,7 @@ const aiProductKnowledge = [
     type: 'Mini excavator',
     bestFor: 'trenching, drainage, residential construction, landscaping, small foundations, and utility work',
     terrain: 'flat ground, prepared jobsites, residential lots, and compact work areas',
-    price: 'Contact for quote',
+    price: '$19,655.10',
     delivery: 'Available to most U.S. locations, including California',
     leadTime: 'typically 5-7 business days after order confirmation',
     support: 'warranty, parts, manuals, and after-sales service'
@@ -455,7 +456,7 @@ const aiProductKnowledge = [
     type: 'Compact wheel loader',
     bestFor: 'moving soil, gravel, mulch, pallets, materials, and jobsite supplies',
     terrain: 'construction yards, farms, landscape sites, warehouses, and compact material-handling areas',
-    price: '$15,499.00',
+    price: '$23,098.90',
     delivery: 'Free shipping is listed; confirm current delivery terms with sales',
     leadTime: 'call sales to confirm current stock and delivery schedule',
     support: '1-year warranty, manuals, parts, operator guidance, and after-sales service'
@@ -466,7 +467,7 @@ const aiProductKnowledge = [
     type: 'Walking excavator',
     bestFor: 'slopes, orchards, vineyards, farms, wetland edges, riverbanks, and hard-to-reach terrain',
     terrain: 'steep, soft, uneven, remote, and sensitive ground',
-    price: 'Contact for quote',
+    price: '$4,610.59',
     delivery: 'Available by freight with destination-based logistics',
     leadTime: 'confirmed after stock and delivery address review',
     support: 'warranty, parts, setup guidance, and after-sales service'
@@ -477,7 +478,7 @@ const aiProductKnowledge = [
     type: 'Compact track loader',
     bestFor: 'tight-access loading, grading, clearing, property work, and attachment-driven jobs',
     terrain: 'dirt, gravel, landscaping sites, compact jobsites, and uneven ground',
-    price: 'Contact for quote',
+    price: '$12,098.27',
     delivery: 'Available by freight with lead time confirmed by location',
     leadTime: 'confirmed with inventory and destination',
     support: 'warranty, attachments, parts, and after-sales service'
@@ -2895,6 +2896,8 @@ export default function App() {
     }
   });
   const [activeGalleryImage, setActiveGalleryImage] = useState(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
   const [activeDetailTab, setActiveDetailTab] = useState('description');
   const [activeAttachmentMenu, setActiveAttachmentMenu] = useState('Mini Excavators (2.5 Tons)');
   const [activeAttachmentFilter, setActiveAttachmentFilter] = useState('All Attachments');
@@ -5021,7 +5024,7 @@ export default function App() {
       return {
         content: [
           'Prices can vary by model, attachment package, inventory, freight, and destination.',
-          'Example: SKOOP II Wheel Loader is listed at $15,499.00.',
+          'Examples: KUVUO 2.7 Mini Excavator is listed at $19,655.10; SKOOP II Wheel Loader is listed at $23,098.90; Spider One Towable Excavator is listed at $4,610.59.',
           'For other machines, send the model name and delivery location so the team can confirm current pricing.'
         ].join('\n'),
         cta: 'Request Quote'
@@ -10452,7 +10455,19 @@ export default function App() {
                       ))}
                     </div>
                   )}
-                  <div className="gallery-main-image">
+                  <div
+                    className="gallery-main-image"
+                    onClick={() => {
+                      const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
+                        ? selectedProduct.images
+                        : (selectedProduct.image ? [selectedProduct.image] : []);
+                      if (galleryImages.length > 0) {
+                        const activeIndex = Math.max(0, galleryImages.indexOf(activeGalleryImage || selectedProduct.image));
+                        setLightboxImageIndex(activeIndex);
+                        setLightboxOpen(true);
+                      }
+                    }}
+                  >
                     {activeGalleryImage ? (
                       <img
                         src={activeGalleryImage}
@@ -10476,6 +10491,32 @@ export default function App() {
                     ) : (
                       getFallbackSvg(selectedProduct.category)
                     )}
+
+                    <button
+                      type="button"
+                      className="gallery-expand-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const galleryImages = (selectedProduct.images && selectedProduct.images.length > 0)
+                          ? selectedProduct.images
+                          : (selectedProduct.image ? [selectedProduct.image] : []);
+                        if (galleryImages.length > 0) {
+                          const activeIndex = Math.max(0, galleryImages.indexOf(activeGalleryImage || selectedProduct.image));
+                          setLightboxImageIndex(activeIndex);
+                          setLightboxOpen(true);
+                        }
+                      }}
+                      aria-label="View product image full screen"
+                      title="View Full Screen (Click to Expand)"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9"/>
+                        <polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                      </svg>
+                      <span>Full Screen</span>
+                    </button>
                   </div>
                 </div>
 
@@ -10502,7 +10543,10 @@ export default function App() {
                   <div className="detail-action-row">
                     {(selectedProduct?.ecwidProductId || selectedProduct?.hash || selectedProduct?.externalUrl || selectedProduct?.checkoutUrl || (selectedProduct?.price && selectedProduct?.price !== 'Call for pricing' && selectedProduct?.price !== 'Request Quote for Pricing')) ? (
                       <>
-                        <button className="btn-buy-now detail-primary-action" onClick={() => openStoreProductPage(selectedProduct)}>
+                        <button className="btn-buy-now detail-primary-action" onClick={() => openCheckoutPage(selectedProduct)}>
+                          BUY NOW
+                        </button>
+                        <button className="btn-view-store" onClick={() => openStoreProductPage(selectedProduct)}>
                           VIEW IN STORE
                         </button>
                         <button className="btn-add-to-cart" onClick={() => handleAddToCart(selectedProduct)}>
@@ -10536,6 +10580,14 @@ export default function App() {
               </div>
             </div>
           </section>
+
+          <FullScreenLightbox
+            isOpen={lightboxOpen}
+            images={(selectedProduct?.images && selectedProduct?.images.length > 0) ? selectedProduct.images : (selectedProduct?.image ? [selectedProduct.image] : [])}
+            initialIndex={lightboxImageIndex}
+            title={selectedProduct?.name || ''}
+            onClose={() => setLightboxOpen(false)}
+          />
 
           <section className="product-tabs-section white-bg">
             <div className="section-content product-tabs-shell">

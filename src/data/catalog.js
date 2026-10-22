@@ -81,11 +81,23 @@ const getEquipmentCategory = (categoryPath = '') => {
   return match?.[1];
 };
 
-// Ecwid clean product URLs do not contain the numeric ID required by Cart.addProduct.
 const ecwidProductIdsBySku = {
   'TYPH-5013': 593348541,
   'TYPH-8005': 843665003,
-  'TYPH-8007': 843668254
+  'TYPH-8007': 843668254,
+  'TYPH-KV27': 869810726,
+  'TYPH-KUVUO27': 869810726,
+  'TYPH-SK02': 868769405,
+  'TYPH-0802': 868769405,
+  'TYPH-SP01': 868827561,
+  'TYPH-SPIDER': 868827561,
+  'TYPH-GRX1': 865478523,
+  'TYPH-V950': 865478793,
+  'TYPH-K3': 865511272,
+  'TYPH-TD02': 865478524,
+  'TYPH-TD180': 865478804,
+  'TYPH-K1': 865508276,
+  'TYPH-K2': 865478525
 };
 
 const getEcwidIdFromUrl = (url = '') => {
@@ -403,19 +415,76 @@ const stoneKrusherK3Description = `<p><strong>Compact Tracked Jaw Crusher with K
 </ul>`;
 
 const featuredCatalogProducts = [
-  { id: "featured-1", sku: "TYPH-KV27", slug: "kuvuo-2-7-series-mini-excavator", name: "KUVUO 2.7 Series", category: "Konstructz", subcategory: "Excavator", weight: "2.7 Ton", engine: "Diesel Engine", cap: "Call for pricing", price: "Call for pricing", image: "http://americanminiexcavator.com/wp-content/uploads/2026/09/2.png", images: ["http://americanminiexcavator.com/wp-content/uploads/2026/09/2.png", "http://americanminiexcavator.com/wp-content/uploads/2026/09/4.png", "http://americanminiexcavator.com/wp-content/uploads/2026/09/10.png", "http://americanminiexcavator.com/wp-content/uploads/2026/09/9.png", "http://americanminiexcavator.com/wp-content/uploads/2026/09/8.png"] },
+  {
+    id: "featured-1",
+    sku: "TYPH-KV27",
+    slug: "kuvuo-2-7-series-mini-excavator",
+    name: "KUVUO 2.7 Series",
+    category: "Konstructz",
+    subcategory: "Excavator",
+    weight: "2.7 Ton",
+    engine: "Kubota D1105 Diesel Engine",
+    cap: "$19,655.10",
+    price: "$19,655.10",
+    ecwidProductId: 869810726,
+    hash: "#!/TYPHON-KUVUO-2-7-Mini-Excavator-Konstructz-Series-2-7-Ton-with-Kubota-D1105-Enclosed-Cab-A-C-&-Heater-Retractable-Metal-Tracks-Full-Pilot-Controls-and-2-Speed-Travel/p/869810726",
+    externalUrl: "https://americanskidsteer.com/TYPHON-KUVUO-2-7-Mini-Excavator-Konstructz-Series-2-7-Ton-with-Kubota-D1105-Enclosed-Cab-A-C-&-Heater-Retractable-Metal-Tracks-Full-Pilot-Controls-and-2-Speed-Travel-p869810726",
+    checkoutUrl: "/store#!/TYPHON-KUVUO-2-7-Mini-Excavator-Konstructz-Series-2-7-Ton-with-Kubota-D1105-Enclosed-Cab-A-C-&-Heater-Retractable-Metal-Tracks-Full-Pilot-Controls-and-2-Speed-Travel/p/869810726",
+    image: "http://americanminiexcavator.com/wp-content/uploads/2026/09/2.png",
+    images: [
+      "http://americanminiexcavator.com/wp-content/uploads/2026/09/2.png",
+      "http://americanminiexcavator.com/wp-content/uploads/2026/09/4.png",
+      "http://americanminiexcavator.com/wp-content/uploads/2026/09/10.png",
+      "http://americanminiexcavator.com/wp-content/uploads/2026/09/9.png",
+      "http://americanminiexcavator.com/wp-content/uploads/2026/09/8.png"
+    ]
+  },
   { id: "featured-2", sku: "TYPH-GRX1", slug: "typhon-groundripper-grx1-compact-track-trencher", name: "TYPHON GroundRipper GRX1 Compact Track Trencher", category: "Konstructz", subcategory: "Trenchers", weight: "See details", engine: "Honda GX690 22.1 HP", cap: "$8,411.95", price: "$8,411.95", ecwidProductId: 865478523, hash: "#!/TYPHON-GroundRipper-GRX1-Compact-Track-Trencher-Konstructz-Series-w-Honda-GX690-22-1HP-Engine/p/865478523", image: "http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1II-scaled.webp", images: ["http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1II-scaled.webp", "http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1I-scaled.webp", "http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1III-scaled.webp", "http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1IV-scaled.webp", "http://americanminiexcavator.com/wp-content/uploads/2026/09/GRX1V-scaled.webp"], richDescription: groundRipperDescription },
-  { id: "featured-3", sku: "TYPH-SK02", slug: "skoop-ii-wheel-loader-compact-wheel-loader", name: "Skoop II Wheel Loader", category: "Konstructz", subcategory: "Wheel Loader", weight: "1.8 Ton", engine: "Diesel Engine", cap: "Call for pricing", price: "Call for pricing", image: "https://wheelloadersusa.com/wp-content/uploads/2026/09/WheelloaderII.webp", images: ["https://wheelloadersusa.com/wp-content/uploads/2026/09/WheelloaderII.webp"] },
-  { id: "featured-4", sku: "TYPH-SP01", slug: "spider-one-towable-excavator-mini-excavator", name: "Spider One Towable Excavator", category: "Konstructz", subcategory: "Excavator", weight: "1.0 Ton", engine: "Gasoline Engine", cap: "Call for pricing", price: "Call for pricing", image: "https://wheelloader.org/wp-content/uploads/2026/08/sprider-one.png", images: [
-    "https://wheelloader.org/wp-content/uploads/2026/08/sprider-one.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/mini-typhon-Konstructz-sprider-excavator-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/mini-sprider-excavator-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/sprider-excavator-front-view-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/Sprider-excavator-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/sprider-one-excavator-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/typhon-sprider-excavator-scaled.png",
-    "https://asianmachinery.net/wp-content/uploads/2026/08/Konstructz-sprider-excavator-scaled.png"
-  ] },
+  {
+    id: "featured-3",
+    sku: "TYPH-SK02",
+    slug: "skoop-ii-wheel-loader-compact-wheel-loader",
+    name: "Skoop II Wheel Loader",
+    category: "Konstructz",
+    subcategory: "Wheel Loader",
+    weight: "1.8 Ton",
+    engine: "Kubota Diesel Engine",
+    cap: "$23,098.90",
+    price: "$23,098.90",
+    ecwidProductId: 868769405,
+    hash: "#!/TYPHON-Telescopic-SKOOP-Wheel-Loader-Cabin-Version-Kubota-D1105-Diesel-Engine-1-Ton-Max-Load-Capacity-AC-&-Heater-Cabin/p/868769405",
+    externalUrl: "https://americanskidsteer.com/TYPHON-Telescopic-SKOOP-Wheel-Loader-Cabin-Version-Kubota-D1105-Diesel-Engine-1-Ton-Max-Load-Capacity-AC-&-Heater-Cabin-p868769405",
+    checkoutUrl: "/store#!/TYPHON-Telescopic-SKOOP-Wheel-Loader-Cabin-Version-Kubota-D1105-Diesel-Engine-1-Ton-Max-Load-Capacity-AC-&-Heater-Cabin/p/868769405",
+    image: "https://wheelloadersusa.com/wp-content/uploads/2026/09/WheelloaderII.webp",
+    images: ["https://wheelloadersusa.com/wp-content/uploads/2026/09/WheelloaderII.webp"]
+  },
+  {
+    id: "featured-4",
+    sku: "TYPH-SP01",
+    slug: "spider-one-towable-excavator-mini-excavator",
+    name: "Spider One Towable Excavator",
+    category: "Konstructz",
+    subcategory: "Excavator",
+    weight: "1.0 Ton",
+    engine: "Honda GX390 Gasoline Engine",
+    cap: "$4,610.59",
+    price: "$4,610.59",
+    ecwidProductId: 868827561,
+    hash: "#!/New-TYPHON-Spider-One-Mini-Excavator-Konstructz-Series-with-Honda-GX390-EPA-Engine-Towable-Design-and-Full-360-Degree-Rotation/p/868827561",
+    externalUrl: "https://americanskidsteer.com/New-TYPHON-Spider-One-Mini-Excavator-Konstructz-Series-with-Honda-GX390-EPA-Engine-Towable-Design-and-Full-360-Degree-Rotation-p868827561",
+    checkoutUrl: "/store#!/New-TYPHON-Spider-One-Mini-Excavator-Konstructz-Series-with-Honda-GX390-EPA-Engine-Towable-Design-and-Full-360-Degree-Rotation/p/868827561",
+    image: "https://wheelloader.org/wp-content/uploads/2026/08/sprider-one.png",
+    images: [
+      "https://wheelloader.org/wp-content/uploads/2026/08/sprider-one.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/mini-typhon-Konstructz-sprider-excavator-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/mini-sprider-excavator-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/sprider-excavator-front-view-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/Sprider-excavator-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/sprider-one-excavator-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/typhon-sprider-excavator-scaled.png",
+      "https://asianmachinery.net/wp-content/uploads/2026/08/Konstructz-sprider-excavator-scaled.png"
+    ]
+  },
   { id: "featured-5", sku: "TYPH-V950", slug: "typhon-stomp-v950-mini-track-loader-1-5-ton-compact-track-loader", name: "Stomp V950 Track Loader", category: "Konstructz", subcategory: "Skid Steer", weight: "1.5 Ton", engine: "Kubota D1105 25 HP", cap: "$12,098.27", price: "$12,098.27", ecwidProductId: 865478793, hash: "#!/Typhon-Stomp-V950-Mini-Skid-Steer-Track-Loader-Konstructz-Series-1-5-Ton-25HP-Kubota-D1105-Engine/p/865478793", image: "https://asianmachinery.net/wp-content/uploads/2026/08/mini-skid-steer-track-loader-scaled.png", images: [
     "https://asianmachinery.net/wp-content/uploads/2026/08/mini-skid-steer-track-loader-scaled.png",
     "https://asianmachinery.net/wp-content/uploads/2026/08/mini-track-loader-v950-scaled.png",

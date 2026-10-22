@@ -24,7 +24,13 @@ export default function ProductCard({
     onView(item);
   };
 
-  const isQuoteProduct = item?.category === 'Konstructz' || item?.category === 'KONSTRUCTZ' || item?.brand === 'KONSTRUCTZ' || item?.brand === 'Konstructz' || item?.price === 'Call for pricing' || item?.price === 'Request Quote for Pricing' || item?.price === 'Quote on request';
+  const hasBuyOption = Boolean(
+    item?.ecwidProductId ||
+    item?.hash ||
+    (item?.checkoutUrl && !item.checkoutUrl.includes('page=all-products')) ||
+    (item?.price && item?.price !== 'Call for pricing' && item?.price !== 'Request Quote for Pricing' && item?.price !== 'Quote on request')
+  );
+  const isQuoteProduct = !hasBuyOption;
 
   const handlePrimaryClick = (event) => {
     event.preventDefault();
@@ -103,7 +109,7 @@ export default function ProductCard({
             className="card-btn-viewdetails"
             onClick={handleView}
           >
-            {(item?.ecwidProductId || item?.hash || (item?.price && item?.price !== 'Call for pricing' && item?.price !== 'Request Quote for Pricing')) ? 'Explore Product' : 'Request a Quote'}
+            {hasBuyOption ? 'View & Buy' : 'Request a Quote'}
           </button>
           <button
             type="button"
