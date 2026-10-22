@@ -34,7 +34,7 @@
 })();
 
 if (!defined('DB_DRIVER')) {
-    define('DB_DRIVER', getenv('DB_DRIVER') ?: 'sqlite');
+    define('DB_DRIVER', getenv('DB_DRIVER') ?: (file_exists(dirname(__DIR__, 2) . '/data/site.db') ? 'sqlite' : 'mysql'));
 }
 if (!defined('DB_HOST')) {
     define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
@@ -46,10 +46,10 @@ if (!defined('DB_NAME')) {
     define('DB_NAME', getenv('DB_NAME') ?: 'u534600013_konstructz');
 }
 if (!defined('DB_USER')) {
-    define('DB_USER', getenv('DB_USER') ?: '');
+    define('DB_USER', getenv('DB_USER') ?: 'u534600013_Konstructz08');
 }
 if (!defined('DB_PASS')) {
-    define('DB_PASS', getenv('DB_PASS') ?: '');
+    define('DB_PASS', getenv('DB_PASS') ?: '12345liN@');
 }
 if (!defined('DB_FILE')) {
     define('DB_FILE', getenv('DB_FILE') ?: 'data/site.db');
