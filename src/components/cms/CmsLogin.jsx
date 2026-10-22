@@ -267,7 +267,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
       <main className="cms-login-center">
         <div className="cms-login-card">
           <div className="cms-login-logo">
-            <img src={logoAsset} alt="StoneKrusher logo" />
+            <img src={logoAsset} alt="StoneKrusher" />
           </div>
 
           <h1 className="cms-login-title">{isBlocked ? 'Access Blocked' : 'Sign in'}</h1>
@@ -324,7 +324,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
               )}
 
               <div className="cms-login-field">
-                <span className="cms-login-field-icon" aria-hidden="true"><IconUser /></span>
                 <input
                   id="cms-username"
                   className="cms-login-input"
@@ -334,13 +333,12 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                   required
                   autoFocus
                   autoComplete="username"
-                  placeholder="Username or email"
-                  aria-label="Username or email"
+                  placeholder="Username"
+                  aria-label="Username"
                 />
               </div>
 
               <div className="cms-login-field">
-                <span className="cms-login-field-icon" aria-hidden="true"><IconKey /></span>
                 <input
                   id="cms-password"
                   className="cms-login-input"
@@ -395,15 +393,39 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
               {googleClientId && (
                 <div className="cms-login-google">
                   <div className="cms-login-divider"><span>OR SIGN IN WITH</span></div>
-                  <div
-                    className={`cms-login-google-btn${googleLoading ? ' is-loading' : ''}`}
-                    ref={googleButtonRef}
-                    aria-label="Continue with Google"
-                  />
+                  
+                  {/* Styled Google Sign In Button */}
+                  <div className="cms-login-google-wrapper">
+                    <button
+                      type="button"
+                      className="cms-login-google-pill"
+                      onClick={() => {
+                        const googleBtn = googleButtonRef.current?.querySelector('div[role="button"]') || googleButtonRef.current?.querySelector('iframe');
+                        if (googleBtn) {
+                          googleBtn.click();
+                        } else if (window.google?.accounts?.id) {
+                          window.google.accounts.id.prompt();
+                        }
+                      }}
+                      aria-label="Sign in with Google"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.79l7.97-6.2z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                      <span>Sign in with Google</span>
+                    </button>
+                    {/* Hidden Google GSI Render Target for seamless authentication flow */}
+                    <div
+                      className="cms-login-google-hidden-btn"
+                      ref={googleButtonRef}
+                      aria-hidden="true"
+                    />
+                  </div>
+
                   {googleLoading && <p className="cms-login-google-status">Verifying your Google account...</p>}
-                  <p className="cms-login-google-hint">
-                    For linked accounts only. To link Google for the first time, sign in above with your username and password.
-                  </p>
                 </div>
               )}
             </form>
