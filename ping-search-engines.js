@@ -2,8 +2,8 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 
-const baseUrl = 'https://cwqv.com';
-const host = 'cwqv.com';
+const baseUrl = 'https://stonekrusher.com';
+const host = 'stonekrusher.com';
 const sitemapUrl = `${baseUrl}/sitemap.xml`;
 const apiKey = '4e2c9180ab5f4f899b418a032d8471e6';
 const keyLocation = `${baseUrl}/${apiKey}.txt`;

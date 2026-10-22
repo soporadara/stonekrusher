@@ -15,11 +15,11 @@ fi
 
 echo "=== Configuring Remote ==="
 if git remote | grep -q 'origin'; then
-  git remote set-url origin https://github.com/KiuQ-Technologies-II/cwqv.com.git
+  git remote set-url origin https://github.com/KiuQ-Technologies-II/stonekrusher.com.git
 else
-  git remote add origin https://github.com/KiuQ-Technologies-II/cwqv.com.git
+  git remote add origin https://github.com/KiuQ-Technologies-II/stonekrusher.com.git
 fi
-echo "Remote configured: https://github.com/KiuQ-Technologies-II/cwqv.com.git"
+echo "Remote configured: https://github.com/KiuQ-Technologies-II/stonekrusher.com.git"
 
 echo "=== Staging and Committing Files ==="
 git add .

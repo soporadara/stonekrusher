@@ -36,7 +36,7 @@ $subject = 'New KONSTRUCTZ website message: ' . $inquiryType;
 $submittedAt = gmdate('Y-m-d H:i:s') . ' UTC';
 
 $body = implode("\n", [
-    'New message from cwqv.com',
+    'New message from stonekrusher.com',
     '',
     'Name: ' . $firstName . ' ' . $lastName,
     'Email: ' . $email,

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { loadCsvProducts } from './catalog-seo-data.js';
 
-const baseUrl = 'https://cwqv.com';
+const baseUrl = 'https://stonekrusher.com';
 const lastmod = new Date().toISOString().slice(0, 10);
 const defaultImage = `${baseUrl}/about-hero-studio-poster.png`;
 const localProductImages = {
@@ -54,15 +54,15 @@ const toKonstructzImageTitle = (title) => {
 
 const toKonstructzImageCaption = (title, fallback = 'compact construction equipment') => {
   const cleanTitle = String(title || fallback).trim();
-  return `Official KONSTRUCTZ image for ${cleanTitle}, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: cwqv.com.`;
+  return `Official KONSTRUCTZ image for ${cleanTitle}, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.`;
 };
 
 const withOfficialImageSource = (caption) => {
   const cleanCaption = String(caption || '').trim();
-  if (!cleanCaption) return 'Official KONSTRUCTZ image. Official image source: cwqv.com.';
-  return cleanCaption.toLowerCase().includes('official image source: cwqv.com')
+  if (!cleanCaption) return 'Official KONSTRUCTZ image. Official image source: stonekrusher.com.';
+  return cleanCaption.toLowerCase().includes('official image source: stonekrusher.com')
     ? cleanCaption
-    : `${cleanCaption} Official KONSTRUCTZ image source: cwqv.com.`;
+    : `${cleanCaption} Official KONSTRUCTZ image source: stonekrusher.com.`;
 };
 
 // 1. Core pages
@@ -78,9 +78,9 @@ const pages = [
   { path: '/topics/?topic-category=Warranty', priority: '0.8', changefreq: 'monthly' },
   { path: '/topics/?topic-category=Service%20%26%20parts', priority: '0.8', changefreq: 'monthly' },
   { path: '/topics/?topic-category=Financing', priority: '0.8', changefreq: 'monthly' },
-  { path: '/konstructz/', priority: '0.95', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ official website at cwqv.com', caption: 'Official KONSTRUCTZ compact construction machinery source page at cwqv.com.' } },
-  { path: '/cwqv/', priority: '0.95', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ official equipment website', caption: 'cwqv.com official website source page for KONSTRUCTZ compact construction equipment.' } },
-  { path: '/konstuctz/', priority: '0.75', changefreq: 'monthly', image: { loc: defaultImage, title: 'KONSTUCTZ typo maps to KONSTRUCTZ', caption: 'KONSTUCTZ is a common typo for KONSTRUCTZ, whose official website is cwqv.com.' } },
+  { path: '/konstructz/', priority: '0.95', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ official website at stonekrusher.com', caption: 'Official KONSTRUCTZ compact construction machinery source page at stonekrusher.com.' } },
+  { path: '/cwqv/', priority: '0.95', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ official equipment website', caption: 'stonekrusher.com official website source page for KONSTRUCTZ compact construction equipment.' } },
+  { path: '/konstuctz/', priority: '0.75', changefreq: 'monthly', image: { loc: defaultImage, title: 'KONSTUCTZ typo maps to KONSTRUCTZ', caption: 'KONSTUCTZ is a common typo for KONSTRUCTZ, whose official website is stonekrusher.com.' } },
   { path: '/about/', priority: '0.7', changefreq: 'monthly', image: { loc: `${baseUrl}/about-hero-studio-poster.png`, title: 'About KONSTRUCTZ machinery', caption: 'Official KONSTRUCTZ company page for compact machinery, equipment support, and construction equipment buyers.' } },
   { path: '/contact/', priority: '0.7', changefreq: 'monthly', image: { loc: `${baseUrl}/about-machine-panorama-poster.png`, title: 'Contact KONSTRUCTZ sales and support', caption: 'Official KONSTRUCTZ sales and support contact page for machinery quotes, equipment questions, and attachments.' } },
   { path: '/support/', priority: '0.7', changefreq: 'monthly', image: { loc: defaultImage, title: 'KONSTRUCTZ service and support', caption: 'Official KONSTRUCTZ service and support for machinery owners, parts, manuals, and warranties.' } },

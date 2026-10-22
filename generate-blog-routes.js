@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { getBlogPosts, saveBlogPosts } from './data/db.js'
 
-const siteUrl = 'https://cwqv.com'
+const siteUrl = 'https://stonekrusher.com'
 const outputRoot = path.resolve('public/blog')
 
 const posts = getBlogPosts();
@@ -33,7 +33,7 @@ const formatArticleBody = (text = '', articleTitle = 'KONSTRUCTZ equipment guide
         return `<h3 style="font-size:20px;color:#f7f7f2;margin:24px 0 12px;">${escapeHtml(block.slice(4))}</h3>`;
       }
       if (/^https?:\/\/.*?\.(webp|jpg|jpeg|png)$/i.test(block)) {
-        return `<div style="text-align:center;margin:32px 0;"><img src="${escapeHtml(block)}" alt="${escapeHtml(`${articleTitle} equipment photo for sale official image source cwqv.com`)}" title="${escapeHtml(`KONSTRUCTZ ${articleTitle} machinery image`)}" width="800" height="480" loading="lazy" style="max-width:100%;height:auto;border-radius:12px;border:1px solid #2c3527;"></div>`;
+        return `<div style="text-align:center;margin:32px 0;"><img src="${escapeHtml(block)}" alt="${escapeHtml(`${articleTitle} equipment photo for sale official image source stonekrusher.com`)}" title="${escapeHtml(`KONSTRUCTZ ${articleTitle} machinery image`)}" width="800" height="480" loading="lazy" style="max-width:100%;height:auto;border-radius:12px;border:1px solid #2c3527;"></div>`;
       }
       if (block.startsWith('- ')) {
         const items = block.split(/\n- /).map(item => `<li style="margin-bottom:8px;">${escapeHtml(item.replace(/^- /, ''))}</li>`).join('');
@@ -71,7 +71,7 @@ const blogHubSchema = {
 const blogCardsHtml = publishedPosts.map(post => `
   <article style="background:#181e15;border:1px solid #2c3527;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,border-color .2s;">
     <a href="/blog/${escapeHtml(post.slug)}/">
-      <img src="${escapeHtml(post.image || `${siteUrl}/about-machine-panorama-poster.png`)}" alt="${escapeHtml(`${post.title} KONSTRUCTZ equipment photo for sale official image source cwqv.com`)}" title="${escapeHtml(`Read ${post.title}`)}" width="400" height="220" loading="lazy" style="width:100%;height:220px;object-fit:cover;background:#0c0f0a;">
+      <img src="${escapeHtml(post.image || `${siteUrl}/about-machine-panorama-poster.png`)}" alt="${escapeHtml(`${post.title} KONSTRUCTZ equipment photo for sale official image source stonekrusher.com`)}" title="${escapeHtml(`Read ${post.title}`)}" width="400" height="220" loading="lazy" style="width:100%;height:220px;object-fit:cover;background:#0c0f0a;">
     </a>
     <div style="padding:24px;display:flex;flex-direction:column;flex-grow:1;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -218,7 +218,7 @@ for (const post of publishedPosts) {
         '@id': `${siteUrl}${cleanPath}#primaryimage`,
         url: image,
         contentUrl: image,
-        caption: `Official KONSTRUCTZ image for ${post.title}, compact construction equipment and machinery guide at cwqv.com.`,
+        caption: `Official KONSTRUCTZ image for ${post.title}, compact construction equipment and machinery guide at stonekrusher.com.`,
         name: `${post.title} KONSTRUCTZ equipment photo`
       },
       {

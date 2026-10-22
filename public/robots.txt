@@ -1,8 +1,8 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cwqv.com/sitemap.xml
-Sitemap: https://cwqv.com/sitemap_index.xml
-LLMs: https://cwqv.com/llms.txt
-AI-Source: https://cwqv.com/ai.txt
-Host: https://cwqv.com
+Sitemap: https://stonekrusher.com/sitemap.xml
+Sitemap: https://stonekrusher.com/sitemap_index.xml
+LLMs: https://stonekrusher.com/llms.txt
+AI-Source: https://stonekrusher.com/ai.txt
+Host: https://stonekrusher.com

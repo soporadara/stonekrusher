@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadCsvProducts } from './catalog-seo-data.js';
 
-const baseUrl = 'https://cwqv.com';
+const baseUrl = 'https://stonekrusher.com';
 const outputRoot = path.resolve('public/equipment');
 
 const profiles = [
@@ -138,7 +138,7 @@ for (const profile of profiles) {
   }
   const canonicalUrl = `${baseUrl}/equipment/${profile.slug}/`;
   const cards = matches.map(product => `<article class="card">
-      <a href="/products/${escapeHtml(product.slug)}/"><img src="${escapeHtml(absoluteUrl(product.image))}" alt="${escapeHtml(`${product.name} ${product.category || ''} for sale from KONSTRUCTZ official image source cwqv.com`)}" title="${escapeHtml(`Buy ${product.name} for sale`)}" loading="lazy" width="480" height="360"></a>
+      <a href="/products/${escapeHtml(product.slug)}/"><img src="${escapeHtml(absoluteUrl(product.image))}" alt="${escapeHtml(`${product.name} ${product.category || ''} for sale from KONSTRUCTZ official image source stonekrusher.com`)}" title="${escapeHtml(`Buy ${product.name} for sale`)}" loading="lazy" width="480" height="360"></a>
       <div><p class="type">${escapeHtml(product.category)}</p><h2><a href="/products/${escapeHtml(product.slug)}/">${escapeHtml(product.name)}</a></h2>${product.sku ? `<p>Model / SKU: ${escapeHtml(product.sku)}</p>` : ''}<a class="link" href="/products/${escapeHtml(product.slug)}/">View specifications</a></div>
     </article>`).join('\n');
   const faq = profile.questions.map(([question, answer]) => `<details><summary>${escapeHtml(question)}</summary><p>${escapeHtml(answer)}</p></details>`).join('\n');

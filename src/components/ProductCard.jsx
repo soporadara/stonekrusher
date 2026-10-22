@@ -16,7 +16,7 @@ export default function ProductCard({
   const imageAlt = [
     item.name,
     item.fitmentCategory || item.category || item.subcategory || 'construction equipment',
-    'for sale from KONSTRUCTZ official image source cwqv.com'
+    'for sale from KONSTRUCTZ official image source stonekrusher.com'
   ].filter(Boolean).join(' ');
 
   const handleView = (event) => {

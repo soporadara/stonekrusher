@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadCsvProducts } from './catalog-seo-data.js';
 
-const baseUrl = 'https://cwqv.com';
+const baseUrl = 'https://stonekrusher.com';
 const products = loadCsvProducts();
 const outputRoot = path.resolve('public/products');
 const storeOutputRoot = path.resolve('public/store');
@@ -231,7 +231,7 @@ for (const product of uniqueProducts) {
         '@id': `${canonicalUrl}#primaryimage`,
         url: image,
         contentUrl: image,
-        caption: `Official KONSTRUCTZ product image for ${name} ${product.sku ? `(${product.sku}) ` : ''}${category}, compact construction machinery for sale at cwqv.com.`,
+        caption: `Official KONSTRUCTZ product image for ${name} ${product.sku ? `(${product.sku}) ` : ''}${category}, compact construction machinery for sale at stonekrusher.com.`,
         name: `${name} ${category} equipment photo`
       },
       {
