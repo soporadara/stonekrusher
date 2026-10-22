@@ -4,6 +4,22 @@ import './cms-login.css';
 
 const DEFAULT_ATTEMPT_LIMIT = 10;
 
+const IconUser = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const IconKey = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="7.5" cy="15.5" r="4.5" />
+    <path d="M10.7 12.3L21 2" />
+    <path d="M17 6l3 3" />
+    <path d="M14 9l2 2" />
+  </svg>
+);
+
 const IconEye = ({ off }) => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {off ? (
@@ -18,13 +34,6 @@ const IconEye = ({ off }) => (
         <circle cx="12" cy="12" r="3" />
       </>
     )}
-  </svg>
-);
-
-const IconShield = () => (
-  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="M9 12l2 2 4-4" />
   </svg>
 );
 
@@ -58,8 +67,8 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [attempts, setAttempts] = useState(null); // { remaining, limit } after a failed sign-in
-  const [blocked, setBlocked] = useState(null); // { until: ms timestamp | null, permanent, limit }
+  const [attempts, setAttempts] = useState(null);
+  const [blocked, setBlocked] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -75,7 +84,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
   useEffect(() => { rememberRef.current = remember; }, [remember]);
   useEffect(() => { onLoginSuccessRef.current = onLoginSuccess; }, [onLoginSuccess]);
 
-  // Shared handler for every failed sign-in response (password or Google).
   const applyFailure = useCallback((data, fallbackMessage) => {
     if (data && data.blocked) {
       const startedAt = Date.now();
@@ -99,7 +107,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
     }
   }, []);
 
-  // Countdown while this device is blocked; unblock the form when it expires.
   useEffect(() => {
     if (!blocked || !blocked.until) return undefined;
     const timer = setInterval(() => {
@@ -114,7 +121,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
     return () => clearInterval(timer);
   }, [blocked]);
 
-  // Discover Google sign-in config; also learn right away if this device is already blocked.
   useEffect(() => {
     let cancelled = false;
     fetch('/api/auth.php?action=google_config')
@@ -131,7 +137,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
     return () => { cancelled = true; };
   }, [applyFailure]);
 
-  // Load Google Identity Services and render the official button.
   useEffect(() => {
     if (!googleClientId || isBlocked) return undefined;
     let cancelled = false;
@@ -167,12 +172,13 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
         cancel_on_tap_outside: true
       });
       googleButtonRef.current.innerHTML = '';
-      const width = Math.min(380, Math.max(220, googleButtonRef.current.clientWidth || 340));
+      const containerWidth = googleButtonRef.current.clientWidth || 360;
+      const width = Math.min(420, Math.max(260, containerWidth));
       window.google.accounts.id.renderButton(googleButtonRef.current, {
         type: 'standard',
-        theme: 'filled_black',
+        theme: 'outline',
         size: 'large',
-        text: 'signin_with',
+        text: 'continue_with',
         shape: 'pill',
         logo_alignment: 'left',
         width
@@ -252,7 +258,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
         <span className="cms-login-orb cms-login-orb-a" />
         <span className="cms-login-orb cms-login-orb-b" />
         <span className="cms-login-orb cms-login-orb-c" />
-        <span className="cms-login-grid" />
       </div>
 
       <button type="button" className="cms-login-return" onClick={onBackToSite}>
@@ -262,19 +267,18 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
       <main className="cms-login-center">
         <div className="cms-login-card">
           <div className="cms-login-logo">
-            <img src={logoAsset} alt="StoneKrusher wolf logo" />
+            <img src={logoAsset} alt="StoneKrusher logo" />
           </div>
 
-          <h1>{isBlocked ? 'Access blocked' : 'Sign in'}</h1>
-          <p className="cms-login-sub">StoneKrusher Content Management System</p>
+          <h1 className="cms-login-title">{isBlocked ? 'Access Blocked' : 'Sign in'}</h1>
 
           {isBlocked ? (
             <div className="cms-login-blocked" role="alert">
               <span className="cms-login-blocked-icon"><IconBan /></span>
               <h2>This device has been blocked</h2>
               <p>
-                We detected {attemptLimit} failed sign-in attempts from this device, so access to the
-                StoneKrusher CMS has been blocked to protect the site.
+                We detected {attemptLimit} failed sign-in attempts from this device. Access to the
+                StoneKrusher CMS has been suspended to protect the site.
               </p>
               {blocked.permanent ? (
                 <div className="cms-login-blocked-timer is-permanent">
@@ -288,11 +292,10 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                 </div>
               )}
               <p className="cms-login-blocked-help">
-                Believe this is a mistake? Contact a StoneKrusher administrator and ask them to remove the block
-                under Security.
+                Believe this is a mistake? Contact a StoneKrusher administrator to remove the block under Security.
               </p>
               <button type="button" className="cms-login-submit cms-login-submit-ghost" onClick={onBackToSite}>
-                Return to StoneKrusher
+                Return to Website
               </button>
             </div>
           ) : (
@@ -320,21 +323,24 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                 </div>
               )}
 
-              <label className="cms-login-sr" htmlFor="cms-username">Username or email</label>
-              <input
-                id="cms-username"
-                className="cms-login-input"
-                type="text"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                required
-                autoFocus
-                autoComplete="username"
-                placeholder="Username or email"
-              />
+              <div className="cms-login-field">
+                <span className="cms-login-field-icon" aria-hidden="true"><IconUser /></span>
+                <input
+                  id="cms-username"
+                  className="cms-login-input"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  required
+                  autoFocus
+                  autoComplete="username"
+                  placeholder="Username or email"
+                  aria-label="Username or email"
+                />
+              </div>
 
-              <label className="cms-login-sr" htmlFor="cms-password">Password</label>
-              <div className="cms-login-pass">
+              <div className="cms-login-field">
+                <span className="cms-login-field-icon" aria-hidden="true"><IconKey /></span>
                 <input
                   id="cms-password"
                   className="cms-login-input"
@@ -344,6 +350,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                   required
                   autoComplete="current-password"
                   placeholder="Password"
+                  aria-label="Password"
                 />
                 <button
                   type="button"
@@ -362,10 +369,15 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                     checked={remember}
                     onChange={(e) => setRemember(e.target.checked)}
                   />
-                  <span>Remember me</span>
+                  <span className="cms-login-checkbox-custom" aria-hidden="true">
+                    <svg viewBox="0 0 12 10" width="10" height="8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="1.5 5 4.5 8 10.5 2" />
+                    </svg>
+                  </span>
+                  <span>Remember Me</span>
                 </label>
                 <button type="button" className="cms-login-link" onClick={() => setShowForgot(true)}>
-                  Forgot password?
+                  Forgot Password?
                 </button>
               </div>
 
@@ -382,22 +394,21 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
 
               {googleClientId && (
                 <div className="cms-login-google">
-                  <div className="cms-login-divider"><span>or continue with</span></div>
-                  <div className={`cms-login-google-btn${googleLoading ? ' is-loading' : ''}`} ref={googleButtonRef} aria-label="Sign in with Google" />
+                  <div className="cms-login-divider"><span>OR SIGN IN WITH</span></div>
+                  <div
+                    className={`cms-login-google-btn${googleLoading ? ' is-loading' : ''}`}
+                    ref={googleButtonRef}
+                    aria-label="Continue with Google"
+                  />
                   {googleLoading && <p className="cms-login-google-status">Verifying your Google account...</p>}
-                  <p className="cms-login-google-hint">Sign in with your linked Google account, or sign in above with your email and password.</p>
                 </div>
               )}
             </form>
           )}
 
-          <div className="cms-login-shield">
-            <span className="cms-login-shield-title"><IconShield /> StoneKrusher Shield Active</span>
-            <span className="cms-login-shield-text">
-              Protected by automated IP threat defense and brute-force lockout guard.
-              Devices are blocked after {attemptLimit} failed sign-ins.
-            </span>
-          </div>
+          <p className="cms-login-defense-text">
+            Protected by StoneKrusher Shield. Auto-ban defense triggers after {attemptLimit} failed attempts.
+          </p>
         </div>
       </main>
 
