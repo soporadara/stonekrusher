@@ -424,6 +424,14 @@
   font-size: 0.8rem;
   color: var(--lg-sand);
 }
+.cms-login-google-hint {
+  margin: 12px auto 0;
+  text-align: center;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.52);
+  max-width: 320px;
+}
 
 /* Defense text below button */
 .cms-login-defense-text {

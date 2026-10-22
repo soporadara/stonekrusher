@@ -401,6 +401,9 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                     aria-label="Continue with Google"
                   />
                   {googleLoading && <p className="cms-login-google-status">Verifying your Google account...</p>}
+                  <p className="cms-login-google-hint">
+                    For linked accounts only. To link Google for the first time, sign in above with your username and password.
+                  </p>
                 </div>
               )}
             </form>
