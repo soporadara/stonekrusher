@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import CmsMediaLibrary from './CmsMediaLibrary';
 
 export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId }) {
+  // Navigation / View state
+  const [view, setView] = useState('list'); // 'list' | 'editor'
   const [posts, setPosts] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -11,17 +14,21 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Editor State
-  const [showEditor, setShowEditor] = useState(false);
+  // Editor Form state
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(getEmptyForm());
   const [slugStatus, setSlugStatus] = useState({ available: true, message: '' });
   const [saving, setSaving] = useState(false);
+  const [actionType, setActionType] = useState('draft'); // 'draft' | 'published' | 'scheduled'
+  const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [editorTab, setEditorTab] = useState('visual'); // 'visual' | 'source' | 'preview'
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState('featured'); // 'featured' | 'editor'
   const [revisions, setRevisions] = useState([]);
   const [showRevisions, setShowRevisions] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const visualEditorRef = useRef(null);
 
   function getEmptyForm() {
     return {
@@ -31,9 +38,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       category: 'Guide',
       author: 'Admin KONSTRUCTZ',
       featured_image: '',
+      cover_image_alt: '',
       excerpt: '',
       content: '',
       status: 'Draft',
+      scheduled_at: '',
+      video_url: '',
+      meta_title: '',
+      meta_description: '',
       tags: '',
       published_date: new Date().toISOString().split('T')[0]
     };
@@ -47,14 +59,16 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       if (data.success) {
         setCategories(data.categories || []);
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Fetch Posts List
   const fetchPosts = async () => {
     setLoading(true);
     try {
-      let url = `/api/cms.php?action=posts_list&page=${page}&limit=10`;
+      let url = `/api/cms.php?action=posts_list&page=${page}&limit=12`;
       if (statusFilter) url += `&status=${encodeURIComponent(statusFilter)}`;
       if (categoryFilter) url += `&category=${encodeURIComponent(categoryFilter)}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
@@ -78,8 +92,10 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   }, []);
 
   useEffect(() => {
-    fetchPosts();
-  }, [page, statusFilter, categoryFilter]);
+    if (view === 'list') {
+      fetchPosts();
+    }
+  }, [page, statusFilter, categoryFilter, view]);
 
   // Open editor if editingPostId is passed
   useEffect(() => {
@@ -100,7 +116,19 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       } else {
         setSlugStatus({ available: false, message: `Collision: Suggested alternative is ${data.suggested}` });
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateNew = () => {
+    setForm(getEmptyForm());
+    setIsEditing(false);
+    setView('editor');
+    setEditorTab('visual');
+    setHasUnsavedChanges(false);
+    setErrorMessage('');
+    setSlugStatus({ available: true, message: '' });
   };
 
   const handleEditPost = async (id) => {
@@ -110,7 +138,19 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       const data = await res.json();
       if (data.success && data.post) {
         const p = data.post;
-        const tagsArr = p.tags_json ? JSON.parse(p.tags_json) : [];
+        let tagsArr = [];
+        try {
+          tagsArr = p.tags_json ? JSON.parse(p.tags_json) : [];
+        } catch {
+          tagsArr = [];
+        }
+        let parsedData = {};
+        try {
+          parsedData = p.data_json ? JSON.parse(p.data_json) : {};
+        } catch {
+          parsedData = {};
+        }
+
         setForm({
           id: p.id,
           title: p.title || '',
@@ -118,53 +158,61 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           category: p.category || 'Guide',
           author: p.author || 'Admin KONSTRUCTZ',
           featured_image: p.featured_image || '',
+          cover_image_alt: parsedData.cover_image_alt || '',
           excerpt: p.excerpt || '',
           content: p.content || '',
           status: p.status || 'Draft',
+          scheduled_at: p.scheduled_at ? new Date(p.scheduled_at * 1000).toISOString().slice(0, 16) : '',
+          video_url: parsedData.video_url || '',
+          meta_title: parsedData.meta_title || '',
+          meta_description: parsedData.meta_description || '',
           tags: Array.isArray(tagsArr) ? tagsArr.join(', ') : '',
           published_date: p.published_date || new Date().toISOString().split('T')[0]
         });
         setRevisions(data.revisions || []);
         setIsEditing(true);
-        setShowEditor(true);
+        setView('editor');
+        setEditorTab('visual');
         setHasUnsavedChanges(false);
+        setErrorMessage('');
       }
     } catch (err) {
-      alert('Failed to load post for editing.');
+      alert('Failed to load article for editing.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateNew = () => {
-    setForm(getEmptyForm());
-    setIsEditing(false);
-    setShowEditor(true);
-    setHasUnsavedChanges(false);
-  };
-
   const handleTitleChange = (val) => {
     setHasUnsavedChanges(true);
-    const updated = { ...form, title: val };
-    if (!isEditing && !form.slug) {
-      const autoSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      updated.slug = autoSlug;
-      checkSlugCollision(autoSlug, form.id);
-    }
-    setForm(updated);
+    const autoSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    setForm(prev => {
+      const updated = { ...prev, title: val };
+      if (!isEditing && (!prev.slug || prev.slug === autoSlug.slice(0, prev.slug.length))) {
+        updated.slug = autoSlug;
+        checkSlugCollision(autoSlug, prev.id);
+      }
+      return updated;
+    });
   };
 
   const handleSavePost = async (targetStatus) => {
+    const finalStatus = targetStatus || form.status;
+    setActionType(finalStatus);
+    setErrorMessage('');
+
     if (!form.title.trim()) {
-      alert('Please provide an article title.');
+      setErrorMessage('Please provide an article title before saving.');
       return;
     }
+
     setSaving(true);
     try {
       const payload = {
         ...form,
-        status: targetStatus || form.status,
-        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean)
+        status: finalStatus,
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+        scheduled_at: form.scheduled_at ? Math.floor(new Date(form.scheduled_at).getTime() / 1000) : null
       };
 
       const res = await fetch('/api/cms.php?action=post_save', {
@@ -178,18 +226,20 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to save post.');
+        throw new Error(data.error || 'Failed to save article.');
       }
 
-      setStatusMessage('Article successfully saved!');
+      setStatusMessage(finalStatus === 'Published' ? 'Article published successfully!' : 'Draft saved successfully!');
       setHasUnsavedChanges(false);
-      setTimeout(() => setStatusMessage(''), 3000);
+      setTimeout(() => setStatusMessage(''), 3500);
       fetchPosts();
-      if (!isEditing) {
-        setShowEditor(false);
+
+      if (!isEditing && data.post && data.post.id) {
+        setForm(prev => ({ ...prev, id: data.post.id }));
+        setIsEditing(true);
       }
     } catch (err) {
-      alert(err.message);
+      setErrorMessage(err.message);
     } finally {
       setSaving(false);
     }
@@ -211,7 +261,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
         fetchPosts();
       }
     } catch (err) {
-      alert('Failed to trash post.');
+      alert('Failed to move article to trash.');
     }
   };
 
@@ -230,12 +280,12 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
         fetchPosts();
       }
     } catch (err) {
-      alert('Failed to restore post.');
+      alert('Failed to restore article.');
     }
   };
 
   const handleDeletePermanent = async (id) => {
-    if (!confirm('PERMANENT DELETION: Are you sure? This cannot be undone.')) return;
+    if (!confirm('PERMANENT DELETION: This action cannot be reversed. Delete article permanently?')) return;
     try {
       const res = await fetch('/api/cms.php?action=post_delete', {
         method: 'POST',
@@ -250,125 +300,724 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
         fetchPosts();
       }
     } catch (err) {
-      alert('Failed to delete post.');
+      alert('Failed to permanently delete article.');
     }
   };
 
-  const handleRestoreRevision = async (revId) => {
-    if (!confirm('Revert this article to this revision snapshot?')) return;
-    try {
-      const res = await fetch('/api/cms.php?action=post_restore_revision', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({ revision_id: revId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Post reverted to previous revision!');
-        setShowRevisions(false);
-        handleEditPost(form.id);
-      }
-    } catch (err) {
-      alert('Failed to restore revision.');
-    }
-  };
-
-  // Image Upload Handler
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('_csrf', csrfToken);
-
-    try {
-      const res = await fetch('/api/upload.php', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': csrfToken },
-        body: fd
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Upload failed');
-      }
-      setForm(prev => ({ ...prev, featured_image: data.url }));
+  // Rich formatting command helper
+  const execFormat = (command, value = null) => {
+    document.execCommand(command, false, value);
+    if (visualEditorRef.current) {
+      const html = visualEditorRef.current.innerHTML;
+      setForm(prev => ({ ...prev, content: html }));
       setHasUnsavedChanges(true);
-    } catch (err) {
-      alert(err.message);
     }
   };
 
-  return (
-    <div>
-      {/* SECTION HEADER */}
-      <div className="cms-section-header">
-        <div className="cms-section-title-group">
-          <h1>Blog Administration</h1>
-          <p>Create, edit, schedule, and moderate publication workflows</p>
-        </div>
-        <div className="cms-section-actions">
-          <button className="cms-btn cms-btn-primary" onClick={handleCreateNew}>
-            <span>✍️</span> Create New Article
-          </button>
-        </div>
-      </div>
+  const insertMediaIntoEditor = (url) => {
+    if (mediaPickerTarget === 'featured') {
+      setForm(prev => ({ ...prev, featured_image: url }));
+      setHasUnsavedChanges(true);
+    } else {
+      const imgHtml = `<figure class="article-image"><img src="${url}" alt="Article illustration" /><figcaption>StoneKrusher Machinery</figcaption></figure><p></p>`;
+      if (editorTab === 'visual') {
+        execFormat('insertHTML', imgHtml);
+      } else {
+        setForm(prev => ({ ...prev, content: prev.content + '\n\n' + imgHtml }));
+        setHasUnsavedChanges(true);
+      }
+    }
+    setShowMediaPicker(false);
+  };
 
-      {statusMessage && (
-        <div style={{ padding: '12px 16px', background: 'var(--cms-success-bg)', color: 'var(--cms-success)', borderRadius: 'var(--cms-radius-md)', marginBottom: '16px', fontWeight: '600' }}>
-          ✓ {statusMessage}
-        </div>
-      )}
+  const insertYoutubeEmbed = () => {
+    const url = prompt('Enter YouTube Video URL (e.g. https://www.youtube.com/watch?v=...):');
+    if (!url) return;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    const videoId = match ? match[1] : '';
+    if (!videoId) {
+      alert('Could not parse YouTube video ID. Please check the URL.');
+      return;
+    }
+    const embedHtml = `<div class="article-video-wrapper" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:24px 0;border-radius:14px;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div><p></p>`;
+    if (editorTab === 'visual') {
+      execFormat('insertHTML', embedHtml);
+    } else {
+      setForm(prev => ({ ...prev, content: prev.content + '\n\n' + embedHtml }));
+      setHasUnsavedChanges(true);
+    }
+  };
 
-      {/* FILTER & SEARCH TOOLBAR */}
-      <div className="cms-table-wrapper" style={{ marginBottom: '24px' }}>
-        <div className="cms-table-toolbar">
-          <div className="cms-table-search">
-            <span className="cms-table-search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search by title, slug or summary..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchPosts()}
-            />
+  // Helper to extract YouTube video ID for preview
+  const getEmbedUrl = (url) => {
+    if (!url) return '';
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : '';
+  };
+
+  // =========================================================================
+  // RENDER: EDITOR WORKSPACE (Full-page editorial view matching Rafelblog UI)
+  // =========================================================================
+  if (view === 'editor') {
+    return (
+      <div className="cms-article-editor-shell">
+        {/* Top Sticky Header */}
+        <div className="cms-article-topbar">
+          <div className="cms-article-topbar-left">
+            <button
+              type="button"
+              className="cms-article-back-btn"
+              onClick={() => {
+                if (hasUnsavedChanges && !confirm('You have unsaved changes. Exit without saving?')) return;
+                setView('list');
+              }}
+              title="Return to Articles list"
+            >
+              <span>←</span>
+            </button>
+            <div>
+              <h1 className="cms-article-heading">
+                {isEditing ? 'Edit Article' : 'New Article'}
+              </h1>
+              <p className="cms-article-subheading">
+                Write and publish an editorial post for StoneKrusher
+              </p>
+            </div>
           </div>
 
-          <div className="cms-table-filters">
-            <select
-              className="cms-select"
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          <div className="cms-article-topbar-actions">
+            <button
+              type="button"
+              className="cms-btn cms-btn-secondary"
+              onClick={() => handleSavePost('Draft')}
+              disabled={saving}
             >
-              <option value="">Status: All Active</option>
-              <option value="Published">Published</option>
-              <option value="Draft">Drafts</option>
-              <option value="Scheduled">Scheduled</option>
-              <option value="Archived">Archived</option>
-              <option value="Trash">Trash (Soft-deleted)</option>
-            </select>
-
-            <select
-              className="cms-select"
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              <span>📄</span> {saving && actionType === 'Draft' ? 'Saving Draft...' : 'Save Draft'}
+            </button>
+            <button
+              type="button"
+              className="cms-btn cms-btn-primary"
+              onClick={() => handleSavePost(form.status === 'Scheduled' ? 'Scheduled' : 'Published')}
+              disabled={saving}
             >
-              <option value="">Category: All</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>{c.name}</option>
-              ))}
-            </select>
-
-            <button className="cms-btn cms-btn-secondary" onClick={fetchPosts}>
-              Filter
+              {form.status === 'Scheduled' ? (
+                <><span>⏰</span> {saving ? 'Scheduling...' : 'Schedule Post'}</>
+              ) : (
+                <><span>🌐</span> {saving ? 'Publishing...' : 'Publish Article'}</>
+              )}
             </button>
           </div>
         </div>
 
-        {/* POSTS TABLE */}
+        {/* Status / Error alerts */}
+        {statusMessage && (
+          <div className="cms-alert cms-alert-success">
+            <span>✓</span> {statusMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="cms-alert cms-alert-danger">
+            <span>⚠️</span> {errorMessage}
+            <button type="button" onClick={() => setErrorMessage('')} className="cms-alert-dismiss">Dismiss</button>
+          </div>
+        )}
+
+        {/* 2-Column Grid Layout (Left: Editorial Canvas, Right: Sticky Settings Inspector) */}
+        <div className="cms-article-grid">
+          
+          {/* LEFT: EDITORIAL CANVAS (2 cols) */}
+          <div className="cms-article-main-col">
+            
+            {/* 1. Article Title Card */}
+            <div className="cms-card cms-article-card">
+              <label className="cms-card-label">Article Title</label>
+              <input
+                type="text"
+                className="cms-article-title-input"
+                value={form.title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Give your article a descriptive, captivating title..."
+                required
+              />
+
+              {/* URL Slug Preview Row */}
+              <div className="cms-article-slug-bar">
+                <span className="cms-slug-icon" aria-hidden="true">🌐</span>
+                <span className="cms-slug-prefix">stonekrusher.com/blog/</span>
+                <input
+                  type="text"
+                  className="cms-slug-input"
+                  value={form.slug}
+                  onChange={(e) => {
+                    const s = e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+                    setForm(prev => ({ ...prev, slug: s }));
+                    setHasUnsavedChanges(true);
+                    checkSlugCollision(s, form.id);
+                  }}
+                  placeholder="custom-article-slug"
+                />
+                {slugStatus.message && (
+                  <span className={`cms-slug-badge ${slugStatus.available ? 'is-valid' : 'is-conflict'}`}>
+                    {slugStatus.available ? '✓ Unique' : '⚠️ Collision'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 2. Article Summary / Excerpt Card */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <label className="cms-card-label">Article Summary / Excerpt</label>
+                <span className="cms-char-counter">{form.excerpt.length}/300 chars</span>
+              </div>
+              <textarea
+                className="cms-textarea"
+                rows={3}
+                value={form.excerpt}
+                onChange={(e) => {
+                  setForm(prev => ({ ...prev, excerpt: e.target.value }));
+                  setHasUnsavedChanges(true);
+                }}
+                maxLength={300}
+                placeholder="A concise, engaging 1-2 sentence preview shown on category cards, homepage feeds, and SEO snippets..."
+              />
+            </div>
+
+            {/* 3. Rich Editorial Content Card */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <div>
+                  <label className="cms-card-label">Article Content</label>
+                  <span className="cms-card-sublabel">Rich WYSIWYG & Media</span>
+                </div>
+                {/* Editor Tab Switcher */}
+                <div className="cms-editor-tab-pills">
+                  <button
+                    type="button"
+                    className={`cms-editor-tab-pill ${editorTab === 'visual' ? 'active' : ''}`}
+                    onClick={() => setEditorTab('visual')}
+                  >
+                    ✏️ Visual
+                  </button>
+                  <button
+                    type="button"
+                    className={`cms-editor-tab-pill ${editorTab === 'source' ? 'active' : ''}`}
+                    onClick={() => setEditorTab('source')}
+                  >
+                    📝 HTML / Markdown
+                  </button>
+                  <button
+                    type="button"
+                    className={`cms-editor-tab-pill ${editorTab === 'preview' ? 'active' : ''}`}
+                    onClick={() => setEditorTab('preview')}
+                  >
+                    👁️ Preview
+                  </button>
+                </div>
+              </div>
+
+              {/* Rich Formatting Toolbar (Visible in Visual mode) */}
+              {editorTab === 'visual' && (
+                <div className="cms-editor-toolbar">
+                  <div className="cms-toolbar-group">
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('bold')} title="Bold (Ctrl+B)"><strong>B</strong></button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('italic')} title="Italic (Ctrl+I)"><em>I</em></button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('underline')} title="Underline (Ctrl+U)"><u>U</u></button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('strikeThrough')} title="Strikethrough"><s>S</s></button>
+                  </div>
+
+                  <div className="cms-toolbar-divider" />
+
+                  <div className="cms-toolbar-group">
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('formatBlock', '<h2>')} title="Heading 2">H2</button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('formatBlock', '<h3>')} title="Heading 3">H3</button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('formatBlock', '<p>')} title="Paragraph">P</button>
+                  </div>
+
+                  <div className="cms-toolbar-divider" />
+
+                  <div className="cms-toolbar-group">
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('insertUnorderedList')} title="Bullet List">• List</button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('insertOrderedList')} title="Numbered List">1. List</button>
+                    <button type="button" className="cms-tool-btn" onClick={() => execFormat('formatBlock', '<blockquote>')} title="Blockquote">“ Quote</button>
+                  </div>
+
+                  <div className="cms-toolbar-divider" />
+
+                  <div className="cms-toolbar-group">
+                    <button
+                      type="button"
+                      className="cms-tool-btn cms-tool-highlight"
+                      onClick={() => {
+                        setMediaPickerTarget('editor');
+                        setShowMediaPicker(true);
+                      }}
+                      title="Insert Image from Media Library"
+                    >
+                      🖼️ Image
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-tool-btn"
+                      onClick={insertYoutubeEmbed}
+                      title="Insert YouTube Video Embed"
+                    >
+                      ▶️ Video
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-tool-btn"
+                      onClick={() => {
+                        const url = prompt('Enter destination link URL:');
+                        if (url) execFormat('createLink', url);
+                      }}
+                      title="Insert Hyperlink"
+                    >
+                      🔗 Link
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-tool-btn"
+                      onClick={() => execFormat('insertHorizontalRule')}
+                      title="Horizontal Divider"
+                    >
+                      ― Rule
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Editor Surface */}
+              <div className="cms-editor-surface">
+                {editorTab === 'visual' && (
+                  <div
+                    ref={visualEditorRef}
+                    className="cms-visual-editor"
+                    contentEditable
+                    suppressContentEditableWarning
+                    dangerouslySetInnerHTML={{ __html: form.content }}
+                    onInput={(e) => {
+                      setForm(prev => ({ ...prev, content: e.currentTarget.innerHTML }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Write detailed machinery reviews, maintenance tips, operator guides, and technical insights..."
+                  />
+                )}
+
+                {editorTab === 'source' && (
+                  <textarea
+                    className="cms-source-editor"
+                    value={form.content}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, content: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Enter raw HTML or Markdown content..."
+                    rows={20}
+                  />
+                )}
+
+                {editorTab === 'preview' && (
+                  <div className="cms-article-preview-reader">
+                    <div className="cms-preview-badge">Live Reader Preview</div>
+                    {form.featured_image && (
+                      <img src={form.featured_image} alt={form.cover_image_alt || form.title} className="cms-preview-hero-img" />
+                    )}
+                    <h1 className="cms-preview-title">{form.title || 'Untitled Article'}</h1>
+                    <div className="cms-preview-meta">
+                      <span>By {form.author}</span> • <span>Category: {form.category}</span> • <span>{form.published_date}</span>
+                    </div>
+                    {form.excerpt && <p className="cms-preview-excerpt">{form.excerpt}</p>}
+                    <hr className="cms-preview-divider" />
+                    <div
+                      className="cms-preview-body"
+                      dangerouslySetInnerHTML={{ __html: form.content || '<p><em>No content written yet.</em></p>' }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* RIGHT: STICKY SETTINGS INSPECTOR (1 col) */}
+          <div className="cms-article-sidebar">
+            
+            {/* 1. Publishing Status Card */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <h3 className="cms-card-title">Publishing Status</h3>
+                <span className={`cms-status-badge is-${form.status.toLowerCase()}`}>
+                  {form.status === 'Published' ? 'Public' : form.status}
+                </span>
+              </div>
+
+              <div className="cms-form-stack">
+                <div>
+                  <label className="cms-field-label">Status</label>
+                  <select
+                    className="cms-select"
+                    value={form.status}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, status: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    <option value="Draft">Draft</option>
+                    <option value="Published">Public (Published)</option>
+                    <option value="Scheduled">Scheduled</option>
+                  </select>
+                </div>
+
+                {form.status === 'Scheduled' && (
+                  <div className="cms-scheduled-box">
+                    <div className="cms-scheduled-header">
+                      <span>⏰</span> Schedule Date & Time
+                    </div>
+                    <input
+                      type="datetime-local"
+                      className="cms-input"
+                      value={form.scheduled_at}
+                      onChange={(e) => {
+                        setForm(prev => ({ ...prev, scheduled_at: e.target.value }));
+                        setHasUnsavedChanges(true);
+                      }}
+                    />
+                    <p className="cms-field-hint">
+                      The article will automatically become public at this scheduled time.
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="cms-field-label">Published Date</label>
+                  <input
+                    type="date"
+                    className="cms-input"
+                    value={form.published_date}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, published_date: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Article Author Card */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <h3 className="cms-card-title">
+                  <span className="cms-icon-green">👤</span> Article Author
+                </h3>
+              </div>
+              <div className="cms-form-stack">
+                <input
+                  type="text"
+                  className="cms-input"
+                  value={form.author}
+                  onChange={(e) => {
+                    setForm(prev => ({ ...prev, author: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  placeholder="Author name..."
+                />
+                <div className="cms-author-pill">
+                  <div className="cms-author-avatar">
+                    {form.author ? form.author.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                  <div>
+                    <div className="cms-author-name">{form.author || 'Admin'}</div>
+                    <div className="cms-author-role">Staff Writer</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Classification & Category Card */}
+            <div className="cms-card cms-article-card">
+              <h3 className="cms-card-title">Classification & Category</h3>
+              <div className="cms-form-stack">
+                <div>
+                  <label className="cms-field-label">Category *</label>
+                  <select
+                    className="cms-select"
+                    value={form.category}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, category: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                  >
+                    {categories.length > 0 ? (
+                      categories.map(cat => (
+                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Guide">Guide</option>
+                        <option value="Equipment">Equipment</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Safety">Safety</option>
+                        <option value="News">News</option>
+                        <option value="Technical">Technical</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="cms-field-label">Tags (comma-separated)</label>
+                  <input
+                    type="text"
+                    className="cms-input"
+                    value={form.tags}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, tags: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="mini excavator, maintenance, skid steer, safety"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Featured Cover Image Card */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <h3 className="cms-card-title">
+                  <span className="cms-icon-green">🖼️</span> Featured Cover Image
+                </h3>
+              </div>
+
+              <div className="cms-form-stack">
+                <div className="cms-input-with-action">
+                  <input
+                    type="url"
+                    className="cms-input"
+                    value={form.featured_image}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, featured_image: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Image URL or pick from library..."
+                  />
+                  <button
+                    type="button"
+                    className="cms-btn cms-btn-primary cms-btn-sm"
+                    onClick={() => {
+                      setMediaPickerTarget('featured');
+                      setShowMediaPicker(true);
+                    }}
+                    title="Browse Media Library"
+                  >
+                    Browse
+                  </button>
+                </div>
+
+                {form.featured_image && (
+                  <div className="cms-cover-preview-box">
+                    <img src={form.featured_image} alt="Cover preview" />
+                    <button
+                      type="button"
+                      className="cms-cover-remove-btn"
+                      onClick={() => {
+                        setForm(prev => ({ ...prev, featured_image: '' }));
+                        setHasUnsavedChanges(true);
+                      }}
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                )}
+
+                <div>
+                  <label className="cms-field-label">Image Alt Description</label>
+                  <input
+                    type="text"
+                    className="cms-input"
+                    value={form.cover_image_alt}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, cover_image_alt: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="e.g. StoneKrusher mobile jaw crusher on quarry jobsite"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Attached Video Card (Optional) */}
+            <div className="cms-card cms-article-card">
+              <div className="cms-card-header-row">
+                <h3 className="cms-card-title">
+                  <span className="cms-icon-green">▶️</span> Attached Video (Optional)
+                </h3>
+              </div>
+              <p className="cms-field-hint">
+                YouTube or Facebook video URL. When provided, an interactive video player is displayed prominently.
+              </p>
+              <div className="cms-form-stack">
+                <input
+                  type="url"
+                  className="cms-input"
+                  value={form.video_url}
+                  onChange={(e) => {
+                    setForm(prev => ({ ...prev, video_url: e.target.value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                {form.video_url && getEmbedUrl(form.video_url) && (
+                  <div className="cms-sidebar-video-preview">
+                    <iframe
+                      src={getEmbedUrl(form.video_url)}
+                      title="Video preview"
+                      style={{ width: '100%', height: '170px', border: 0, borderRadius: '8px' }}
+                      allowFullScreen
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 6. SEO & Social Meta Card */}
+            <div className="cms-card cms-article-card">
+              <h3 className="cms-card-title">SEO & Social Meta</h3>
+              <div className="cms-form-stack">
+                <div>
+                  <label className="cms-field-label">Meta Title</label>
+                  <input
+                    type="text"
+                    className="cms-input"
+                    value={form.meta_title}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, meta_title: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder={form.title || 'Page meta title...'}
+                  />
+                </div>
+
+                <div>
+                  <label className="cms-field-label">Meta Description</label>
+                  <textarea
+                    className="cms-textarea"
+                    rows={3}
+                    value={form.meta_description}
+                    onChange={(e) => {
+                      setForm(prev => ({ ...prev, meta_description: e.target.value }));
+                      setHasUnsavedChanges(true);
+                    }}
+                    placeholder="Search engine snippet (recommended 150-160 characters)..."
+                  />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Media Picker Modal */}
+        {showMediaPicker && (
+          <div className="cms-modal-backdrop" style={{ zIndex: 120 }}>
+            <div className="cms-modal cms-modal-xl">
+              <div className="cms-modal-header">
+                <h3>Select Image from Media Library</h3>
+                <button
+                  type="button"
+                  className="cms-btn-icon cms-btn-secondary"
+                  onClick={() => setShowMediaPicker(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="cms-modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+                <CmsMediaLibrary
+                  csrfToken={csrfToken}
+                  isPicker
+                  onSelectMedia={(url) => insertMediaIntoEditor(url)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // RENDER: ARTICLES LIST VIEW (Modern table matching Rafelblog UI)
+  // =========================================================================
+  return (
+    <div className="cms-articles-list-view">
+      {/* Page Header */}
+      <div className="cms-section-header">
+        <div className="cms-section-title-group">
+          <h1>Articles</h1>
+          <p>Manage publication stories, categories, URL slugs, and featured media</p>
+        </div>
+        <div className="cms-section-actions">
+          <button
+            type="button"
+            className="cms-btn cms-btn-primary"
+            onClick={handleCreateNew}
+          >
+            <span>+</span> New Article
+          </button>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="cms-card cms-filter-bar">
+        <div className="cms-search-box">
+          <span className="cms-search-icon">🔍</span>
+          <input
+            type="text"
+            className="cms-search-input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') fetchPosts(); }}
+            placeholder="Search articles by title, slug, or content..."
+          />
+          {search && (
+            <button
+              type="button"
+              className="cms-search-clear"
+              onClick={() => { setSearch(''); fetchPosts(); }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        <div className="cms-filter-group">
+          <select
+            className="cms-select cms-select-sm"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map(c => (
+              <option key={c.id || c.name} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="cms-select cms-select-sm"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="Trash">Trash</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Articles Table */}
+      <div className="cms-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div className="cms-table-responsive">
           <table className="cms-table">
             <thead>
@@ -378,67 +1027,81 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                 <th>Author</th>
                 <th>Status</th>
                 <th>Date</th>
-                <th>Actions</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '32px', color: 'var(--cms-text-muted)' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: 'var(--cms-text-muted)' }}>
                     Loading articles...
                   </td>
                 </tr>
               ) : posts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--cms-text-muted)' }}>
-                    No matching articles found. Click "Create New Article" to write one.
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--cms-text-muted)' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📝</div>
+                    <div style={{ fontWeight: '600' }}>No articles found</div>
+                    <p style={{ fontSize: '0.84rem', marginTop: '4px' }}>
+                      Try adjusting your filters or click "+ New Article" to compose your first post.
+                    </p>
                   </td>
                 </tr>
               ) : (
-                posts.map((p) => (
+                posts.map(p => (
                   <tr key={p.id}>
-                    <td style={{ maxWidth: '280px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        {p.featured_image && (
+                    <td style={{ maxWidth: '340px' }}>
+                      <div className="cms-table-article-cell">
+                        {p.featured_image ? (
                           <img
                             src={p.featured_image}
                             alt=""
-                            style={{ width: '42px', height: '42px', borderRadius: '6px', objectFit: 'cover' }}
+                            className="cms-table-thumb"
                           />
+                        ) : (
+                          <div className="cms-table-thumb-placeholder">📝</div>
                         )}
-                        <div>
-                          <div style={{ fontWeight: '600', color: 'var(--cms-text)' }}>{p.title}</div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)', fontFamily: 'var(--cms-font-mono)' }}>
-                            /{p.slug}
+                        <div className="cms-table-article-info">
+                          <button
+                            type="button"
+                            className="cms-table-title-link"
+                            onClick={() => handleEditPost(p.id)}
+                          >
+                            {p.title}
+                          </button>
+                          <div className="cms-table-slug">
+                            stonekrusher.com/blog/{p.slug}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <span className="cms-badge cms-badge-muted">{p.category || 'Guide'}</span>
+                      <span className="cms-category-badge">{p.category || 'Guide'}</span>
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.84rem' }}>{p.author || 'Admin'}</span>
+                      <span className="cms-author-text">{p.author || 'Admin'}</span>
                     </td>
                     <td>
-                      <span className={`cms-badge cms-badge-${(p.status || 'published').toLowerCase()}`}>
+                      <span className={`cms-status-badge is-${(p.status || 'published').toLowerCase()}`}>
                         {p.status || 'Published'}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--cms-text-muted)', whiteSpace: 'nowrap' }}>
-                      {p.published_date || 'Draft'}
-                    </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <span className="cms-date-text">{p.published_date || 'Draft'}</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="cms-table-actions">
                         {p.status === 'Trash' ? (
                           <>
                             <button
+                              type="button"
                               className="cms-btn cms-btn-secondary cms-btn-sm"
                               onClick={() => handleRestorePost(p.id)}
                             >
                               Restore
                             </button>
                             <button
+                              type="button"
                               className="cms-btn cms-btn-danger cms-btn-sm"
                               onClick={() => handleDeletePermanent(p.id)}
                             >
@@ -447,14 +1110,25 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                           </>
                         ) : (
                           <>
+                            <a
+                              href={`/blog/${p.slug}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="cms-btn cms-btn-secondary cms-btn-sm"
+                              title="View published article on website"
+                            >
+                              View
+                            </a>
                             <button
+                              type="button"
                               className="cms-btn cms-btn-secondary cms-btn-sm"
                               onClick={() => handleEditPost(p.id)}
                             >
                               Edit
                             </button>
                             <button
-                              className="cms-btn cms-btn-danger cms-btn-sm"
+                              type="button"
+                              className="cms-btn-icon-danger"
                               onClick={() => handleTrashPost(p.id)}
                               title="Move to trash"
                             >
@@ -471,23 +1145,25 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           </table>
         </div>
 
-        {/* PAGINATION */}
+        {/* Pagination Bar */}
         <div className="cms-pagination">
           <div>
             Showing {posts.length} of {total} articles
           </div>
           <div className="cms-page-controls">
             <button
+              type="button"
               className="cms-btn cms-btn-secondary cms-btn-sm"
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
               Previous
             </button>
-            <span style={{ padding: '0 8px', fontWeight: '600' }}>
+            <span className="cms-page-number">
               Page {page} of {totalPages}
             </span>
             <button
+              type="button"
               className="cms-btn cms-btn-secondary cms-btn-sm"
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
@@ -497,351 +1173,6 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           </div>
         </div>
       </div>
-
-      {/* FULL ARTICLE EDITOR MODAL / SLIDEOUT */}
-      {showEditor && (
-        <div className="cms-modal-backdrop">
-          <div className="cms-modal cms-modal-lg" style={{ height: '90vh' }}>
-            <div className="cms-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <h3>{isEditing ? `Edit: ${form.title || 'Untitled'}` : 'Create New Article'}</h3>
-                {hasUnsavedChanges && (
-                  <span style={{ fontSize: '0.74rem', background: 'var(--cms-warning-bg)', color: 'var(--cms-warning)', padding: '2px 8px', borderRadius: '4px' }}>
-                    Unsaved edits
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isEditing && revisions.length > 0 && (
-                  <button
-                    className="cms-btn cms-btn-secondary cms-btn-sm"
-                    onClick={() => setShowRevisions(true)}
-                  >
-                    🕒 Revisions ({revisions.length})
-                  </button>
-                )}
-                <button
-                  className="cms-btn cms-btn-secondary cms-btn-sm"
-                  onClick={() => setShowPreview(true)}
-                >
-                  👁️ Preview
-                </button>
-                <button
-                  className="cms-btn-icon cms-btn-secondary"
-                  onClick={() => {
-                    if (hasUnsavedChanges && !confirm('You have unsaved changes. Exit without saving?')) return;
-                    setShowEditor(false);
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <div className="cms-modal-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                
-                {/* LEFT: CONTENT & HEADINGS */}
-                <div>
-                  <div className="cms-form-group">
-                    <label>Article Title *</label>
-                    <input
-                      type="text"
-                      className="cms-input"
-                      style={{ fontSize: '1.1rem', fontWeight: '700' }}
-                      value={form.title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                      placeholder="e.g. 5 Critical Maintenance Checks for Mini Excavators"
-                      required
-                    />
-                  </div>
-
-                  <div className="cms-form-group">
-                    <label>URL Slug</label>
-                    <input
-                      type="text"
-                      className="cms-input"
-                      value={form.slug}
-                      onChange={(e) => {
-                        setForm({ ...form, slug: e.target.value });
-                        setHasUnsavedChanges(true);
-                        checkSlugCollision(e.target.value, form.id);
-                      }}
-                      placeholder="5-critical-maintenance-checks"
-                    />
-                    <div style={{ fontSize: '0.74rem', marginTop: '4px', color: slugStatus.available ? 'var(--cms-success)' : 'var(--cms-warning)' }}>
-                      {slugStatus.message}
-                    </div>
-                  </div>
-
-                  <div className="cms-form-group">
-                    <label>Short Excerpt / Meta Description</label>
-                    <textarea
-                      className="cms-textarea"
-                      style={{ minHeight: '70px' }}
-                      value={form.excerpt}
-                      onChange={(e) => { setForm({ ...form, excerpt: e.target.value }); setHasUnsavedChanges(true); }}
-                      placeholder="Summary shown in blog listing and Google search snippets..."
-                    />
-                  </div>
-
-                  <div className="cms-form-group">
-                    <label>Full Content (Markdown or HTML format)</label>
-                    <textarea
-                      className="cms-textarea"
-                      style={{ minHeight: '260px', fontFamily: 'var(--cms-font-mono)', fontSize: '0.85rem' }}
-                      value={form.content}
-                      onChange={(e) => { setForm({ ...form, content: e.target.value }); setHasUnsavedChanges(true); }}
-                      placeholder="## Introduction&#10;&#10;Write detailed jobsite guidance, specifications, and operator tips..."
-                    />
-                  </div>
-                </div>
-
-                {/* RIGHT: METADATA & PUBLISHING CONTROLS */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  
-                  {/* PUBLISH STATUS BOX */}
-                  <div className="cms-card" style={{ padding: '16px' }}>
-                    <div className="cms-form-group" style={{ marginBottom: '12px' }}>
-                      <label>Publication Status</label>
-                      <select
-                        className="cms-select"
-                        style={{ width: '100%' }}
-                        value={form.status}
-                        onChange={(e) => { setForm({ ...form, status: e.target.value }); setHasUnsavedChanges(true); }}
-                      >
-                        <option value="Draft">Draft</option>
-                        <option value="Published">Published</option>
-                        <option value="Scheduled">Scheduled</option>
-                        <option value="Archived">Archived</option>
-                      </select>
-                    </div>
-
-                    <div className="cms-form-group" style={{ marginBottom: '12px' }}>
-                      <label>Publication Date</label>
-                      <input
-                        type="date"
-                        className="cms-input"
-                        value={form.published_date}
-                        onChange={(e) => { setForm({ ...form, published_date: e.target.value }); setHasUnsavedChanges(true); }}
-                      />
-                    </div>
-
-                    <div className="cms-form-group" style={{ marginBottom: '0' }}>
-                      <label>Category</label>
-                      <select
-                        className="cms-select"
-                        style={{ width: '100%' }}
-                        value={form.category}
-                        onChange={(e) => { setForm({ ...form, category: e.target.value }); setHasUnsavedChanges(true); }}
-                      >
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* FEATURED IMAGE */}
-                  <div className="cms-card" style={{ padding: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', marginBottom: '8px' }}>
-                      Featured Image
-                    </label>
-                    {form.featured_image ? (
-                      <div style={{ position: 'relative', marginBottom: '10px' }}>
-                        <img
-                          src={form.featured_image}
-                          alt="Preview"
-                          style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '6px' }}
-                        />
-                        <button
-                          type="button"
-                          className="cms-btn cms-btn-danger cms-btn-sm"
-                          style={{ position: 'absolute', top: '6px', right: '6px' }}
-                          onClick={() => setForm({ ...form, featured_image: '' })}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{
-                        height: '100px',
-                        border: '2px dashed var(--cms-card-border)',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--cms-text-subtle)',
-                        fontSize: '0.8rem',
-                        marginBottom: '10px'
-                      }}>
-                        No image selected
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        placeholder="Image URL or upload"
-                        value={form.featured_image}
-                        onChange={(e) => { setForm({ ...form, featured_image: e.target.value }); setHasUnsavedChanges(true); }}
-                        style={{ fontSize: '0.78rem' }}
-                      />
-                      <label className="cms-btn cms-btn-secondary cms-btn-sm" style={{ cursor: 'pointer' }}>
-                        Upload
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={handleImageUpload}
-                        />
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* AUTHOR & TAGS */}
-                  <div className="cms-card" style={{ padding: '16px' }}>
-                    <div className="cms-form-group">
-                      <label>Author</label>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        value={form.author}
-                        onChange={(e) => { setForm({ ...form, author: e.target.value }); setHasUnsavedChanges(true); }}
-                      />
-                    </div>
-                    <div className="cms-form-group" style={{ marginBottom: 0 }}>
-                      <label>Tags (comma-separated)</label>
-                      <input
-                        type="text"
-                        className="cms-input"
-                        value={form.tags}
-                        onChange={(e) => { setForm({ ...form, tags: e.target.value }); setHasUnsavedChanges(true); }}
-                        placeholder="Excavator, Maintenance, Safety"
-                      />
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            </div>
-
-            <div className="cms-modal-footer">
-              <button
-                type="button"
-                className="cms-btn cms-btn-secondary"
-                onClick={() => {
-                  if (hasUnsavedChanges && !confirm('Discard unsaved changes?')) return;
-                  setShowEditor(false);
-                }}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="cms-btn cms-btn-secondary"
-                disabled={saving}
-                onClick={() => handleSavePost('Draft')}
-              >
-                Save as Draft
-              </button>
-
-              <button
-                type="button"
-                className="cms-btn cms-btn-primary"
-                disabled={saving}
-                onClick={() => handleSavePost('Published')}
-              >
-                {saving ? 'Publishing...' : 'Publish Article'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* REVISION HISTORY MODAL */}
-      {showRevisions && (
-        <div className="cms-modal-backdrop" style={{ zIndex: 110 }}>
-          <div className="cms-modal" style={{ maxWidth: '500px' }}>
-            <div className="cms-modal-header">
-              <h3>Revision History</h3>
-              <button className="cms-btn-icon cms-btn-secondary" onClick={() => setShowRevisions(false)}>✕</button>
-            </div>
-            <div className="cms-modal-body">
-              <p style={{ fontSize: '0.84rem', color: 'var(--cms-text-muted)', marginTop: 0 }}>
-                Automatic snapshots saved before previous updates:
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {revisions.map((rev) => (
-                  <div
-                    key={rev.id}
-                    style={{
-                      padding: '12px',
-                      border: '1px solid var(--cms-card-border)',
-                      borderRadius: 'var(--cms-radius-md)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: '600', fontSize: '0.88rem' }}>{rev.title}</div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)' }}>
-                        {new Date(rev.created_at * 1000).toLocaleString()}
-                      </div>
-                    </div>
-                    <button
-                      className="cms-btn cms-btn-secondary cms-btn-sm"
-                      onClick={() => handleRestoreRevision(rev.id)}
-                    >
-                      Revert
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PREVIEW MODAL */}
-      {showPreview && (
-        <div className="cms-modal-backdrop" style={{ zIndex: 110 }}>
-          <div className="cms-modal cms-modal-lg" style={{ height: '85vh' }}>
-            <div className="cms-modal-header">
-              <h3>Live Public Preview</h3>
-              <button className="cms-btn-icon cms-btn-secondary" onClick={() => setShowPreview(false)}>✕</button>
-            </div>
-            <div className="cms-modal-body" style={{ background: '#0b0f17', color: '#f3f4f6', padding: '32px' }}>
-              <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-                <span className="cms-badge cms-badge-warning" style={{ marginBottom: '12px' }}>{form.category}</span>
-                <h1 style={{ fontSize: '2rem', fontWeight: '800', lineHeight: 1.2, margin: '8px 0 14px' }}>{form.title || 'Untitled Post'}</h1>
-                <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '20px' }}>
-                  By {form.author} · Published {form.published_date}
-                </div>
-                {form.featured_image && (
-                  <img
-                    src={form.featured_image}
-                    alt=""
-                    style={{ width: '100%', maxHeight: '380px', objectFit: 'cover', borderRadius: '12px', marginBottom: '24px' }}
-                  />
-                )}
-                {form.excerpt && (
-                  <p style={{ fontSize: '1.1rem', color: '#cbd5e1', fontStyle: 'italic', borderLeft: '4px solid var(--cms-primary)', paddingLeft: '16px', marginBottom: '24px' }}>
-                    {form.excerpt}
-                  </p>
-                )}
-                <div style={{ lineHeight: 1.7, fontSize: '1rem', color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>
-                  {form.content || 'No body content entered yet.'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

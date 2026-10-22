@@ -1,0 +1,19 @@
+{
+    "users": [
+        {
+            "id": "main-admin",
+            "username": "admin@kiuq.kiuq",
+            "password_hash": "$2y$12$QEarLyHf0rz/6VrPvLyvQug1zqhhWFkLZsGhcabu4nSDI2as/426S",
+            "role": "admin",
+            "status": "active",
+            "display_name": "Main Admin",
+            "avatar_url": "",
+            "theme": "light",
+            "dashboard_theme_url": "",
+            "is_main_admin": true,
+            "can_view_login_activity": true,
+            "created_at": 1788516331,
+            "updated_at": 1788516331
+        }
+    ]
+}

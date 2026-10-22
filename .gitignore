@@ -29,3 +29,6 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal

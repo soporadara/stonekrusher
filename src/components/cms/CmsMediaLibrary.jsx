@@ -1,18 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-export default function CmsMediaLibrary({ csrfToken }) {
+export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectMedia }) {
+  const [viewMode, setViewMode] = useState('manager'); // 'manager' (live iframe) | 'grid' (native grid)
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const iframeRef = useRef(null);
+
+  // Native Grid State
   const [mediaList, setMediaList] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [editAlt, setEditAlt] = useState('');
   const [editCaption, setEditCaption] = useState('');
-  const [deleteWarning, setDeleteWarning] = useState(null);
+  const [copiedUrl, setCopiedUrl] = useState('');
+
+  const handleRefresh = () => {
+    setIframeKey(prev => prev + 1);
+    if (viewMode === 'grid') {
+      fetchMedia();
+    }
+  };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
 
   const fetchMedia = async () => {
     setLoading(true);
@@ -34,8 +50,10 @@ export default function CmsMediaLibrary({ csrfToken }) {
   };
 
   useEffect(() => {
-    fetchMedia();
-  }, [page]);
+    if (viewMode === 'grid') {
+      fetchMedia();
+    }
+  }, [page, viewMode]);
 
   const handleUpload = async (e) => {
     const files = e.target.files;
@@ -64,68 +82,13 @@ export default function CmsMediaLibrary({ csrfToken }) {
     }
     setUploading(false);
     fetchMedia();
+    setIframeKey(prev => prev + 1);
   };
 
-  const handleSelectMedia = (item) => {
-    setSelectedItem(item);
-    setEditAlt(item.alt_text || '');
-    setEditCaption(item.caption || '');
-  };
-
-  const handleSaveMeta = async () => {
-    if (!selectedItem) return;
-    try {
-      const res = await fetch('/api/cms.php?action=media_save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({
-          id: selectedItem.id,
-          alt_text: editAlt,
-          caption: editCaption
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert('Media details updated.');
-        fetchMedia();
-      }
-    } catch (err) {
-      alert('Failed to update media');
-    }
-  };
-
-  const handleDeleteMedia = async (force = false) => {
-    if (!selectedItem) return;
-    try {
-      const res = await fetch('/api/cms.php?action=media_delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({
-          id: selectedItem.id,
-          force: force ? 1 : 0
-        })
-      });
-      const data = await res.json();
-      if (res.status === 409 && data.requires_confirmation) {
-        setDeleteWarning(data.error);
-        return;
-      }
-      if (data.success) {
-        setSelectedItem(null);
-        setDeleteWarning(null);
-        fetchMedia();
-      } else {
-        alert(data.error || 'Failed to delete media');
-      }
-    } catch (err) {
-      alert('Error deleting media');
-    }
+  const handleCopyUrl = (url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    setTimeout(() => setCopiedUrl(''), 2500);
   };
 
   const formatBytes = (bytes) => {
@@ -137,242 +100,187 @@ export default function CmsMediaLibrary({ csrfToken }) {
   };
 
   return (
-    <div>
-      <div className="cms-section-header">
-        <div className="cms-section-title-group">
-          <h1>Media Asset Library</h1>
-          <p>Organize, optimize, and reuse photos for blog articles and equipment catalog</p>
+    <div className={`cms-media-suite ${isFullscreen ? 'is-fullscreen' : ''}`}>
+      {/* Top Header & Controls bar matching Rafelblog Media/Index.tsx */}
+      <div className="cms-card cms-media-header-card">
+        <div className="cms-media-header-left">
+          <div className="cms-media-icon-badge">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+              <line x1="2" y1="10" x2="22" y2="10" />
+            </svg>
+          </div>
+          <div>
+            <div className="cms-media-title-row">
+              <h1 className="cms-media-title">Media Library</h1>
+              <span className="cms-badge-emerald">Live File Manager</span>
+            </div>
+            <p className="cms-media-subtitle">
+              Upload assets, organize folders, convert WebP, and copy direct article links
+            </p>
+          </div>
         </div>
-        <div className="cms-section-actions">
-          <label className="cms-btn cms-btn-primary" style={{ cursor: 'pointer' }}>
-            <span>📤</span> {uploading ? 'Uploading...' : 'Upload Media'}
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              style={{ display: 'none' }}
-              disabled={uploading}
-              onChange={handleUpload}
-            />
-          </label>
+
+        <div className="cms-media-header-actions">
+          {/* Mode Switcher */}
+          {!isPicker && (
+            <div className="cms-media-mode-pills">
+              <button
+                type="button"
+                className={`cms-media-mode-pill ${viewMode === 'manager' ? 'active' : ''}`}
+                onClick={() => setViewMode('manager')}
+                title="Live File Manager with Folders & WebP Tools"
+              >
+                📁 Live Manager
+              </button>
+              <button
+                type="button"
+                className={`cms-media-mode-pill ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setViewMode('grid')}
+                title="Visual Asset Grid"
+              >
+                🖼️ Grid View
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="cms-btn cms-btn-secondary cms-btn-sm"
+            onClick={handleRefresh}
+            title="Reload File Manager"
+          >
+            🔄 Refresh
+          </button>
+
+          <button
+            type="button"
+            className="cms-btn cms-btn-secondary cms-btn-sm"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? '🗗 Minimize' : '🗖 Fullscreen'}
+          </button>
+
+          <a
+            href="/medialibrary/index.php"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cms-btn cms-btn-primary cms-btn-sm"
+            title="Open in standalone window"
+          >
+            ↗ Open Standalone
+          </a>
         </div>
       </div>
 
-      {/* TOOLBAR */}
-      <div className="cms-table-wrapper" style={{ marginBottom: '20px' }}>
-        <div className="cms-table-toolbar">
-          <div className="cms-table-search">
-            <span className="cms-table-search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search filename or alt text..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchMedia()}
-            />
-          </div>
-
-          <div className="cms-table-filters">
-            <button
-              className={`cms-btn ${viewMode === 'grid' ? 'cms-btn-primary' : 'cms-btn-secondary'} cms-btn-sm`}
-              onClick={() => setViewMode('grid')}
-            >
-              Grid
-            </button>
-            <button
-              className={`cms-btn ${viewMode === 'list' ? 'cms-btn-primary' : 'cms-btn-secondary'} cms-btn-sm`}
-              onClick={() => setViewMode('list')}
-            >
-              List
-            </button>
-            <button className="cms-btn cms-btn-secondary cms-btn-sm" onClick={fetchMedia}>
-              Refresh
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* MEDIA GRID / LIST VIEW */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--cms-text-muted)' }}>
-          Loading media assets...
-        </div>
-      ) : mediaList.length === 0 ? (
-        <div className="cms-card" style={{ textAlign: 'center', padding: '60px' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🖼️</div>
-          <h3 style={{ margin: '0 0 6px' }}>Media Library Empty</h3>
-          <p style={{ color: 'var(--cms-text-muted)', fontSize: '0.86rem', margin: 0 }}>
-            Upload machinery photographs, diagrams, and article covers to get started.
-          </p>
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-          {mediaList.map((m) => (
-            <div
-              key={m.id}
-              onClick={() => handleSelectMedia(m)}
-              className="cms-card"
-              style={{
-                padding: '8px',
-                cursor: 'pointer',
-                borderColor: selectedItem?.id === m.id ? 'var(--cms-primary)' : 'var(--cms-card-border)'
-              }}
-            >
-              <div style={{ width: '100%', height: '120px', background: 'var(--cms-bg)', borderRadius: '6px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img
-                  src={m.filepath}
-                  alt={m.alt_text || ''}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-              <div style={{ padding: '6px 4px 0' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {m.original_name || m.filename}
-                </div>
-                <div style={{ fontSize: '0.68rem', color: 'var(--cms-text-subtle)' }}>
-                  {formatBytes(m.file_size)} {m.dimensions ? `· ${m.dimensions}` : ''}
-                </div>
-              </div>
+      {/* VIEW 1: EMBEDDED LIVE FILE MANAGER (TINYFILEMANAGER / RAFELBLOG MEDIA SUITE) */}
+      {(viewMode === 'manager' || isPicker) && (
+        <div className={`cms-card cms-media-iframe-card ${isFullscreen ? 'fullscreen-frame' : ''}`}>
+          <iframe
+            key={iframeKey}
+            ref={iframeRef}
+            src="/medialibrary/index.php"
+            title="StoneKrusher Media File Manager"
+            className="cms-media-iframe"
+            allow="clipboard-read; clipboard-write; fullscreen"
+          />
+          {isPicker && (
+            <div className="cms-media-picker-helper">
+              <span>💡 Tip:</span> Copy the image link or upload images in the folders above, then paste the URL into your article cover image or content.
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="cms-table-wrapper" style={{ marginBottom: '24px' }}>
-          <div className="cms-table-responsive">
-            <table className="cms-table">
-              <thead>
-                <tr>
-                  <th>Preview</th>
-                  <th>Original Name</th>
-                  <th>MIME Type</th>
-                  <th>Dimensions</th>
-                  <th>File Size</th>
-                  <th>Date Uploaded</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mediaList.map((m) => (
-                  <tr key={m.id} onClick={() => handleSelectMedia(m)} style={{ cursor: 'pointer' }}>
-                    <td>
-                      <img src={m.filepath} alt="" style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '4px' }} />
-                    </td>
-                    <td style={{ fontWeight: '600' }}>{m.original_name || m.filename}</td>
-                    <td><code>{m.mime_type}</code></td>
-                    <td>{m.dimensions || '—'}</td>
-                    <td>{formatBytes(m.file_size)}</td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--cms-text-subtle)' }}>
-                      {new Date(m.created_at * 1000).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          )}
         </div>
       )}
 
-      {/* PAGINATION */}
-      {totalPages > 1 && (
-        <div className="cms-pagination" style={{ background: 'var(--cms-card-bg)', borderRadius: 'var(--cms-radius-lg)', marginBottom: '24px' }}>
-          <div>Showing {mediaList.length} of {total} assets</div>
-          <div className="cms-page-controls">
-            <button className="cms-btn cms-btn-secondary cms-btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
-            <span style={{ padding: '0 8px', fontWeight: '600' }}>Page {page} of {totalPages}</span>
-            <button className="cms-btn cms-btn-secondary cms-btn-sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
-          </div>
-        </div>
-      )}
-
-      {/* INSPECTOR MODAL */}
-      {selectedItem && (
-        <div className="cms-modal-backdrop">
-          <div className="cms-modal" style={{ maxWidth: '580px' }}>
-            <div className="cms-modal-header">
-              <h3>Media Details</h3>
-              <button className="cms-btn-icon cms-btn-secondary" onClick={() => setSelectedItem(null)}>✕</button>
+      {/* VIEW 2: NATIVE ASSET GRID (Fast thumbnail gallery with metadata) */}
+      {viewMode === 'grid' && !isPicker && (
+        <div className="cms-media-grid-view">
+          {/* Upload / Filter Bar */}
+          <div className="cms-card cms-media-toolbar-card">
+            <div className="cms-search-box" style={{ flex: 1, maxWidth: '400px' }}>
+              <span className="cms-search-icon">🔍</span>
+              <input
+                type="text"
+                className="cms-search-input"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') fetchMedia(); }}
+                placeholder="Search images by filename or alt text..."
+              />
             </div>
-            <div className="cms-modal-body">
-              <div style={{ textAlign: 'center', marginBottom: '18px', background: 'var(--cms-bg)', padding: '16px', borderRadius: '8px' }}>
-                <img
-                  src={selectedItem.filepath}
-                  alt=""
-                  style={{ maxWidth: '100%', maxHeight: '240px', objectFit: 'contain' }}
-                />
-              </div>
 
-              {deleteWarning && (
-                <div style={{ padding: '12px', background: 'var(--cms-danger-bg)', color: 'var(--cms-danger)', borderRadius: 'var(--cms-radius-md)', marginBottom: '14px', fontSize: '0.84rem' }}>
-                  ⚠️ {deleteWarning}
-                  <div style={{ marginTop: '8px' }}>
-                    <button className="cms-btn cms-btn-danger cms-btn-sm" onClick={() => handleDeleteMedia(true)}>
-                      Force Delete Anyway
-                    </button>
+            <label className="cms-btn cms-btn-primary" style={{ cursor: 'pointer' }}>
+              <span>📤</span> {uploading ? 'Uploading...' : 'Upload Photos'}
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleUpload}
+                disabled={uploading}
+              />
+            </label>
+          </div>
+
+          {/* Grid Container */}
+          <div className="cms-media-grid-container">
+            {loading ? (
+              <div className="cms-media-empty">Loading media assets...</div>
+            ) : mediaList.length === 0 ? (
+              <div className="cms-media-empty">
+                <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🖼️</div>
+                <div style={{ fontWeight: '600' }}>No assets found in native catalog</div>
+                <p style={{ fontSize: '0.84rem', marginTop: '4px' }}>
+                  Switch to "Live Manager" above to browse the full file directory, or upload a photo.
+                </p>
+              </div>
+            ) : (
+              <div className="cms-media-grid">
+                {mediaList.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`cms-media-card ${selectedItem?.id === item.id ? 'is-selected' : ''}`}
+                    onClick={() => {
+                      if (onSelectMedia) {
+                        onSelectMedia(item.filepath);
+                      } else {
+                        setSelectedItem(item);
+                        setEditAlt(item.alt_text || '');
+                        setEditCaption(item.caption || '');
+                      }
+                    }}
+                  >
+                    <div className="cms-media-thumb-wrap">
+                      <img src={item.filepath} alt={item.alt_text || item.original_name} loading="lazy" />
+                    </div>
+                    <div className="cms-media-card-info">
+                      <div className="cms-media-card-name" title={item.original_name}>
+                        {item.original_name}
+                      </div>
+                      <div className="cms-media-card-size">
+                        {formatBytes(item.file_size)} • {item.dimensions || 'image'}
+                      </div>
+                    </div>
+                    <div className="cms-media-card-actions">
+                      <button
+                        type="button"
+                        className="cms-media-copy-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyUrl(item.filepath);
+                        }}
+                      >
+                        {copiedUrl === item.filepath ? '✓ Copied' : '📋 Copy URL'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.82rem', marginBottom: '16px' }}>
-                <div><strong>File size:</strong> {formatBytes(selectedItem.file_size)}</div>
-                <div><strong>Dimensions:</strong> {selectedItem.dimensions || 'Vector / Unknown'}</div>
-                <div><strong>MIME type:</strong> {selectedItem.mime_type}</div>
-                <div><strong>Uploaded:</strong> {new Date(selectedItem.created_at * 1000).toLocaleString()}</div>
+                ))}
               </div>
-
-              <div className="cms-form-group">
-                <label>Direct URL</label>
-                <input
-                  type="text"
-                  className="cms-input"
-                  readOnly
-                  value={selectedItem.filepath}
-                  onClick={(e) => { e.target.select(); navigator.clipboard.writeText(selectedItem.filepath); alert('URL copied to clipboard!'); }}
-                  style={{ fontSize: '0.8rem', cursor: 'copy' }}
-                />
-              </div>
-
-              <div className="cms-form-group">
-                <label>Alt Text (SEO & Accessibility)</label>
-                <input
-                  type="text"
-                  className="cms-input"
-                  value={editAlt}
-                  onChange={(e) => setEditAlt(e.target.value)}
-                  placeholder="Describe image for screen readers and SEO..."
-                />
-              </div>
-
-              <div className="cms-form-group">
-                <label>Caption</label>
-                <input
-                  type="text"
-                  className="cms-input"
-                  value={editCaption}
-                  onChange={(e) => setEditCaption(e.target.value)}
-                  placeholder="Optional display caption..."
-                />
-              </div>
-            </div>
-
-            <div className="cms-modal-footer">
-              <button
-                type="button"
-                className="cms-btn cms-btn-danger"
-                onClick={() => handleDeleteMedia(false)}
-              >
-                Delete File
-              </button>
-              <button
-                type="button"
-                className="cms-btn cms-btn-primary"
-                onClick={handleSaveMeta}
-              >
-                Save Changes
-              </button>
-            </div>
+            )}
           </div>
         </div>
       )}
-
     </div>
   );
 }

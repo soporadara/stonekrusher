@@ -1,0 +1,23 @@
+# Disable directory listing
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Deny direct access to any hidden files/folders (starting with .)
+    RewriteRule ^\. - [F,L]
+
+    # Deny direct access to features and backup internal directories
+    RewriteRule ^features(/.*)?$ - [F,L]
+    RewriteRule ^backup(/.*)?$ - [F,L]
+</IfModule>
+
+# Block sensitive file extensions from being directly downloaded
+<FilesMatch "(\.(sqlite|sqlite3|db|json|log|bak|lock|env)|^\.)">
+    Require all denied
+</FilesMatch>
+
+# Block direct access to internal PHP libraries and feature scripts
+<FilesMatch "^(feature_db|folder_meta|properties|duplicate_finder|image_replace|version_history|ai_bg_remove|sorting|storage_dashboard|config|lib)\.php$">
+    Require all denied
+</FilesMatch>
