@@ -7,3 +7,9 @@ RewriteRule ^ - [L]
 
 # Let the React app resolve clean routes such as /blog/article-slug/.
 RewriteRule ^ index.html [L]
+
+# Private CMS entry point: never index it (header-based, so the slug is not listed in robots.txt).
+<IfModule mod_headers.c>
+  SetEnvIf Request_URI "^/ourcmskiuq" CMS_NOINDEX
+  Header set X-Robots-Tag "noindex, nofollow, noarchive" env=CMS_NOINDEX
+</IfModule>

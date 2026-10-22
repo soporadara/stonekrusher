@@ -2036,13 +2036,21 @@ const CLEAN_VIEW_PATHS = {
   contact: '/contact/',
   cart: '/cart/',
   store: '/store/',
-  'admin-blog': '/admin/blog/',
-  'store-data': '/admin/products/',
-  admin: '/admin/'
+  'admin-blog': '/ourcmskiuq/'
 };
 
-const getViewFromCleanPath = (pathname) => (
-  Object.entries(CLEAN_VIEW_PATHS).find(([, path]) => path === pathname)?.[0] || null
+// Private CMS entry point. Not linked anywhere on the public site and not listed in robots.txt/sitemap.
+const CMS_PATH_PATTERN = /^\/ourcmskiuq\/?$/;
+// Legacy admin view names must never be reachable through ?page=... query strings.
+const LEGACY_ADMIN_VIEWS = ['admin', 'admin-blog', 'store-data'];
+
+const getViewFromCleanPath = (pathname) => {
+  if (CMS_PATH_PATTERN.test(pathname)) return 'admin-blog';
+  return Object.entries(CLEAN_VIEW_PATHS).find(([, path]) => path === pathname)?.[0] || null;
+};
+
+const getRequestedPageParam = (value) => (
+  value && LEGACY_ADMIN_VIEWS.includes(value) ? null : value
 );
 
 const normalizeBlogCategory = (value) => (
@@ -2786,7 +2794,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState(() => {
     const pathname = window.location.pathname;
     if (pathname.match(/^\/blog\/[^/]+\/?$/)) return 'blog-post';
-    return getViewFromCleanPath(pathname) || new URLSearchParams(window.location.search).get('page') || 'home';
+    return getViewFromCleanPath(pathname) || getRequestedPageParam(new URLSearchParams(window.location.search).get('page')) || 'home';
   });
   const [inventorySearchQuery, setInventorySearchQuery] = useState('');
   const [inventorySortBy, setInventorySortBy] = useState('newest');
@@ -5108,7 +5116,7 @@ export default function App() {
       const cleanStoreSlug = cleanStoreMatch ? decodeURIComponent(cleanStoreMatch[1]) : null;
       const cleanPathView = getViewFromCleanPath(window.location.pathname);
       const equipmentRoute = getEquipmentRoute(window.location.pathname);
-      const requestedPageView = params.get('page');
+      const requestedPageView = getRequestedPageParam(params.get('page'));
       const requestedView = cleanBlogSlug
         ? 'blog-post'
         : cleanProductSlug
@@ -5495,7 +5503,7 @@ export default function App() {
     } else if (currentView === 'admin-blog') {
       title = 'Blog Admin Dashboard | KONSTRUCTZ';
       description = 'Create, edit, and manage KONSTRUCTZ blog posts.';
-      canonicalPath = '/admin/blog/';
+      canonicalPath = '/ourcmskiuq/';
       robotsContent = 'noindex, nofollow';
     } else if (currentView === 'topic') {
       if (activeTopicCategory === 'Machines') {
@@ -5573,7 +5581,7 @@ export default function App() {
     } else if (currentView === 'store-data') {
       title = 'Product Data Store | KONSTRUCTZ Admin';
       description = 'Internal product CSV upload and preview utility for KONSTRUCTZ product data.';
-      canonicalPath = '/admin/products/';
+      canonicalPath = '/ourcmskiuq/';
       robotsContent = 'noindex, nofollow';
     }
 
@@ -6135,11 +6143,11 @@ export default function App() {
     }
   ];
 
-  if (currentView === 'admin-blog' || currentView === 'admin' || currentView === 'store-data') {
+  if (currentView === 'admin-blog') {
     return (
       <CmsApp
         onBackToSite={() => navigate('home')}
-        initialTab={currentView === 'store-data' ? 'products' : 'overview'}
+        initialTab="overview"
       />
     );
   }
@@ -12706,7 +12714,6 @@ export default function App() {
             <a href="/#products" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#products'; }}>Products</a>
             <a href="?page=support" onClick={(e) => { e.preventDefault(); navigate('support'); }}>Support</a>
             <a href="/#faq" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#faq'; }}>FAQ</a>
-            <a href="/admin/" onClick={(e) => { e.preventDefault(); navigate('admin-blog'); }}>Admin Console</a>
           </div>
 
           <div className="footer-links-col">

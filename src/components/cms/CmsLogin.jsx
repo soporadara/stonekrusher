@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
 export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
-  const [identifier, setIdentifier] = useState('admin');
-  const [password, setPassword] = useState('Admin@StoneKrusher2026!');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
