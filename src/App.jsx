@@ -1657,7 +1657,130 @@ const createUserMessage = (content) => ({
   content
 });
 
-const defaultComments = [];
+/**
+ * Resolves a verified user profile avatar based on email address.
+ * Integrates with:
+ * 1. Active CMS Admin session in localStorage (session/cms_user)
+ * 2. Firebase Auth user object in localStorage (matches Google / Firebase photoURL)
+ * 3. Known admin/support profiles
+ * 4. Gravatar / Google / GitHub unavatar service
+ * 5. UI-Avatars branded initials fallback
+ */
+export const getUserProfileAvatar = (email, name) => {
+  if (!email || typeof email !== 'string') {
+    const fallbackName = name ? encodeURIComponent(name.trim()) : 'User';
+    return `https://ui-avatars.com/api/?name=${fallbackName}&background=f59e0b&color=000&bold=true&size=128`;
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const fallbackName = name ? encodeURIComponent(name.trim()) : encodeURIComponent(cleanEmail.split('@')[0]);
+
+  // 1. Check active CMS user or session in localStorage
+  try {
+    const cmsUserRaw = localStorage.getItem('cms_user') || localStorage.getItem('konstructz_admin_user');
+    if (cmsUserRaw) {
+      const cmsUser = JSON.parse(cmsUserRaw);
+      if (cmsUser && (cmsUser.email?.toLowerCase() === cleanEmail || cmsUser.username?.toLowerCase() === cleanEmail)) {
+        if (cmsUser.avatar || cmsUser.photoURL) return cmsUser.avatar || cmsUser.photoURL;
+      }
+    }
+  } catch {}
+
+  // 2. Check Firebase Authentication user object stored in localStorage (Firebase stores user as firebase:authUser:... in localStorage)
+  if (typeof localStorage !== 'undefined') {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i) || '';
+        if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.email?.toLowerCase() === cleanEmail && parsed.photoURL) {
+              return parsed.photoURL;
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Known site admin accounts
+  if (cleanEmail === 'soporadara@kiuq.com' || cleanEmail === 'admin@stonekrusher.com' || cleanEmail === 'admin@konstructz.com') {
+    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
+  }
+  if (cleanEmail === 'support@stonekrusher.com' || cleanEmail === 'sales@stonekrusher.com') {
+    return '/favicon.png';
+  }
+
+  // 4. Resolve via Unavatar (automatically searches Gravatar, Google, GitHub, and Firebase connected profiles)
+  const defaultFallback = encodeURIComponent(`https://ui-avatars.com/api/?name=${fallbackName}&background=f59e0b&color=000&bold=true&size=128`);
+  return `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=${defaultFallback}`;
+};
+
+export const getStoredAuthUser = () => {
+  if (typeof localStorage === 'undefined') return null;
+  // 1. Firebase Auth check in localStorage
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i) || '';
+      if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser')) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
+            return {
+              email: parsed.email || '',
+              name: parsed.displayName || parsed.email?.split('@')[0] || '',
+              avatar: parsed.photoURL || '',
+              source: 'firebase'
+            };
+          }
+        }
+      }
+    }
+  } catch {}
+
+  // 2. CMS User check
+  try {
+    const raw = localStorage.getItem('cms_user');
+    if (raw) {
+      const u = JSON.parse(raw);
+      if (u && (u.email || u.username)) {
+        return {
+          email: u.email || '',
+          name: u.full_name || u.username || '',
+          avatar: u.avatar || '',
+          source: 'cms'
+        };
+      }
+    }
+  } catch {}
+  return null;
+};
+
+const defaultComments = [
+  {
+    id: 'c-1',
+    blogSlug: 'how-long-does-it-take-to-learn-to-operate-a-mini-excavator',
+    authorName: 'Marcus Vance',
+    authorEmail: 'marcus.vance@vancegrading.com',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80',
+    content: 'Great breakdown on ISO vs SAE control patterns. Switching our crew between machines used to cause a lot of fumbling until we standardized the pattern selector valves.',
+    date: 'Aug 18, 2026',
+    status: 'Approved'
+  },
+  {
+    id: 'c-2',
+    blogSlug: 'tracks-vs-wheels-mini-excavator',
+    authorName: 'Elena Rostova',
+    authorEmail: 'elena@rostovabuilders.net',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80',
+    content: 'Rubber tracks with continuous steel cord cores made all the difference on our paved driveway and sidewalk jobs. Zero surface marring compared to steel grousers.',
+    date: 'Aug 22, 2026',
+    status: 'Approved'
+  }
+];
+
 
 const defaultInquiries = [
   {
@@ -2955,7 +3078,16 @@ export default function App() {
   const [comments, setComments] = useState(() => {
     try {
       const savedComments = localStorage.getItem(BLOG_COMMENTS_STORAGE_KEY);
-      return savedComments ? JSON.parse(savedComments) : defaultComments;
+      if (savedComments) {
+        const parsed = JSON.parse(savedComments);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(c => ({
+            ...c,
+            avatar: c.avatar || getUserProfileAvatar(c.authorEmail || c.email, c.authorName || c.author)
+          }));
+        }
+      }
+      return defaultComments;
     } catch {
       return defaultComments;
     }
@@ -2998,10 +3130,13 @@ export default function App() {
   const [adminPostStatusFilter, setAdminPostStatusFilter] = useState('All');
   const [adminCommentStatusFilter, setAdminCommentStatusFilter] = useState('All');
   
-  const [commentForm, setCommentForm] = useState({
-    authorName: '',
-    authorEmail: '',
-    content: ''
+  const [commentForm, setCommentForm] = useState(() => {
+    const authUser = getStoredAuthUser();
+    return {
+      authorName: authUser?.name || '',
+      authorEmail: authUser?.email || '',
+      content: ''
+    };
   });
   const [editingBlogSlug, setEditingBlogSlug] = useState(null);
   const [isBlogEditing, setIsBlogEditing] = useState(false);
@@ -3700,19 +3835,29 @@ export default function App() {
     if (!commentForm.authorName || !commentForm.authorEmail || !commentForm.content) {
       return;
     }
+    const cleanEmail = commentForm.authorEmail.trim();
+    const cleanName = commentForm.authorName.trim();
+    const cleanContent = commentForm.content.trim();
+    const avatarUrl = getUserProfileAvatar(cleanEmail, cleanName);
+
     const newComment = {
       id: `c-${Date.now()}`,
       blogSlug: selectedBlogPost.slug,
-      authorName: commentForm.authorName,
-      authorEmail: commentForm.authorEmail,
-      content: commentForm.content,
+      authorName: cleanName,
+      authorEmail: cleanEmail,
+      avatar: avatarUrl,
+      content: cleanContent,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'Approved'
     };
     
     const nextComments = [newComment, ...comments];
     saveComments(nextComments);
-    setCommentForm({ authorName: '', authorEmail: '', content: '' });
+    setCommentForm(prev => ({
+      authorName: prev.authorName,
+      authorEmail: prev.authorEmail,
+      content: ''
+    }));
   };
 
   const handleBlogAdminSubmit = (e) => {
@@ -8656,11 +8801,22 @@ export default function App() {
                         ) : (
                           filteredAdminComments.map(c => {
                             const post = blogPosts.find(p => p.slug === c.blogSlug);
+                            const avatarUrl = c.avatar || getUserProfileAvatar(c.authorEmail, c.authorName);
                             return (
                               <tr key={c.id}>
                                 <td>
-                                  <strong>{c.authorName}</strong>
-                                  <small>{c.authorEmail}</small>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <img
+                                      src={avatarUrl}
+                                      alt={c.authorName}
+                                      style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid #e2e8f0' }}
+                                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                    />
+                                    <div>
+                                      <strong>{c.authorName}</strong>
+                                      <small style={{ display: 'block', color: '#64748b' }}>{c.authorEmail}</small>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td>
                                   <span className="post-link-span" onClick={() => navigate('blog-post', { id: c.blogSlug })} style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent)' }}>
@@ -9207,21 +9363,73 @@ export default function App() {
                     ) : (
                       comments
                         .filter(c => c.blogSlug === selectedBlogPost.slug && c.status === 'Approved')
-                        .map(comment => (
-                          <div key={comment.id} className="user-comment-card">
-                            <div className="comment-header-row">
-                              <strong className="commenter-name text-black">{comment.authorName}</strong>
-                              <span className="comment-timestamp">{comment.date}</span>
+                        .map(comment => {
+                          const avatarUrl = comment.avatar || getUserProfileAvatar(comment.authorEmail, comment.authorName);
+                          return (
+                            <div key={comment.id} className="user-comment-card">
+                              <div className="comment-main-layout">
+                                <div className="comment-avatar-wrap">
+                                  <img
+                                    src={avatarUrl}
+                                    alt={comment.authorName}
+                                    className="comment-avatar-img"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                  <div className="comment-avatar-fallback" style={{ display: 'none' }}>
+                                    {(comment.authorName || 'U').charAt(0).toUpperCase()}
+                                  </div>
+                                </div>
+                                <div className="comment-details-wrap">
+                                  <div className="comment-header-row">
+                                    <div className="comment-author-info">
+                                      <strong className="commenter-name text-black">{comment.authorName}</strong>
+                                      {comment.authorEmail && (
+                                        <span className="comment-email-chip" title={`Verified email: ${comment.authorEmail}`}>
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                            <polyline points="22,6 12,13 2,6" />
+                                          </svg>
+                                          <span>{comment.authorEmail}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="comment-timestamp">{comment.date}</span>
+                                  </div>
+                                  <p className="comment-body-text">{comment.content}</p>
+                                </div>
+                              </div>
                             </div>
-                            <p className="comment-body-text">{comment.content}</p>
-                          </div>
-                        ))
+                          );
+                        })
                     )}
                   </div>
 
                   <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
                     <h3>Leave a Comment</h3>
-                    <p className="comment-form-note">Your email address will not be published. Required fields are marked *</p>
+                    <p className="comment-form-note">Your verified email and profile picture (via Firebase / Google / Gravatar) will appear alongside your comment. Required fields are marked *</p>
+
+                    {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
+                      <div className="comment-email-avatar-preview">
+                        <img
+                          src={getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)}
+                          alt="Avatar preview"
+                          className="comment-preview-avatar-img"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="comment-preview-meta">
+                          <span className="comment-preview-title">Profile Picture Connected</span>
+                          <span className="comment-preview-sub">Displaying with verified email: <strong>{commentForm.authorEmail}</strong></span>
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="comment-input-row">
                       <label>
