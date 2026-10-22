@@ -302,7 +302,7 @@ def main():
 
     # Dry-run analysis
     log_info("Analyzing file differences between local dist and production...")
-    dry_run_cmd = ["rsync", "-avzn", "--delete", "-e", rsync_e] + rsync_excludes + ["dist/", target_destination]
+    dry_run_cmd = ["rsync", "-avzn", "--delete", "--chmod=D755,F644", "-e", rsync_e] + rsync_excludes + ["dist/", target_destination]
     try:
         diff_output = run_cmd(dry_run_cmd, capture=True)
         changed_files = [line for line in diff_output.splitlines() if line and not line.startswith("sending") and not line.startswith("total") and line != "./"]
@@ -330,7 +330,7 @@ def main():
 
     if not args.source_only:
         log_info("Uploading compiled frontend and static pages...")
-        live_sync_cmd = ["rsync", "-avz", "--delete", "-e", rsync_e] + rsync_excludes + ["dist/", target_destination]
+        live_sync_cmd = ["rsync", "-avz", "--delete", "--chmod=D755,F644", "-e", rsync_e] + rsync_excludes + ["dist/", target_destination]
         run_cmd(live_sync_cmd, capture=True)
 
         log_info("Ensuring PHP endpoints, API, and .htaccess are in sync...")
@@ -342,7 +342,7 @@ def main():
         ]
         for src, dest in backend_files:
             if os.path.exists(os.path.join(project_root, src)):
-                run_cmd(["rsync", "-avz", "-e", rsync_e, src, f"{SSH_USER}@{SSH_HOST}:{dest}"], capture=True)
+                run_cmd(["rsync", "-avz", "--chmod=D755,F644", "-e", rsync_e, src, f"{SSH_USER}@{SSH_HOST}:{dest}"], capture=True)
 
         log_success("All public web files successfully transferred to Hostinger public_html!")
 
