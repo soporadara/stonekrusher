@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
 import './cms.css';
-import './cms-vuexy.css';
 
 import CmsLogin from './CmsLogin';
 import CmsDashboard from './CmsDashboard';
-import CmsCrmLeads from './CmsCrmLeads';
-import CmsSupportTracker from './CmsSupportTracker';
-import CmsSeoSuite from './CmsSeoSuite';
-import CmsCommandPalette from './CmsCommandPalette';
 import CmsBlogManager from './CmsBlogManager';
 import CmsCategoryManager from './CmsCategoryManager';
 import CmsProductManager from './CmsProductManager';
@@ -29,7 +24,6 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'dark');
   const [editingPostId, setEditingPostId] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Verify Current Session
   useEffect(() => {
@@ -63,18 +57,6 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     localStorage.setItem('cms_theme', theme);
   }, [theme]);
 
-  // Global Command Palette Shortcut (Ctrl+K or Cmd+K)
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        setShowCommandPalette((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
@@ -100,15 +82,6 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     setActiveTab('posts');
   };
 
-  const handleNavigate = (tab) => {
-    if (tab === 'posts_new') {
-      setEditingPostId(null);
-      setActiveTab('posts');
-    } else {
-      setActiveTab(tab);
-    }
-  };
-
   if (authChecking) {
     return (
       <div className={`cms-root cms-theme-${theme}`} style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -128,40 +101,20 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     );
   }
 
-  const navSections = [
-    {
-      group: 'Dashboards',
-      items: [
-        { id: 'overview', label: 'Analytics', icon: '📊', badge: 'Live' },
-        { id: 'crm', label: 'CRM & Quotes', icon: '💼', badge: 'New' },
-        { id: 'support', label: 'Support Tracker', icon: '🎧' },
-        { id: 'seo', label: 'SEO & Indexing', icon: '🔍' },
-      ]
-    },
-    {
-      group: 'Apps & Content',
-      items: [
-        { id: 'posts', label: 'Blog Articles', icon: '📝' },
-        { id: 'categories', label: 'Categories & Topics', icon: '🏷️' },
-        { id: 'products', label: 'Machinery Catalog', icon: '🚜' },
-        { id: 'media', label: 'Media Library', icon: '🖼️' },
-      ]
-    },
-    {
-      group: 'System & Governance',
-      items: [
-        { id: 'security', label: 'Security Center', icon: '🛡️' },
-        { id: 'users', label: 'Users & Roles', icon: '👥' },
-        { id: 'settings', label: 'Configuration', icon: '⚙️' },
-      ]
-    }
+  const navItems = [
+    { id: 'overview', label: 'Dashboard', icon: '📊', group: 'Core' },
+    { id: 'posts', label: 'Blog Articles', icon: '📝', group: 'Content' },
+    { id: 'categories', label: 'Categories & Topics', icon: '🏷️', group: 'Content' },
+    { id: 'products', label: 'Machinery Catalog', icon: '🚜', group: 'Catalog' },
+    { id: 'media', label: 'Media Library', icon: '🖼️', group: 'Assets' },
+    { id: 'security', label: 'Security Center', icon: '🛡️', group: 'Governance' },
+    { id: 'users', label: 'Users & Roles', icon: '👥', group: 'Governance' },
+    { id: 'settings', label: 'CMS Configuration', icon: '⚙️', group: 'System' },
   ];
-
-  const allNavItems = navSections.flatMap(s => s.items);
 
   return (
     <div className={`cms-root cms-theme-${theme}`}>
-      
+
       {/* SIDEBAR NAVIGATION */}
       <aside className={`cms-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileDrawerOpen ? 'mobile-open' : ''}`}>
         <div className="cms-sidebar-header">
@@ -184,29 +137,19 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         </div>
 
         <nav className="cms-sidebar-nav">
-          {navSections.map((sec, sIdx) => (
-            <div key={sec.group || sIdx} className="cms-sidebar-group">
-              {!sidebarCollapsed && (
-                <div className="cms-sidebar-group-label">{sec.group}</div>
-              )}
-              {sec.items.map((item) => (
-                <button
-                  key={item.id}
-                  className={`cms-nav-item ${activeTab === item.id ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMobileDrawerOpen(false);
-                  }}
-                  title={sidebarCollapsed ? item.label : undefined}
-                >
-                  <span className="cms-nav-icon">{item.icon}</span>
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                  {!sidebarCollapsed && item.badge && (
-                    <span className="cms-nav-badge">{item.badge}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              className={`cms-nav-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveTab(item.id);
+                setMobileDrawerOpen(false);
+              }}
+              title={sidebarCollapsed ? item.label : undefined}
+            >
+              <span className="cms-nav-icon">{item.icon}</span>
+              {!sidebarCollapsed && <span>{item.label}</span>}
+            </button>
           ))}
         </nav>
 
@@ -233,7 +176,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
 
       {/* MAIN VIEWPORT */}
       <div className={`cms-main-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        
+
         {/* TOPBAR */}
         <header className="cms-topbar">
           <div className="cms-topbar-left">
@@ -245,31 +188,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               ☰
             </button>
 
-            {/* Vuexy Topbar Search Input [CTRL + K] */}
-            <div
-              className="cms-vuexy-topbar-search"
-              onClick={() => setShowCommandPalette(true)}
-              role="button"
-              tabIndex={0}
-              title="Click or press Ctrl + K to quick search features and tools"
-              style={{ cursor: 'pointer' }}
-            >
-              <span className="cms-vuexy-search-icon">🔍</span>
-              <input
-                type="text"
-                readOnly
-                placeholder="Search [CTRL + K]..."
-                className="cms-vuexy-search-input"
-                style={{ cursor: 'pointer' }}
-              />
-              <span className="cms-vuexy-search-shortcut">⌘K</span>
-            </div>
-
-            <div className="cms-breadcrumbs" style={{ marginLeft: '12px' }}>
-              <span>StoneKrusher</span>
+            <div className="cms-breadcrumbs">
+              <span>StoneKrusher CMS</span>
               <span>/</span>
               <span className="crumb-active">
-                {allNavItems.find(i => i.id === activeTab)?.label || 'Console'}
+                {navItems.find(i => i.id === activeTab)?.label || 'Console'}
               </span>
             </div>
           </div>
@@ -332,22 +255,16 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         <main className="cms-content">
           {activeTab === 'overview' && (
             <CmsDashboard
-              csrfToken={csrfToken}
-              onNavigateTab={handleNavigate}
+              onNavigateTab={(tab) => {
+                if (tab === 'posts_new') {
+                  setEditingPostId(null);
+                  setActiveTab('posts');
+                } else {
+                  setActiveTab(tab);
+                }
+              }}
               onSelectPost={handleSelectPostFromDashboard}
             />
-          )}
-
-          {activeTab === 'crm' && (
-            <CmsCrmLeads csrfToken={csrfToken} />
-          )}
-
-          {activeTab === 'support' && (
-            <CmsSupportTracker csrfToken={csrfToken} />
-          )}
-
-          {activeTab === 'seo' && (
-            <CmsSeoSuite csrfToken={csrfToken} />
           )}
 
           {activeTab === 'posts' && (
@@ -392,13 +309,6 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         currentUser={currentUser}
         onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
         csrfToken={csrfToken}
-      />
-
-      {/* Vuexy Global Command Palette (CTRL + K) */}
-      <CmsCommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        onNavigateTab={handleNavigate}
       />
     </div>
   );
