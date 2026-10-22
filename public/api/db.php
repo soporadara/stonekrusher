@@ -333,6 +333,42 @@ function ensure_cms_schema_migrated($pdo) {
             created_at BIGINT NOT NULL
         )");
 
+        // 14. Customer Inquiries & CRM Leads Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS cms_inquiries (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(100) NULL,
+            company VARCHAR(255) NULL,
+            machine_model VARCHAR(255) NULL,
+            inquiry_type VARCHAR(100) DEFAULT 'Quote Request',
+            message TEXT NOT NULL,
+            estimated_value DECIMAL(12,2) DEFAULT 0,
+            status VARCHAR(50) DEFAULT 'New',
+            assigned_to VARCHAR(64) NULL,
+            notes TEXT NULL,
+            created_at BIGINT NOT NULL,
+            updated_at BIGINT NOT NULL
+        )");
+
+        // 15. Support & Warranty Tickets Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS cms_support_tickets (
+            id VARCHAR(64) PRIMARY KEY,
+            ticket_number VARCHAR(32) NOT NULL,
+            customer_name VARCHAR(255) NOT NULL,
+            customer_email VARCHAR(255) NOT NULL,
+            equipment_model VARCHAR(255) NULL,
+            serial_number VARCHAR(100) NULL,
+            subject VARCHAR(255) NOT NULL,
+            priority VARCHAR(30) DEFAULT 'Medium',
+            status VARCHAR(50) DEFAULT 'Open',
+            category VARCHAR(100) DEFAULT 'Technical',
+            description TEXT NOT NULL,
+            resolution_notes TEXT NULL,
+            created_at BIGINT NOT NULL,
+            updated_at BIGINT NOT NULL
+        )");
+
         // Create indexes where appropriate
         // MySQL does not support IF NOT EXISTS for indexes, so each one is attempted independently
         $indexStatements = [
@@ -571,6 +607,167 @@ function seed_cms_defaults($pdo) {
                     ]);
                 }
             }
+        }
+    }
+
+    // 7. Seed Sample Inquiries / CRM Leads if empty
+    $inqCountStmt = $pdo->query("SELECT COUNT(*) FROM cms_inquiries");
+    if ((int)$inqCountStmt->fetchColumn() === 0) {
+        $sampleInquiries = [
+            [
+                'id' => 'inq-8491',
+                'name' => 'Michael Vance',
+                'email' => 'm.vance@vanceaggregates.com',
+                'phone' => '+1 (555) 234-8901',
+                'company' => 'Vance Aggregates & Quarry Ltd.',
+                'machine_model' => 'Stone Krusher Jaw Crusher 180',
+                'inquiry_type' => 'RFQ Machinery Quote',
+                'message' => 'Requesting formal quotation for 2 units of Stone Krusher Jaw Crusher 180 with shipping to Houston, TX jobsite.',
+                'estimated_value' => 28450.00,
+                'status' => 'Quoted',
+                'notes' => 'Client requires delivery within 30 days. Sent tier-2 pricing breakdown.',
+                'created_at' => $now - 86400 * 2,
+                'updated_at' => $now - 3600 * 4
+            ],
+            [
+                'id' => 'inq-8492',
+                'name' => 'Carlos Mendez',
+                'email' => 'carlos@mendezterra.br',
+                'phone' => '+55 11 98765-4321',
+                'company' => 'Mendez Mineração & Obras',
+                'machine_model' => 'ThunderDump 180 Track Dumper',
+                'inquiry_type' => 'Fleet Procurement',
+                'message' => 'Interested in 4 units of ThunderDump 180 with Yanmar diesel engine. Please provide export freight terms to Santos Port.',
+                'estimated_value' => 42500.00,
+                'status' => 'Won',
+                'notes' => 'Contract signed. Deposit verified.',
+                'created_at' => $now - 86400 * 4,
+                'updated_at' => $now - 86400 * 1
+            ],
+            [
+                'id' => 'inq-8493',
+                'name' => 'Brett Richardson',
+                'email' => 'brett@richardsonheavy.com.au',
+                'phone' => '+61 2 9876 5432',
+                'company' => 'Richardson Heavy Earthworks',
+                'machine_model' => 'Stomp-V980 Heavy Skid Loader',
+                'inquiry_type' => 'Product Demo & Spec Sheet',
+                'message' => 'Looking to replace aging skid steer fleet with Stomp-V980 units. Need hydraulic flow specs for auger and breaker attachments.',
+                'estimated_value' => 18200.00,
+                'status' => 'Contacted',
+                'notes' => 'Scheduled technical consultation call for tomorrow.',
+                'created_at' => $now - 86400 * 1,
+                'updated_at' => $now - 3600 * 2
+            ],
+            [
+                'id' => 'inq-8494',
+                'name' => 'Sokha Meng',
+                'email' => 'meng.sokha@angkorinfra.kh',
+                'phone' => '+855 12 345 678',
+                'company' => 'Angkor Infrastructure Development',
+                'machine_model' => 'Skoop II Jobsite Wheel Loader',
+                'inquiry_type' => 'Direct Machinery Inquiry',
+                'message' => 'Need pricing and local Phnom Penh warehouse pickup availability for Skoop II Jobsite Wheel Loader.',
+                'estimated_value' => 14800.00,
+                'status' => 'New',
+                'notes' => 'New inbound lead from contact form.',
+                'created_at' => $now - 3600 * 3,
+                'updated_at' => $now - 3600 * 3
+            ]
+        ];
+
+        $stmt = $pdo->prepare("INSERT INTO cms_inquiries (id, name, email, phone, company, machine_model, inquiry_type, message, estimated_value, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        foreach ($sampleInquiries as $inq) {
+            $stmt->execute([
+                $inq['id'],
+                $inq['name'],
+                $inq['email'],
+                $inq['phone'],
+                $inq['company'],
+                $inq['machine_model'],
+                $inq['inquiry_type'],
+                $inq['message'],
+                $inq['estimated_value'],
+                $inq['status'],
+                $inq['notes'],
+                $inq['created_at'],
+                $inq['updated_at']
+            ]);
+        }
+    }
+
+    // 8. Seed Sample Support & Warranty Tickets if empty
+    $tktCountStmt = $pdo->query("SELECT COUNT(*) FROM cms_support_tickets");
+    if ((int)$tktCountStmt->fetchColumn() === 0) {
+        $sampleTickets = [
+            [
+                'id' => 'tkt-8491',
+                'ticket_number' => 'SK-8491',
+                'customer_name' => 'Apex Excavation LLC',
+                'customer_email' => 'fleet@apexexcavation.com',
+                'equipment_model' => 'Stone Krusher Jaw Crusher 180',
+                'serial_number' => 'SK-JC180-2026-042',
+                'subject' => 'Hydraulic pressure calibration question',
+                'priority' => 'Medium',
+                'status' => 'Resolved',
+                'category' => 'Technical',
+                'description' => 'Customer requested guidance on optimal hydraulic relief valve pressure setting for hard basalt rock crushing.',
+                'resolution_notes' => 'Sent calibrated pressure guide and manual section 4.2. Recommended 210 bar setting.',
+                'created_at' => $now - 86400 * 3,
+                'updated_at' => $now - 86400 * 1
+            ],
+            [
+                'id' => 'tkt-8502',
+                'ticket_number' => 'SK-8502',
+                'customer_name' => 'Highland Quarry Group',
+                'customer_email' => 'maintenance@highlandquarry.com',
+                'equipment_model' => 'ThunderDump 180 Track Dumper',
+                'serial_number' => 'TD-180-2026-118',
+                'subject' => 'Rubber track tension adjustment procedure',
+                'priority' => 'Low',
+                'status' => 'In Progress',
+                'category' => 'Maintenance',
+                'description' => 'Operator needs diagram for tensioning grease valve on left rubber track assembly.',
+                'resolution_notes' => 'Video tutorial and service bulletin dispatched to on-site mechanic.',
+                'created_at' => $now - 86400 * 1,
+                'updated_at' => $now - 3600 * 6
+            ],
+            [
+                'id' => 'tkt-8515',
+                'ticket_number' => 'SK-8515',
+                'customer_name' => 'Pacific Landscaping & Civil',
+                'customer_email' => 'dave@pacificlandscaping.com.au',
+                'equipment_model' => 'Stomp-V980',
+                'serial_number' => 'SV-980-2026-089',
+                'subject' => 'High-flow auxiliary hydraulic coupler replacement part',
+                'priority' => 'High',
+                'status' => 'Open',
+                'category' => 'Parts',
+                'description' => 'Looking for replacement flat-face quick couplers (3/4 inch ISO 16028) for skid steer breaker attachment.',
+                'resolution_notes' => '',
+                'created_at' => $now - 3600 * 5,
+                'updated_at' => $now - 3600 * 5
+            ]
+        ];
+
+        $stmt = $pdo->prepare("INSERT INTO cms_support_tickets (id, ticket_number, customer_name, customer_email, equipment_model, serial_number, subject, priority, status, category, description, resolution_notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        foreach ($sampleTickets as $tkt) {
+            $stmt->execute([
+                $tkt['id'],
+                $tkt['ticket_number'],
+                $tkt['customer_name'],
+                $tkt['customer_email'],
+                $tkt['equipment_model'],
+                $tkt['serial_number'],
+                $tkt['subject'],
+                $tkt['priority'],
+                $tkt['status'],
+                $tkt['category'],
+                $tkt['description'],
+                $tkt['resolution_notes'],
+                $tkt['created_at'],
+                $tkt['updated_at']
+            ]);
         }
     }
 }

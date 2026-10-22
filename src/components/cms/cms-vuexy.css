@@ -1,0 +1,632 @@
+/* =========================================================
+   VUEXY ADMIN DASHBOARD & EXECUTIVE SUITE
+   For StoneKrusher / Konstructz CMS Console
+   Tailored with brand sage green (#607a4e / #72915d) accents.
+   ========================================================= */
+
+/* Top Header Bar Vuexy Enhancements */
+.cms-vuexy-topbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 320px;
+  max-width: 100%;
+}
+.cms-vuexy-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 42px 0 38px;
+  background: var(--cms-bg-subtle);
+  border: 1px solid var(--cms-border);
+  border-radius: 8px;
+  color: var(--cms-text);
+  font-family: inherit;
+  font-size: 0.88rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.cms-vuexy-search-input:focus {
+  border-color: var(--cms-primary);
+  box-shadow: 0 0 0 3px rgba(96, 122, 78, 0.25);
+  background: var(--cms-card-bg);
+}
+.cms-vuexy-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--cms-text-muted);
+  font-size: 0.88rem;
+  pointer-events: none;
+}
+.cms-vuexy-search-shortcut {
+  position: absolute;
+  right: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--cms-border);
+  color: var(--cms-text-muted);
+  border: 1px solid var(--cms-card-border);
+  pointer-events: none;
+}
+
+/* Sidebar Vuexy Category Headers & Nav Badges */
+.cms-sidebar-group-label {
+  padding: 18px 16px 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cms-text-subtle);
+}
+.cms-nav-badge {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(96, 122, 78, 0.18);
+  color: var(--cms-primary);
+}
+.cms-nav-badge.badge-danger {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ef4444;
+}
+
+/* =========================================================
+   VUEXY DASHBOARD GRID & CARDS
+   ========================================================= */
+
+.cms-vuexy-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.cms-vuexy-row {
+  display: grid;
+  gap: 24px;
+}
+.cms-vuexy-row-hero {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.cms-vuexy-row-split {
+  grid-template-columns: 1fr 1fr;
+}
+.cms-vuexy-row-tri {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+@media (max-width: 1200px) {
+  .cms-vuexy-row-hero {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 900px) {
+  .cms-vuexy-row-hero,
+  .cms-vuexy-row-split,
+  .cms-vuexy-row-tri {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Hero Analytics Card */
+.cms-vuexy-hero-card {
+  position: relative;
+  overflow: hidden;
+  padding: 28px 32px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #607a4e 0%, #465f37 45%, #253a1f 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 32px -4px rgba(96, 122, 78, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cms-vuexy-hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 60%;
+}
+.cms-vuexy-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.cms-vuexy-hero-title {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+}
+.cms-vuexy-hero-subtitle {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+}
+.cms-vuexy-hero-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cms-vuexy-hero-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.cms-vuexy-hero-stat-pill strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.cms-vuexy-hero-stat-pill span {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+.cms-vuexy-hero-visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cms-vuexy-hero-sphere {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #a8d597 0%, #607a4e 50%, #172814 100%);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), inset -8px -8px 24px rgba(0, 0, 0, 0.6);
+  position: relative;
+  animation: cmsVuexyPulse 6s ease-in-out infinite alternate;
+}
+@keyframes cmsVuexyPulse {
+  from { transform: scale(1) rotate(0deg); }
+  to { transform: scale(1.05) rotate(12deg); }
+}
+
+/* Metric / Sparkline KPI Card */
+.cms-vuexy-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+  background: var(--cms-card-bg);
+  border: 1px solid var(--cms-card-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.cms-vuexy-card:hover {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08);
+}
+.cms-vuexy-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.cms-vuexy-card-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--cms-text);
+}
+.cms-vuexy-card-subtitle {
+  font-size: 0.78rem;
+  color: var(--cms-text-subtle);
+  margin-top: 4px;
+}
+.cms-vuexy-kpi-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--cms-text);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.cms-vuexy-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.cms-vuexy-trend.up { color: #10b981; }
+.cms-vuexy-trend.down { color: #ef4444; }
+
+/* SVG Wave Sparkline */
+.cms-vuexy-sparkline {
+  width: 100%;
+  height: 55px;
+  margin-top: 10px;
+}
+
+/* Sales Overview Split Progress */
+.cms-vuexy-split-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+.cms-vuexy-split-metrics {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cms-vuexy-split-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cms-vuexy-split-col strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--cms-text);
+}
+.cms-vuexy-split-col span {
+  font-size: 0.76rem;
+  color: var(--cms-text-subtle);
+}
+.cms-vuexy-progress-bar-wrap {
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--cms-border);
+  overflow: hidden;
+  display: flex;
+}
+.cms-vuexy-prog-segment-a {
+  height: 100%;
+  background: linear-gradient(90deg, #607a4e, #72915d);
+  border-radius: 9999px 0 0 9999px;
+}
+.cms-vuexy-prog-segment-b {
+  height: 100%;
+  background: #38bdf8;
+  border-radius: 0 9999px 9999px 0;
+}
+
+/* Weekly Earning Reports Bar Chart */
+.cms-vuexy-weekly-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 120px;
+  padding: 16px 8px 6px;
+  margin: 10px 0 16px;
+  border-bottom: 1px solid var(--cms-border);
+}
+.cms-vuexy-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.cms-vuexy-bar-track {
+  width: 28px;
+  height: 90px;
+  background: var(--cms-bg-subtle);
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.cms-vuexy-bar-fill {
+  width: 100%;
+  border-radius: 6px;
+  background: rgba(96, 122, 78, 0.25);
+  transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cms-vuexy-bar-col.highlight .cms-vuexy-bar-fill {
+  background: var(--cms-primary);
+  box-shadow: 0 4px 12px rgba(96, 122, 78, 0.4);
+}
+.cms-vuexy-bar-day {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cms-text-subtle);
+}
+
+.cms-vuexy-earning-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+.cms-vuexy-earning-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--cms-bg-subtle);
+}
+.cms-vuexy-earning-pill .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cms-vuexy-earning-pill .val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--cms-text);
+}
+.cms-vuexy-earning-pill .lbl {
+  font-size: 0.7rem;
+  color: var(--cms-text-subtle);
+}
+
+/* Support Tracker Radial Arc Gauge */
+.cms-vuexy-support-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 12px;
+}
+.cms-vuexy-gauge-container {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cms-vuexy-gauge-svg {
+  transform: rotate(-90deg);
+  width: 160px;
+  height: 160px;
+}
+.cms-vuexy-gauge-text {
+  position: absolute;
+  text-align: center;
+}
+.cms-vuexy-gauge-text strong {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--cms-text);
+}
+.cms-vuexy-gauge-text span {
+  font-size: 0.72rem;
+  color: var(--cms-text-subtle);
+}
+
+.cms-vuexy-support-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+.cms-vuexy-support-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--cms-bg-subtle);
+}
+.cms-vuexy-support-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+/* Sales by Countries List */
+.cms-vuexy-country-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+.cms-vuexy-country-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.cms-vuexy-country-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cms-vuexy-country-flag {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.cms-vuexy-country-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--cms-text);
+}
+.cms-vuexy-country-meta {
+  font-size: 0.74rem;
+  color: var(--cms-text-subtle);
+}
+.cms-vuexy-country-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: right;
+}
+.cms-vuexy-country-amount {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--cms-text);
+}
+
+/* Quick Tools Executive Toolbar */
+.cms-vuexy-tools-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 22px;
+  border-radius: 14px;
+  background: var(--cms-card-bg);
+  border: 1px solid var(--cms-card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+}
+.cms-vuexy-tools-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--cms-text);
+}
+.cms-vuexy-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cms-vuexy-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cms-text);
+  background: var(--cms-bg-subtle);
+  border: 1px solid var(--cms-border);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.cms-vuexy-tool-btn:hover {
+  background: rgba(96, 122, 78, 0.15);
+  border-color: var(--cms-primary);
+  color: var(--cms-primary);
+  transform: translateY(-1px);
+}
+.cms-vuexy-tool-btn.primary {
+  background: var(--cms-primary);
+  color: #ffffff;
+  border-color: var(--cms-primary);
+}
+.cms-vuexy-tool-btn.primary:hover {
+  background: var(--cms-primary-hover);
+  color: #ffffff;
+}
+
+/* =========================================================
+   COMMAND PALETTE MODAL (CTRL + K)
+   ========================================================= */
+.cms-cmd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 100px;
+  animation: cmsCmdFadeIn 0.2s ease;
+}
+@keyframes cmsCmdFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cms-cmd-box {
+  width: 100%;
+  max-width: 600px;
+  background: var(--cms-card-bg);
+  border: 1px solid var(--cms-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  animation: cmsCmdSlideDown 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes cmsCmdSlideDown {
+  from { transform: translateY(-18px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.cms-cmd-search-wrap {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--cms-border);
+  gap: 12px;
+}
+.cms-cmd-search-input {
+  width: 100%;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 1.05rem;
+  color: var(--cms-text);
+  outline: none;
+}
+.cms-cmd-results {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cms-cmd-group-label {
+  padding: 8px 12px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cms-text-subtle);
+}
+.cms-cmd-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--cms-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.88rem;
+}
+.cms-cmd-item:hover,
+.cms-cmd-item.selected {
+  background: rgba(96, 122, 78, 0.15);
+  color: var(--cms-primary);
+}
+.cms-cmd-footer {
+  padding: 10px 20px;
+  background: var(--cms-bg-subtle);
+  border-top: 1px solid var(--cms-border);
+  font-size: 0.74rem;
+  color: var(--cms-text-subtle);
+  display: flex;
+  justify-content: space-between;
+}

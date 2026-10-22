@@ -58,6 +58,21 @@ $headers = [
 
 $sent = mail($to, $subject, $body, implode("\r\n", $headers));
 
+// Record to CMS Inquiries Database
+try {
+    require_once __DIR__ . '/api/db.php';
+    $pdo = get_cms_pdo();
+    if ($pdo) {
+        $inqId = 'inq-' . uniqid();
+        $fullName = trim($firstName . ' ' . $lastName);
+        $now = time();
+        $stmt = $pdo->prepare("INSERT INTO cms_inquiries (id, name, email, phone, company, machine_model, inquiry_type, message, estimated_value, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$inqId, $fullName, $email, $phone, '', '', $inquiryType, $message, 0, 'New', 'Inbound website message', $now, $now]);
+    }
+} catch (Exception $dbEx) {
+    // Non-fatal if DB storage has transient error
+}
+
 if (!$sent) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'Mail server could not send the message.']);
