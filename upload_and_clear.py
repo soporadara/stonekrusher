@@ -83,8 +83,8 @@ def get_ssh_cmd_prefix():
     # Test SSH_ALIAS first (Host stonekrusher-prod in ~/.ssh/config)
     try:
         res = subprocess.run(
-            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", SSH_ALIAS, "echo OK"],
-            capture_output=True, text=True, timeout=8
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", SSH_ALIAS, "echo OK"],
+            capture_output=True, text=True, timeout=20
         )
         if res.returncode == 0 and "OK" in res.stdout:
             return ["ssh", SSH_ALIAS], SSH_ALIAS
@@ -95,8 +95,8 @@ def get_ssh_cmd_prefix():
     if os.path.exists(SSH_KEY):
         try:
             res = subprocess.run(
-                ["ssh", "-i", SSH_KEY, "-p", SSH_PORT, "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", f"{SSH_USER}@{SSH_HOST}", "echo OK"],
-                capture_output=True, text=True, timeout=8
+                ["ssh", "-i", SSH_KEY, "-p", SSH_PORT, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", f"{SSH_USER}@{SSH_HOST}", "echo OK"],
+                capture_output=True, text=True, timeout=20
             )
             if res.returncode == 0 and "OK" in res.stdout:
                 return ["ssh", "-i", SSH_KEY, "-p", SSH_PORT, f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
@@ -249,7 +249,7 @@ def main():
     current_step += 1
 
     try:
-        check_res = subprocess.run(ssh_cmd_base + ["echo SSH_OK"], capture_output=True, text=True, timeout=10)
+        check_res = subprocess.run(ssh_cmd_base + ["echo SSH_OK"], capture_output=True, text=True, timeout=25)
         if check_res.returncode != 0 or "SSH_OK" not in check_res.stdout:
             raise RuntimeError(f"SSH test returned code {check_res.returncode}: {check_res.stderr}")
         log_success(f"SSH connection authenticated ({ssh_target_host}).")
