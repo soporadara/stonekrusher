@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Keep real files and generated product/category directories working normally.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Let the React app resolve clean routes such as /blog/article-slug/.
+RewriteRule ^ index.html [L]

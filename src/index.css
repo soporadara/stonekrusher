@@ -1,0 +1,108 @@
+:root {
+  scroll-behavior: smooth;
+  /* Exact Sage Green & Dark Obsidian Theme */
+  --accent: #607a4e; /* The brand's signature olive/sage green */
+  --accent-hover: #72915d;
+  --accent-light: #d2dcd0; /* Light sage green for blog background */
+  --accent-glow: rgba(96, 122, 78, 0.2);
+  --accent-glow-strong: rgba(96, 122, 78, 0.4);
+  
+  --bg-dark: #0f110e; /* Dark obsidian black for Hero/Header */
+  --bg-light: #ffffff; /* White background for main body sections */
+  --bg-footer: #ebeeeb; /* Light grey/green for footer */
+  --bg-card-dark: #191c18;
+  --bg-card-light: #ffffff;
+  
+  --text-dark-bg: #f3f4f6; /* White text on dark bg */
+  --text-dark-bg-secondary: #9ca3af;
+  --text-light-bg: #111827; /* Dark text on light bg */
+  --text-light-bg-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  
+  --border-light-bg: #e5e7eb;
+  --border-dark-bg: #2d312c;
+
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+
+  font-family: var(--font-body);
+  line-height: 1.6;
+  font-weight: 400;
+
+  background-color: var(--bg-light);
+  color: var(--text-light-bg-secondary);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-light);
+  color: var(--text-light-bg-secondary);
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--text-light-bg);
+  line-height: 1.25;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Section Common Styles */
+section {
+  padding: 80px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  section {
+    padding: 48px 0;
+  }
+}

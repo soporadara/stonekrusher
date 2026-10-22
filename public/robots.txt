@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cwqv.com/sitemap.xml
+Sitemap: https://cwqv.com/sitemap_index.xml
+LLMs: https://cwqv.com/llms.txt
+AI-Source: https://cwqv.com/ai.txt
+Host: https://cwqv.com
