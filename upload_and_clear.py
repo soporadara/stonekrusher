@@ -113,21 +113,28 @@ def get_ssh_cmd_prefix():
 
 def get_rsync_e_flag():
     """Return the -e flag for rsync."""
+    ssh_opts = "-o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=30"
     if os.path.exists(SSH_KEY):
-        return f"ssh -i {SSH_KEY} -p {SSH_PORT} -o StrictHostKeyChecking=accept-new"
-    return f"ssh -p {SSH_PORT} -o StrictHostKeyChecking=accept-new"
+        return f"ssh -i {SSH_KEY} -p {SSH_PORT} {ssh_opts}"
+    return f"ssh -p {SSH_PORT} {ssh_opts}"
 
-def run_cmd(cmd: list, cwd: str = None, capture: bool = False, check: bool = True):
-    try:
-        if capture:
-            res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=check)
-            return res.stdout.strip()
-        else:
-            subprocess.run(cmd, cwd=cwd, check=check)
-            return ""
-    except subprocess.CalledProcessError as e:
-        err_msg = e.stderr.strip() if e.stderr else f"Command failed with exit code {e.returncode}"
-        raise RuntimeError(err_msg)
+def run_cmd(cmd: list, cwd: str = None, capture: bool = False, check: bool = True, retries: int = 3):
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            if capture:
+                res = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=check)
+                return res.stdout.strip()
+            else:
+                subprocess.run(cmd, cwd=cwd, check=check)
+                return ""
+        except subprocess.CalledProcessError as e:
+            err_msg = e.stderr.strip() if e.stderr else f"Command failed with exit code {e.returncode}"
+            last_err = RuntimeError(err_msg)
+            if attempt < retries:
+                time.sleep(2)
+            else:
+                raise last_err
 
 def purge_server_cache(ssh_cmd_base):
     """Purge PHP OPcache, LiteSpeed web cache, and touch key timestamp files."""
@@ -356,6 +363,7 @@ def main():
         for src, dest in backend_files:
             if os.path.exists(os.path.join(project_root, src)):
                 run_cmd(["rsync", "-avz", "--chmod=ugo=rX,u+w", "-e", rsync_e, src, f"{SSH_USER}@{SSH_HOST}:{dest}"], capture=True)
+                time.sleep(0.5)
 
         log_success("All public web files successfully transferred to Hostinger public_html!")
 
