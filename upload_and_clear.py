@@ -290,7 +290,7 @@ def main():
     rsync_excludes = [
         "--exclude=blog-posts-data.json",
         "--exclude=blog-posts-default.json",
-        "--exclude=config.php",
+        "--exclude=/api/config.php",
         "--exclude=*.log",
         "--exclude=.user.ini",
         "--exclude=.htaccess.old*",
@@ -349,6 +349,7 @@ def main():
         backend_files = [
             ("public/api/blog-posts.php", f"{REMOTE_PUBLIC}/api/blog-posts.php"),
             ("public/api/config.php", f"{REMOTE_PUBLIC}/api/config.php"),
+            ("public/medialibrary/features/config.php", f"{REMOTE_PUBLIC}/medialibrary/features/config.php"),
             ("public/contact-submit.php", f"{REMOTE_PUBLIC}/contact-submit.php"),
             ("public/.htaccess", f"{REMOTE_PUBLIC}/.htaccess"),
         ]
