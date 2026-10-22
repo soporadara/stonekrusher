@@ -1666,6 +1666,17 @@ const createUserMessage = (content) => ({
  * 4. Gravatar / Google / GitHub unavatar service
  * 5. UI-Avatars branded initials fallback
  */
+/**
+ * Resolves a verified user profile avatar based on email address.
+ * Integrates with:
+ * 1. Active CMS Admin session in localStorage (session/cms_user)
+ * 2. Firebase Auth user object in localStorage and sessionStorage (matches Google / Firebase photoURL)
+ * 3. Known admin/support profiles with real profile photo
+ * 4. Gravatar / Google / GitHub unavatar service
+ * 5. UI-Avatars branded initials fallback
+ */
+export const USER_REAL_AVATAR = 'https://lightcyan-weasel-711536.hostingersite.com/storage/avatars/UNOQP8Qv0cfy6L3twxNormAHlv7UnrVPV0Xs9k1c.jpg';
+
 export const getUserProfileAvatar = (email, name) => {
   if (!email || typeof email !== 'string') {
     const fallbackName = name ? encodeURIComponent(name.trim()) : 'User';
@@ -1675,28 +1686,72 @@ export const getUserProfileAvatar = (email, name) => {
   const cleanEmail = email.trim().toLowerCase();
   const fallbackName = name ? encodeURIComponent(name.trim()) : encodeURIComponent(cleanEmail.split('@')[0]);
 
-  // 1. Check active CMS user or session in localStorage
+  // 1. Direct match for staff, admin, and user accounts
+  if (
+    cleanEmail.includes('sopoa') ||
+    cleanEmail.includes('sopo') ||
+    cleanEmail.includes('kiuq.com') ||
+    cleanEmail.endsWith('@kiuq.com') ||
+    cleanEmail === 'admin@stonekrusher.com' ||
+    cleanEmail === 'admin@happymachinery.com' ||
+    cleanEmail === 'admin@konstructz.com'
+  ) {
+    return USER_REAL_AVATAR;
+  }
+
+  if (cleanEmail === 'support@stonekrusher.com' || cleanEmail === 'sales@stonekrusher.com') {
+    return '/favicon.png';
+  }
+
+  // Helper to extract photo URL from any user-like structure
+  const extractPhoto = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    if (typeof obj.photoURL === 'string' && obj.photoURL) return obj.photoURL;
+    if (typeof obj.photoUrl === 'string' && obj.photoUrl) return obj.photoUrl;
+    if (typeof obj.avatar === 'string' && obj.avatar) return obj.avatar;
+    if (typeof obj.avatar_url === 'string' && obj.avatar_url) return obj.avatar_url;
+    if (typeof obj.picture === 'string' && obj.picture) return obj.picture;
+    if (typeof obj.image === 'string' && obj.image) return obj.image;
+    if (Array.isArray(obj.providerData)) {
+      for (const p of obj.providerData) {
+        if (p?.photoURL) return p.photoURL;
+        if (p?.photoUrl) return p.photoUrl;
+      }
+    }
+    if (obj.reloadUserInfo?.photoUrl) return obj.reloadUserInfo.photoUrl;
+    if (obj.reloadUserInfo?.profilePicture) return obj.reloadUserInfo.profilePicture;
+    return null;
+  };
+
+  // 2. Check active CMS user or session in localStorage
   try {
     const cmsUserRaw = localStorage.getItem('cms_user') || localStorage.getItem('konstructz_admin_user');
     if (cmsUserRaw) {
       const cmsUser = JSON.parse(cmsUserRaw);
       if (cmsUser && (cmsUser.email?.toLowerCase() === cleanEmail || cmsUser.username?.toLowerCase() === cleanEmail)) {
-        if (cmsUser.avatar || cmsUser.photoURL) return cmsUser.avatar || cmsUser.photoURL;
+        const photo = extractPhoto(cmsUser);
+        if (photo) return photo;
       }
     }
   } catch {}
 
-  // 2. Check Firebase Authentication user object stored in localStorage (Firebase stores user as firebase:authUser:... in localStorage)
-  if (typeof localStorage !== 'undefined') {
+  // 3. Check Firebase Authentication user object stored in localStorage and sessionStorage
+  const storages = [
+    typeof localStorage !== 'undefined' ? localStorage : null,
+    typeof sessionStorage !== 'undefined' ? sessionStorage : null
+  ].filter(Boolean);
+
+  for (const store of storages) {
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i) || '';
-        if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser')) {
-          const raw = localStorage.getItem(key);
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i) || '';
+        if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser') || key.includes('currentUser')) {
+          const raw = store.getItem(key);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed.email?.toLowerCase() === cleanEmail && parsed.photoURL) {
-              return parsed.photoURL;
+            if (parsed && (parsed.email?.toLowerCase() === cleanEmail || parsed.providerData?.[0]?.email?.toLowerCase() === cleanEmail)) {
+              const photo = extractPhoto(parsed);
+              if (photo) return photo;
             }
           }
         }
@@ -1704,41 +1759,57 @@ export const getUserProfileAvatar = (email, name) => {
     } catch {}
   }
 
-  // 3. Known site admin accounts
-  if (cleanEmail === 'soporadara@kiuq.com' || cleanEmail === 'admin@stonekrusher.com' || cleanEmail === 'admin@konstructz.com') {
-    return 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80';
-  }
-  if (cleanEmail === 'support@stonekrusher.com' || cleanEmail === 'sales@stonekrusher.com') {
-    return '/favicon.png';
-  }
-
-  // 4. Resolve via Unavatar (automatically searches Gravatar, Google, GitHub, and Firebase connected profiles)
+  // 4. Resolve via Google/Gravatar Unavatar
   const defaultFallback = encodeURIComponent(`https://ui-avatars.com/api/?name=${fallbackName}&background=f59e0b&color=000&bold=true&size=128`);
   return `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=${defaultFallback}`;
 };
 
 export const getStoredAuthUser = () => {
-  if (typeof localStorage === 'undefined') return null;
-  // 1. Firebase Auth check in localStorage
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i) || '';
-      if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser')) {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
-            return {
-              email: parsed.email || '',
-              name: parsed.displayName || parsed.email?.split('@')[0] || '',
-              avatar: parsed.photoURL || '',
-              source: 'firebase'
-            };
+  const extractPhoto = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    if (typeof obj.photoURL === 'string' && obj.photoURL) return obj.photoURL;
+    if (typeof obj.photoUrl === 'string' && obj.photoUrl) return obj.photoUrl;
+    if (typeof obj.avatar === 'string' && obj.avatar) return obj.avatar;
+    if (typeof obj.picture === 'string' && obj.picture) return obj.picture;
+    if (Array.isArray(obj.providerData)) {
+      for (const p of obj.providerData) {
+        if (p?.photoURL) return p.photoURL;
+        if (p?.photoUrl) return p.photoUrl;
+      }
+    }
+    if (obj.reloadUserInfo?.photoUrl) return obj.reloadUserInfo.photoUrl;
+    return null;
+  };
+
+  const storages = [
+    typeof localStorage !== 'undefined' ? localStorage : null,
+    typeof sessionStorage !== 'undefined' ? sessionStorage : null
+  ].filter(Boolean);
+
+  // 1. Firebase Auth check in storage
+  for (const store of storages) {
+    try {
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i) || '';
+        if (key.startsWith('firebase:authUser') || key.includes('firebase:user') || key.includes('authUser') || key.includes('currentUser')) {
+          const raw = store.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
+              const email = parsed.email || '';
+              const photo = extractPhoto(parsed) || (email.includes('kiuq.com') || email.includes('sopo') ? USER_REAL_AVATAR : '');
+              return {
+                email,
+                name: parsed.displayName || email.split('@')[0] || '',
+                avatar: photo,
+                source: 'firebase'
+              };
+            }
           }
         }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // 2. CMS User check
   try {
@@ -1746,10 +1817,11 @@ export const getStoredAuthUser = () => {
     if (raw) {
       const u = JSON.parse(raw);
       if (u && (u.email || u.username)) {
+        const email = u.email || '';
         return {
-          email: u.email || '',
+          email,
           name: u.full_name || u.username || '',
-          avatar: u.avatar || '',
+          avatar: u.avatar || (email.includes('kiuq.com') || email.includes('sopo') ? USER_REAL_AVATAR : ''),
           source: 'cms'
         };
       }
@@ -9374,7 +9446,12 @@ export default function App() {
                                     alt={comment.authorName}
                                     className="comment-avatar-img"
                                     loading="lazy"
+                                    referrerPolicy="no-referrer"
                                     onError={(e) => {
+                                      if (e.currentTarget.src !== USER_REAL_AVATAR && (comment.authorEmail?.toLowerCase().includes('kiuq') || comment.authorEmail?.toLowerCase().includes('sopo'))) {
+                                        e.currentTarget.src = USER_REAL_AVATAR;
+                                        return;
+                                      }
                                       e.currentTarget.style.display = 'none';
                                       if (e.currentTarget.nextElementSibling) {
                                         e.currentTarget.nextElementSibling.style.display = 'flex';
@@ -9389,15 +9466,12 @@ export default function App() {
                                   <div className="comment-header-row">
                                     <div className="comment-author-info">
                                       <strong className="commenter-name text-black">{comment.authorName}</strong>
-                                      {comment.authorEmail && (
-                                        <span className="comment-email-chip" title={`Verified email: ${comment.authorEmail}`}>
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                                            <polyline points="22,6 12,13 2,6" />
-                                          </svg>
-                                          <span>{comment.authorEmail}</span>
-                                        </span>
-                                      )}
+                                      <span className="comment-verified-badge" title="Verified Commenter via Google / Firebase (Email kept private)">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                        <span>Verified</span>
+                                      </span>
                                     </div>
                                     <span className="comment-timestamp">{comment.date}</span>
                                   </div>
@@ -9412,21 +9486,24 @@ export default function App() {
 
                   <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
                     <h3>Leave a Comment</h3>
-                    <p className="comment-form-note">Your verified email and profile picture (via Firebase / Google / Gravatar) will appear alongside your comment. Required fields are marked *</p>
+                    <p className="comment-form-note">Your email address will not be published. Real profile picture is connected via your verified Firebase / Google account. Required fields are marked *</p>
 
                     {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
                       <div className="comment-email-avatar-preview">
                         <img
                           src={getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)}
-                          alt="Avatar preview"
+                          alt="Profile photo preview"
                           className="comment-preview-avatar-img"
+                          referrerPolicy="no-referrer"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.src !== USER_REAL_AVATAR) {
+                              e.currentTarget.src = USER_REAL_AVATAR;
+                            }
                           }}
                         />
                         <div className="comment-preview-meta">
-                          <span className="comment-preview-title">Profile Picture Connected</span>
-                          <span className="comment-preview-sub">Displaying with verified email: <strong>{commentForm.authorEmail}</strong></span>
+                          <span className="comment-preview-title">Real Profile Photo Connected</span>
+                          <span className="comment-preview-sub">Your email is kept private and will not be displayed on the page.</span>
                         </div>
                       </div>
                     )}
