@@ -5,6 +5,7 @@ import ProductCard from './components/ProductCard'
 import FullScreenLightbox from './components/FullScreenLightbox'
 import StoreEmbed, { clearStoreCheckout, preloadStore } from './components/StoreEmbed'
 import deployedBlogPosts from '../data/blog-posts.json'
+import CmsApp from './components/cms/CmsApp'
 import typhonFactoryEngineerAsset from './assets/typhon_factory_engineer.png'
 import konstructzLogoAsset from './assets/konstructz_logo.png'
 import supportHeroAsset from './assets/support_hero.png'
@@ -2036,7 +2037,8 @@ const CLEAN_VIEW_PATHS = {
   cart: '/cart/',
   store: '/store/',
   'admin-blog': '/admin/blog/',
-  'store-data': '/admin/products/'
+  'store-data': '/admin/products/',
+  admin: '/admin/'
 };
 
 const getViewFromCleanPath = (pathname) => (
@@ -6132,6 +6134,15 @@ export default function App() {
       answer: 'Yes! We provide door-to-door freight shipping across North America and offer flexible equipment financing, lease-to-own, and seasonal payment plans tailored for contractors.'
     }
   ];
+
+  if (currentView === 'admin-blog' || currentView === 'admin' || currentView === 'store-data') {
+    return (
+      <CmsApp
+        onBackToSite={() => navigate('home')}
+        initialTab={currentView === 'store-data' ? 'products' : 'overview'}
+      />
+    );
+  }
 
   return (
     <div className="app-container">
@@ -12695,6 +12706,7 @@ export default function App() {
             <a href="/#products" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#products'; }}>Products</a>
             <a href="?page=support" onClick={(e) => { e.preventDefault(); navigate('support'); }}>Support</a>
             <a href="/#faq" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#faq'; }}>FAQ</a>
+            <a href="/admin/" onClick={(e) => { e.preventDefault(); navigate('admin-blog'); }}>Admin Console</a>
           </div>
 
           <div className="footer-links-col">

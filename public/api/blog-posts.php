@@ -1,6 +1,13 @@
 <?php
+// =========================================================
+// StoneKrusher - Public & Protected Blog Posts API
+// =========================================================
+
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+require_once __DIR__ . '/security.php';
+
+Security::sendSecurityHeaders();
 
 $storageFile = __DIR__ . '/blog-posts-data.json';
 $deployedPostsFile = __DIR__ . '/blog-posts-default.json';
@@ -25,103 +32,25 @@ function sanitize_posts($posts) {
     return $clean;
 }
 
-if (file_exists(__DIR__ . '/config.php')) {
-    require_once __DIR__ . '/config.php';
-}
-
-$dbHost = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: 'localhost');
-$dbName = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: 'u534600013_konstructz');
-$dbUser = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: 'u534600013_Konstructz08');
-$dbPass = defined('DB_PASS') ? DB_PASS : (getenv('DB_PASS') ?: '');
-
-function ensure_tables_exist($pdo) {
-    if (!$pdo) return;
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS blog_posts (
-            id VARCHAR(255) PRIMARY KEY,
-            slug VARCHAR(255) UNIQUE NOT NULL,
-            title VARCHAR(500) NOT NULL,
-            category VARCHAR(100),
-            author VARCHAR(255) DEFAULT 'Admin KONSTRUCTZ',
-            featured_image VARCHAR(1000),
-            excerpt TEXT,
-            data_json TEXT NOT NULL,
-            status VARCHAR(50) DEFAULT 'Published',
-            published_date VARCHAR(50),
-            updated_at BIGINT
-        )");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS posts (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            uid VARCHAR(255),
-            title VARCHAR(500) NOT NULL,
-            slug VARCHAR(255) NOT NULL,
-            excerpt TEXT,
-            content LONGTEXT,
-            featuredImage VARCHAR(1000),
-            imageStoragePath VARCHAR(1000),
-            categoryId VARCHAR(255),
-            status VARCHAR(50) DEFAULT 'Published',
-            visibility VARCHAR(50) DEFAULT 'public'
-        )");
-    } catch (Exception $e) {}
-}
-
-function get_pdo() {
-    global $dbHost, $dbName, $dbUser, $dbPass;
-    if (empty($dbUser)) return null;
-    try {
-        $pdo = new PDO("mysql:host={$dbHost};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-        ]);
-        ensure_tables_exist($pdo);
-        return $pdo;
-    } catch (Exception $e) {
-        return null;
-    }
-}
+$pdo = get_cms_pdo();
+$now = time();
 
 if ($method === 'GET') {
-    $pdo = get_pdo();
     if ($pdo) {
-        // 1. Try reading from CMS 'posts' table (title, slug, content, featuredImage, excerpt)
         try {
-            $stmt = $pdo->query("SELECT * FROM posts WHERE status = 'Published' OR status = 'published' ORDER BY id DESC");
+            // Only expose published posts to the public. Never expose drafts, scheduled, or trash!
+            $stmt = $pdo->prepare("SELECT data_json FROM blog_posts WHERE status = 'Published' AND (scheduled_at IS NULL OR scheduled_at <= ?) ORDER BY updated_at DESC");
+            $stmt->execute([$now]);
             $dbRows = $stmt->fetchAll();
             if (!empty($dbRows)) {
-                $posts = array_map(function($r) {
-                    $rawContent = $r['content'] ?? '';
-                    return [
-                        'id' => (string)($r['id'] ?? $r['uid'] ?? ''),
-                        'slug' => $r['slug'] ?? '',
-                        'title' => $r['title'] ?? '',
-                        'category' => $r['categoryId'] ?? 'Guide',
-                        'image' => $r['featuredImage'] ?? '',
-                        'desc' => strip_tags($r['excerpt'] ?? $rawContent),
-                        'status' => 'Published',
-                        'date' => date('F j, Y'),
-                        'publishedDate' => date('Y-m-d'),
-                        'sections' => [
-                            [
-                                'h2' => '',
-                                'body' => $rawContent
-                            ]
-                        ]
-                    ];
+                $posts = array_map(function($r) { 
+                    return json_decode($r['data_json'], true); 
                 }, $dbRows);
-                send_json(200, ['posts' => $posts]);
+                send_json(200, ['posts' => array_values(array_filter($posts))]);
             }
-        } catch (Exception $e) {}
-
-        // 2. Try reading from 'blog_posts' table (data_json)
-        try {
-            $stmt = $pdo->query("SELECT data_json FROM blog_posts ORDER BY updated_at DESC");
-            $dbRows = $stmt->fetchAll();
-            if (!empty($dbRows)) {
-                $posts = array_map(function($r) { return json_decode($r['data_json'], true); }, $dbRows);
-                send_json(200, ['posts' => $posts]);
-            }
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            // Fallback to json files
+        }
     }
 
     $storagePosts = is_file($storageFile) ? json_decode(file_get_contents($storageFile), true) : null;
@@ -134,22 +63,23 @@ if ($method === 'GET') {
     $rawPosts = is_array($storagePosts) ? $storagePosts : $defaultPosts;
     $posts = sanitize_posts($rawPosts);
 
-    send_json(200, ['posts' => $posts]);
+    // Filter public view for published only
+    $filtered = array_filter($posts, function($p) {
+        $s = $p['status'] ?? 'Published';
+        return strcasecmp($s, 'Published') === 0;
+    });
+
+    send_json(200, ['posts' => array_values($filtered)]);
 }
 
-if ($method !== 'PUT') {
-    header('Allow: GET, PUT');
+// All mutation requests (PUT, POST, DELETE) MUST be authenticated
+$currentUser = Security::requireAuth();
+Security::requirePermission($currentUser, 'posts.edit');
+Security::validateCsrf($currentUser);
+
+if ($method !== 'PUT' && $method !== 'POST') {
+    header('Allow: GET, PUT, POST');
     send_json(405, ['error' => 'Method not allowed.']);
-}
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$host = $_SERVER['HTTP_HOST'] ?? '';
-if ($origin !== '') {
-    $originHost = parse_url($origin, PHP_URL_HOST);
-    $requestHost = preg_replace('/:\d+$/', '', $host);
-    if (!$originHost || strcasecmp($originHost, $requestHost) !== 0) {
-        send_json(403, ['error' => 'Cross-site updates are not allowed.']);
-    }
 }
 
 $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
@@ -173,26 +103,47 @@ if ($encodedPosts === false) {
     send_json(400, ['error' => 'Blog data could not be encoded.']);
 }
 
-$pdo = get_pdo();
 if ($pdo) {
     try {
-        $pdo->exec("DELETE FROM blog_posts");
-        $stmt = $pdo->prepare("INSERT INTO blog_posts (id, slug, title, category, author, featured_image, excerpt, data_json, status, published_date, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO blog_posts (id, slug, title, category, author, featured_image, excerpt, data_json, status, published_date, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE title = VALUES(title), category = VALUES(category), author = VALUES(author), featured_image = VALUES(featured_image), excerpt = VALUES(excerpt), data_json = VALUES(data_json), status = VALUES(status), published_date = VALUES(published_date), updated_at = VALUES(updated_at)");
+
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $pdo->prepare("INSERT INTO blog_posts (id, slug, title, category, author, featured_image, excerpt, data_json, status, published_date, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET title = excluded.title, category = excluded.category, author = excluded.author, featured_image = excluded.featured_image, excerpt = excluded.excerpt, data_json = excluded.data_json, status = excluded.status, published_date = excluded.published_date, updated_at = excluded.updated_at");
+        }
+
         foreach ($sanitizedPosts as $i => $post) {
             $slug = $post['slug'] ?? "post-{$i}";
             $id = (string)($post['id'] ?? $slug);
             $title = $post['title'] ?? '';
             $cat = $post['category'] ?? 'Guide';
             $author = $post['author'] ?? 'Admin KONSTRUCTZ';
-            $img = $post['image'] ?? '';
-            $excerpt = $post['desc'] ?? '';
+            $img = $post['image'] ?? ($post['featuredImage'] ?? '');
+            $excerpt = $post['desc'] ?? ($post['excerpt'] ?? '');
             $status = $post['status'] ?? 'Published';
             $pubDate = $post['publishedDate'] ?? ($post['date'] ?? date('Y-m-d'));
             $updatedAt = time();
-            $stmt->execute([$id, $slug, $title, $cat, $author, $img, $excerpt, json_encode($post, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), $status, $pubDate, $updatedAt]);
+            $stmt->execute([
+                $id,
+                $slug,
+                $title,
+                $cat,
+                $author,
+                $img,
+                $excerpt,
+                json_encode($post, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                $status,
+                $pubDate,
+                $updatedAt,
+                $currentUser['id']
+            ]);
         }
+
+        Security::logAudit($currentUser['id'], 'posts.batch_sync', 'posts', null, ['count' => count($sanitizedPosts)]);
     } catch (Exception $e) {
-        // Fall back to JSON file write if MySQL query fails
+        error_log("Database sync error in blog-posts.php: " . $e->getMessage());
     }
 }
 
@@ -200,9 +151,8 @@ if (file_put_contents($storageFile, $encodedPosts . PHP_EOL, LOCK_EX) === false 
     send_json(500, ['error' => 'Shared blog posts could not be saved.']);
 }
 
-// Also keep deployed default file and workspace data file in sync
 @file_put_contents($deployedPostsFile, $encodedPosts . PHP_EOL, LOCK_EX);
-$rootDataFile = __DIR__ . '/../../data/blog-posts.json';
+$rootDataFile = dirname(__DIR__, 2) . '/data/blog-posts.json';
 if (is_dir(dirname($rootDataFile))) {
     @file_put_contents($rootDataFile, $encodedPosts . PHP_EOL, LOCK_EX);
 }

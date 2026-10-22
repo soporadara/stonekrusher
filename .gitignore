@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 production_public_html/
+backup_pre_cms_upgrade/
+.env
+.env.local
 __pycache__/
 *.pyc
 
