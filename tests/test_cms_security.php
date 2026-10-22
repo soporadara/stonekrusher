@@ -299,6 +299,42 @@ if (file_exists($htaccessFile)) {
 }
 
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// SUITE 10: GOOGLE SIGN-IN CLAIM VALIDATION
+// ---------------------------------------------------------
+echo "\nSUITE 10: Google Sign-In Token Claim Validation\n";
+
+$gid = '1234567890-abcdefg.apps.googleusercontent.com';
+$goodClaims = [
+    'aud' => $gid,
+    'iss' => 'https://accounts.google.com',
+    'exp' => time() + 600,
+    'email' => 'staff@example.com',
+    'email_verified' => 'true',
+    'sub' => '1098765432'
+];
+
+assert_test("Valid Google Client ID format accepted", Security::isValidGoogleClientId($gid));
+assert_test("Malformed Google Client ID rejected", !Security::isValidGoogleClientId('not-a-client-id'));
+assert_test("Client ID with injected characters rejected", !Security::isValidGoogleClientId("x.apps.googleusercontent.com\"><script>"));
+assert_test("Valid claims pass validation", Security::validateGoogleClaims($goodClaims, $gid) === null);
+assert_test("accounts.google.com issuer (no scheme) accepted", Security::validateGoogleClaims(array_merge($goodClaims, ['iss' => 'accounts.google.com']), $gid) === null);
+assert_test("Wrong audience (token for another app) rejected", Security::validateGoogleClaims(array_merge($goodClaims, ['aud' => 'other.apps.googleusercontent.com']), $gid) === 'audience_mismatch');
+assert_test("Wrong issuer rejected", Security::validateGoogleClaims(array_merge($goodClaims, ['iss' => 'https://evil.example.com']), $gid) === 'issuer_mismatch');
+assert_test("Expired token rejected", Security::validateGoogleClaims(array_merge($goodClaims, ['exp' => time() - 5]), $gid) === 'token_expired');
+assert_test("Unverified email rejected", Security::validateGoogleClaims(array_merge($goodClaims, ['email_verified' => 'false']), $gid) === 'email_not_verified');
+assert_test("Missing email rejected", Security::validateGoogleClaims(array_merge($goodClaims, ['email' => '']), $gid) === 'missing_identity');
+assert_test("Non-array claims rejected", Security::validateGoogleClaims(null, $gid) === 'invalid_claims');
+assert_test("Empty configured client ID never validates", Security::validateGoogleClaims($goodClaims, '') === 'audience_mismatch');
+assert_test("Garbage ID token is rejected before any network call", Security::fetchGoogleTokenClaims("abc def<>") === null);
+
+$pdo->prepare("DELETE FROM cms_settings WHERE setting_key = 'google_client_id'")->execute();
+assert_test("Google Client ID is empty until configured", Security::getGoogleClientId() === '' || defined('GOOGLE_CLIENT_ID') || getenv('GOOGLE_CLIENT_ID'));
+$pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('google_client_id', ?, ?)")->execute([$gid, time()]);
+assert_test("Google Client ID read from CMS settings", Security::getGoogleClientId() === $gid);
+$pdo->prepare("DELETE FROM cms_settings WHERE setting_key = 'google_client_id'")->execute();
+
+// ---------------------------------------------------------
 // SUMMARY
 // ---------------------------------------------------------
 echo "\n=========================================================\n";

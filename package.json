@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node generate-product-pages.js && node generate-category-pages.js && node generate-blog-routes.js && node generate-sitemap.js && node ping-search-engines.js && vite build && node post-build-seo.js",
+    "build": "node generate-product-pages.js && node generate-category-pages.js && node generate-blog-routes.js && node generate-legal-pages.js && node generate-sitemap.js && node ping-search-engines.js && vite build && node post-build-seo.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.js"

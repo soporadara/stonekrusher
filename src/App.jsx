@@ -6,6 +6,8 @@ import FullScreenLightbox from './components/FullScreenLightbox'
 import StoreEmbed, { clearStoreCheckout, preloadStore } from './components/StoreEmbed'
 import deployedBlogPosts from '../data/blog-posts.json'
 import CmsApp from './components/cms/CmsApp'
+import LegalPage from './components/LegalPage'
+import { LEGAL_DOCUMENTS } from './data/legal-content'
 import typhonFactoryEngineerAsset from './assets/typhon_factory_engineer.png'
 import konstructzLogoAsset from './assets/konstructz_logo.png'
 import supportHeroAsset from './assets/support_hero.png'
@@ -2036,6 +2038,8 @@ const CLEAN_VIEW_PATHS = {
   contact: '/contact/',
   cart: '/cart/',
   store: '/store/',
+  terms: '/terms-of-service/',
+  privacy: '/privacy-policy/',
   'admin-blog': '/ourcmskiuq/'
 };
 
@@ -2046,7 +2050,8 @@ const LEGACY_ADMIN_VIEWS = ['admin', 'admin-blog', 'store-data'];
 
 const getViewFromCleanPath = (pathname) => {
   if (CMS_PATH_PATTERN.test(pathname)) return 'admin-blog';
-  return Object.entries(CLEAN_VIEW_PATHS).find(([, path]) => path === pathname)?.[0] || null;
+  const normalizedPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+  return Object.entries(CLEAN_VIEW_PATHS).find(([, path]) => path === normalizedPath)?.[0] || null;
 };
 
 const getRequestedPageParam = (value) => (
@@ -5578,6 +5583,11 @@ export default function App() {
       modifiedDate = selectedBlogPost.updatedDate || selectedBlogPost.publishedDate;
       canonicalPath = getBlogPostPath(selectedBlogPost.slug);
       pageType = 'article';
+    } else if (currentView === 'terms' || currentView === 'privacy') {
+      const legalDoc = LEGAL_DOCUMENTS[currentView];
+      title = legalDoc.seoTitle;
+      description = legalDoc.seoDescription;
+      canonicalPath = legalDoc.path;
     } else if (currentView === 'store-data') {
       title = 'Product Data Store | KONSTRUCTZ Admin';
       description = 'Internal product CSV upload and preview utility for KONSTRUCTZ product data.';
@@ -11005,6 +11015,8 @@ export default function App() {
             </div>
           </section>
         </main>
+      ) : (currentView === 'terms' || currentView === 'privacy') ? (
+        <LegalPage kind={currentView} navigate={navigate} />
       ) : currentView === 'about' ? (
         <main className="about-page">
           {/* Hero Banner Section */}
@@ -12714,6 +12726,8 @@ export default function App() {
             <a href="/#products" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#products'; }}>Products</a>
             <a href="?page=support" onClick={(e) => { e.preventDefault(); navigate('support'); }}>Support</a>
             <a href="/#faq" onClick={(e) => { e.preventDefault(); navigate('home'); window.location.hash = '#faq'; }}>FAQ</a>
+            <a href={CLEAN_VIEW_PATHS.terms} onClick={(e) => { e.preventDefault(); navigate('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Terms of Service</a>
+            <a href={CLEAN_VIEW_PATHS.privacy} onClick={(e) => { e.preventDefault(); navigate('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Privacy Policy</a>
           </div>
 
           <div className="footer-links-col">
@@ -12740,6 +12754,10 @@ export default function App() {
         </div>
 
         <div className="footer-bottom">
+          <div className="footer-legal-links">
+            <a href={CLEAN_VIEW_PATHS.terms} onClick={(e) => { e.preventDefault(); navigate('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Terms of Service</a>
+            <a href={CLEAN_VIEW_PATHS.privacy} onClick={(e) => { e.preventDefault(); navigate('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Privacy Policy</a>
+          </div>
           <p>© 2026 stonekrusher.com / KONSTRUCTZ. All Rights Reserved. Built for power and reliability.</p>
         </div>
       </footer>

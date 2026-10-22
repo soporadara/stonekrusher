@@ -11,7 +11,8 @@ export default function CmsSettings({ csrfToken }) {
     audit_log_retention_days: '90',
     default_theme: 'dark',
     enable_2fa: '0',
-    posts_per_page: '10'
+    posts_per_page: '10',
+    google_client_id: ''
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -172,6 +173,31 @@ export default function CmsSettings({ csrfToken }) {
               <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-subtle)' }}>Default: 90 days before eligible for purge</span>
             </div>
           </div>
+        </div>
+
+        {/* GOOGLE SIGN-IN */}
+        <div className="cms-card" style={{ marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: '700' }}>Google Sign-In</h3>
+          <p style={{ margin: '0 0 16px', fontSize: '0.84rem', color: 'var(--cms-text-muted)', lineHeight: 1.6 }}>
+            Let staff sign in with their Google account. Only Google emails that match an existing CMS user can sign in, and accounts are never created automatically. Leave empty to turn Google sign-in off.
+          </p>
+          <div className="cms-form-group" style={{ marginBottom: '12px' }}>
+            <label>Google OAuth Web Client ID</label>
+            <input
+              type="text"
+              className="cms-input"
+              placeholder="1234567890-abcdefg.apps.googleusercontent.com"
+              autoComplete="off"
+              spellCheck="false"
+              value={settings.google_client_id || ''}
+              onChange={(e) => setSettings({ ...settings, google_client_id: e.target.value })}
+            />
+          </div>
+          <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '0.78rem', color: 'var(--cms-text-subtle)', lineHeight: 1.7 }}>
+            <li>In Google Cloud Console, open APIs &amp; Services, then Credentials, and create an OAuth client ID of type &quot;Web application&quot;.</li>
+            <li>Add <strong>{typeof window !== 'undefined' ? window.location.origin : 'https://stonekrusher.com'}</strong> under &quot;Authorized JavaScript origins&quot;. No redirect URI is needed.</li>
+            <li>Paste the Client ID above and save. The Google button then appears on the login page.</li>
+          </ol>
         </div>
 
         {/* INTERFACE PREFERENCES */}

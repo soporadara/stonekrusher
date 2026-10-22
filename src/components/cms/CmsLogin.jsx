@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import logoAsset from '../../assets/konstructz_logo.png';
 import heroAsset from '../../assets/loader_carrying_gravel.png';
 import './cms-login.css';
@@ -65,6 +65,91 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotStatus, setForgotStatus] = useState('');
+  const [googleClientId, setGoogleClientId] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleButtonRef = useRef(null);
+  const rememberRef = useRef(remember);
+  const onLoginSuccessRef = useRef(onLoginSuccess);
+
+  useEffect(() => { rememberRef.current = remember; }, [remember]);
+  useEffect(() => { onLoginSuccessRef.current = onLoginSuccess; }, [onLoginSuccess]);
+
+  // Discover whether Google sign-in is configured (the Client ID is public).
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth.php?action=google_config')
+      .then((res) => res.json())
+      .then((cfg) => {
+        if (!cancelled && cfg && cfg.enabled && cfg.client_id) setGoogleClientId(cfg.client_id);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load Google Identity Services and render the official button.
+  useEffect(() => {
+    if (!googleClientId) return undefined;
+    let cancelled = false;
+
+    const handleCredential = async (response) => {
+      setError('');
+      setGoogleLoading(true);
+      try {
+        const res = await fetch('/api/auth.php?action=google_login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential, remember: rememberRef.current })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Google sign-in failed. Please try again.');
+        }
+        onLoginSuccessRef.current(data.user, data.csrf_token);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    const renderButton = () => {
+      if (cancelled || !window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      googleButtonRef.current.innerHTML = '';
+      const width = Math.min(360, Math.max(220, googleButtonRef.current.clientWidth || 340));
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        width
+      });
+    };
+
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      renderButton();
+    } else {
+      let script = document.getElementById('google-gsi-client');
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'google-gsi-client';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener('load', renderButton);
+      return () => { cancelled = true; script.removeEventListener('load', renderButton); };
+    }
+    return () => { cancelled = true; };
+  }, [googleClientId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,7 +191,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
       });
       const data = await res.json();
       setForgotStatus(data.message || 'If that email exists, reset instructions have been issued.');
-    } catch (err) {
+    } catch {
       setForgotStatus('Error processing reset request.');
     }
   };
@@ -236,6 +321,15 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                 <>Sign In to Dashboard <span aria-hidden="true">→</span></>
               )}
             </button>
+
+            {googleClientId && (
+              <div className="cms-login-google">
+                <div className="cms-login-divider"><span>or continue with</span></div>
+                <div className={`cms-login-google-btn${googleLoading ? ' is-loading' : ''}`} ref={googleButtonRef} aria-label="Sign in with Google" />
+                {googleLoading && <p className="cms-login-google-status">Verifying your Google account...</p>}
+                <p className="cms-login-google-hint">Only email addresses already added to the CMS can sign in with Google.</p>
+              </div>
+            )}
           </form>
 
           <div className="cms-login-secure">

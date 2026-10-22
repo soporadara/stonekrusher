@@ -84,6 +84,8 @@ const pages = [
   { path: '/about/', priority: '0.7', changefreq: 'monthly', image: { loc: `${baseUrl}/about-hero-studio-poster.png`, title: 'About KONSTRUCTZ machinery', caption: 'Official KONSTRUCTZ company page for compact machinery, equipment support, and construction equipment buyers.' } },
   { path: '/contact/', priority: '0.7', changefreq: 'monthly', image: { loc: `${baseUrl}/about-machine-panorama-poster.png`, title: 'Contact KONSTRUCTZ sales and support', caption: 'Official KONSTRUCTZ sales and support contact page for machinery quotes, equipment questions, and attachments.' } },
   { path: '/support/', priority: '0.7', changefreq: 'monthly', image: { loc: defaultImage, title: 'KONSTRUCTZ service and support', caption: 'Official KONSTRUCTZ service and support for machinery owners, parts, manuals, and warranties.' } },
+  { path: '/terms-of-service/', priority: '0.3', changefreq: 'yearly', image: null },
+  { path: '/privacy-policy/', priority: '0.3', changefreq: 'yearly', image: null },
   { path: '/ai.txt', priority: '0.6', changefreq: 'monthly', image: null },
   { path: '/llms.txt', priority: '0.6', changefreq: 'monthly', image: null },
 ];

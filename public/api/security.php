@@ -107,6 +107,72 @@ class Security {
     }
 
     /**
+     * Google OAuth Web Client ID (public value). Priority: CMS setting, constant, environment.
+     */
+    public static function getGoogleClientId() {
+        $id = trim((string)self::getSetting('google_client_id', ''));
+        if ($id === '' && defined('GOOGLE_CLIENT_ID')) {
+            $id = trim((string)GOOGLE_CLIENT_ID);
+        }
+        if ($id === '') {
+            $id = trim((string)(getenv('GOOGLE_CLIENT_ID') ?: ''));
+        }
+        return self::isValidGoogleClientId($id) ? $id : '';
+    }
+
+    public static function isValidGoogleClientId($id) {
+        return is_string($id) && (bool)preg_match('/^[0-9A-Za-z._-]+\.apps\.googleusercontent\.com$/', $id);
+    }
+
+    /**
+     * Validate the claims of a Google ID token (after Google has verified the signature).
+     * Returns null when valid, otherwise a short machine-readable failure reason.
+     */
+    public static function validateGoogleClaims($claims, $clientId, $now = null) {
+        $now = $now ?? time();
+        if (!is_array($claims)) return 'invalid_claims';
+        if ($clientId === '' || ($claims['aud'] ?? '') !== $clientId) return 'audience_mismatch';
+        if (!in_array($claims['iss'] ?? '', ['accounts.google.com', 'https://accounts.google.com'], true)) return 'issuer_mismatch';
+        if ((int)($claims['exp'] ?? 0) <= $now) return 'token_expired';
+        $verified = $claims['email_verified'] ?? false;
+        if (!($verified === true || $verified === 'true' || $verified === 1 || $verified === '1')) return 'email_not_verified';
+        if (empty($claims['sub']) || empty($claims['email']) || !filter_var($claims['email'], FILTER_VALIDATE_EMAIL)) return 'missing_identity';
+        return null;
+    }
+
+    /**
+     * Ask Google to verify an ID token's signature and return its claims (null on failure).
+     */
+    public static function fetchGoogleTokenClaims($idToken) {
+        if (!is_string($idToken) || $idToken === '' || strlen($idToken) > 4096 || !preg_match('/^[A-Za-z0-9._-]+$/', $idToken)) {
+            return null;
+        }
+        $url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($idToken);
+        $body = false;
+
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 8,
+                CURLOPT_CONNECTTIMEOUT => 5,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2
+            ]);
+            $body = curl_exec($ch);
+            $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($status !== 200) $body = false;
+        } else {
+            $context = stream_context_create(['http' => ['timeout' => 8, 'ignore_errors' => false]]);
+            $body = @file_get_contents($url, false, $context);
+        }
+
+        if ($body === false || $body === '') return null;
+        $claims = json_decode($body, true);
+        return is_array($claims) ? $claims : null;
+    }
+
+    /**
      * Record a login attempt and apply lockout policy
      */
     public static function recordLoginAttempt($identifier, $ip, $userAgent, $success, $failureReason = null, $userRow = null) {

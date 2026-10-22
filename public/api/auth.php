@@ -103,6 +103,88 @@ switch ($action) {
         ]);
         exit;
 
+    case 'google_config':
+        // Public: the OAuth Client ID is not a secret and is needed by the browser to render the button.
+        $googleClientId = Security::getGoogleClientId();
+        echo json_encode([
+            'enabled' => $googleClientId !== '',
+            'client_id' => $googleClientId
+        ]);
+        exit;
+
+    case 'google_login':
+        if ($method !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed.']);
+            exit;
+        }
+
+        Security::checkRateLimit($ip);
+
+        $googleClientId = Security::getGoogleClientId();
+        if ($googleClientId === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Google sign-in is not configured for this site.']);
+            exit;
+        }
+
+        $credential = (string)($input['credential'] ?? '');
+        $claims = Security::fetchGoogleTokenClaims($credential);
+        $claimError = Security::validateGoogleClaims($claims, $googleClientId);
+
+        if ($claimError !== null) {
+            Security::recordLoginAttempt('google-sign-in', $ip, $userAgent, false, 'google_' . $claimError, null);
+            http_response_code(401);
+            echo json_encode(['error' => 'Google sign-in could not be verified. Please try again.']);
+            exit;
+        }
+
+        $googleEmail = strtolower(trim($claims['email']));
+        $pdo = get_cms_pdo();
+        $stmt = $pdo->prepare("SELECT * FROM cms_users WHERE LOWER(email) = LOWER(?)");
+        $stmt->execute([$googleEmail]);
+        $user = $stmt->fetch();
+        $now = time();
+
+        if (!$user) {
+            Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_no_matching_account', null);
+            http_response_code(403);
+            echo json_encode([
+                'error' => 'This Google account is not authorized for the CMS. Ask an administrator to add your email address first.'
+            ]);
+            exit;
+        }
+
+        if (!empty($user['locked_until']) && $user['locked_until'] > $now) {
+            $waitMinutes = ceil(($user['locked_until'] - $now) / 60);
+            http_response_code(423);
+            echo json_encode([
+                'error' => "Account temporarily locked. Try again in {$waitMinutes} minute(s)."
+            ]);
+            exit;
+        }
+
+        if ($user['status'] !== 'active') {
+            Security::recordLoginAttempt($googleEmail, $ip, $userAgent, false, 'google_account_inactive', $user);
+            http_response_code(403);
+            echo json_encode(['error' => 'This account has been deactivated. Please contact an administrator.']);
+            exit;
+        }
+
+        Security::recordLoginAttempt($googleEmail, $ip, $userAgent, true, null, $user);
+        Security::logAudit($user['id'], 'user.login_google', 'user', $user['id'], ['ip' => $ip]);
+        $sessionData = Security::createSession($user, $ip, $userAgent, !empty($input['remember']));
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login successful',
+            'token' => $sessionData['token'],
+            'csrf_token' => $sessionData['csrf_token'],
+            'expires_at' => $sessionData['expires_at'],
+            'user' => $sessionData['user']
+        ]);
+        exit;
+
     case 'me':
         $currentUser = Security::getCurrentUser();
         if (!$currentUser) {

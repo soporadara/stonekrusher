@@ -159,6 +159,18 @@
     </image:image>
   </url>
   <url>
+    <loc>https://stonekrusher.com/terms-of-service/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/privacy-policy/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://stonekrusher.com/ai.txt</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>monthly</changefreq>

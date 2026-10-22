@@ -1200,8 +1200,18 @@ switch ($action) {
         $allowedSettings = [
             'site_name', 'site_url', 'admin_email', 'max_failed_logins',
             'lockout_duration_minutes', 'session_lifetime_hours',
-            'audit_log_retention_days', 'default_theme', 'enable_2fa', 'posts_per_page'
+            'audit_log_retention_days', 'default_theme', 'enable_2fa', 'posts_per_page',
+            'google_client_id'
         ];
+
+        if (isset($input['google_client_id'])) {
+            $input['google_client_id'] = trim((string)$input['google_client_id']);
+            if ($input['google_client_id'] !== '' && !Security::isValidGoogleClientId($input['google_client_id'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invalid Google Client ID. It should look like 1234567890-abc123.apps.googleusercontent.com']);
+                exit;
+            }
+        }
 
         $stmt = $pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES (?, ?, ?) 
                                ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = excluded.updated_at");
