@@ -15,6 +15,7 @@ import CmsUserManager from './CmsUserManager';
 import CmsSettings from './CmsSettings';
 import CmsSystemStatus from './CmsSystemStatus';
 import CmsProfileModal from './CmsProfileModal';
+import CmsTabErrorBoundary from './CmsTabErrorBoundary';
 
 export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -29,6 +30,13 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'dark');
   const [editingPostId, setEditingPostId] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Sync activeTab if initialTab changes externally
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Verify Current Session
   useEffect(() => {
@@ -339,71 +347,77 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
 
         {/* CONTENT CANVAS */}
         <main className="cms-content">
-          {activeTab === 'overview' && (
-            <CmsDashboard
-              csrfToken={csrfToken}
-              onNavigateTab={handleNavigate}
-              onSelectPost={handleSelectPostFromDashboard}
-            />
-          )}
+          <CmsTabErrorBoundary
+            tabName={activeItemLabel}
+            tabKey={activeTab}
+            onReset={() => setActiveTab('overview')}
+          >
+            {activeTab === 'overview' && (
+              <CmsDashboard
+                csrfToken={csrfToken}
+                onNavigateTab={handleNavigate}
+                onSelectPost={handleSelectPostFromDashboard}
+              />
+            )}
 
-          {activeTab === 'posts' && (
-            <CmsBlogManager
-              csrfToken={csrfToken}
-              editingPostId={editingPostId}
-              initialStatusFilter={tabOptions.status || ''}
-              onClearEditingId={() => setEditingPostId(null)}
-            />
-          )}
+            {activeTab === 'posts' && (
+              <CmsBlogManager
+                csrfToken={csrfToken}
+                editingPostId={editingPostId}
+                initialStatusFilter={tabOptions.status || ''}
+                onClearEditingId={() => setEditingPostId(null)}
+              />
+            )}
 
-          {activeTab === 'categories' && (
-            <CmsCategoryManager csrfToken={csrfToken} />
-          )}
+            {activeTab === 'categories' && (
+              <CmsCategoryManager csrfToken={csrfToken} />
+            )}
 
-          {activeTab === 'products' && (
-            <CmsProductManager
-              csrfToken={csrfToken}
-              initialStatusFilter={tabOptions.status || ''}
-            />
-          )}
+            {activeTab === 'products' && (
+              <CmsProductManager
+                csrfToken={csrfToken}
+                initialStatusFilter={tabOptions.status || ''}
+              />
+            )}
 
-          {activeTab === 'media' && (
-            <CmsMediaLibrary csrfToken={csrfToken} />
-          )}
+            {activeTab === 'media' && (
+              <CmsMediaLibrary csrfToken={csrfToken} />
+            )}
 
-          {activeTab === 'crm' && (
-            <CmsCrmLeads
-              csrfToken={csrfToken}
-              initialFilterStatus={tabOptions.status || 'all'}
-            />
-          )}
+            {activeTab === 'crm' && (
+              <CmsCrmLeads
+                csrfToken={csrfToken}
+                initialFilterStatus={tabOptions.status || 'all'}
+              />
+            )}
 
-          {activeTab === 'support' && (
-            <CmsSupportTracker
-              csrfToken={csrfToken}
-              initialFilterStatus={tabOptions.status || 'all'}
-            />
-          )}
+            {activeTab === 'support' && (
+              <CmsSupportTracker
+                csrfToken={csrfToken}
+                initialFilterStatus={tabOptions.status || 'all'}
+              />
+            )}
 
-          {activeTab === 'seo' && (
-            <CmsSeoSuite csrfToken={csrfToken} />
-          )}
+            {activeTab === 'seo' && (
+              <CmsSeoSuite csrfToken={csrfToken} />
+            )}
 
-          {activeTab === 'users' && (
-            <CmsUserManager csrfToken={csrfToken} currentUser={currentUser} />
-          )}
+            {activeTab === 'users' && (
+              <CmsUserManager csrfToken={csrfToken} currentUser={currentUser} />
+            )}
 
-          {activeTab === 'security' && (
-            <CmsSecurityCenter csrfToken={csrfToken} currentUser={currentUser} />
-          )}
+            {activeTab === 'security' && (
+              <CmsSecurityCenter csrfToken={csrfToken} currentUser={currentUser} />
+            )}
 
-          {activeTab === 'settings' && (
-            <CmsSettings csrfToken={csrfToken} />
-          )}
+            {activeTab === 'settings' && (
+              <CmsSettings csrfToken={csrfToken} />
+            )}
 
-          {activeTab === 'system' && (
-            <CmsSystemStatus csrfToken={csrfToken} />
-          )}
+            {activeTab === 'system' && (
+              <CmsSystemStatus csrfToken={csrfToken} />
+            )}
+          </CmsTabErrorBoundary>
         </main>
 
       </div>

@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './cms-vuexy.css';
 
+function safeFormatDate(val) {
+  if (!val) return '—';
+  try {
+    const num = Number(val);
+    const date = !isNaN(num) && num > 0
+      ? new Date(num > 1e11 ? num : num * 1000)
+      : new Date(val);
+    return isNaN(date.getTime()) ? String(val) : date.toLocaleString();
+  } catch (e) {
+    return String(val);
+  }
+}
+
 export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +134,10 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
     );
   }
 
-  const { metrics = {}, recent_posts = [], recent_activity = [], recent_inquiries = [] } = data || {};
+  const metrics = (data && data.metrics) || {};
+  const recent_posts = Array.isArray(data?.recent_posts) ? data.recent_posts : [];
+  const recent_activity = Array.isArray(data?.recent_activity) ? data.recent_activity : [];
+  const recent_inquiries = Array.isArray(data?.recent_inquiries) ? data.recent_inquiries : [];
   const {
     posts = {},
     products = {},
@@ -130,11 +146,13 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
     support = {},
     security = {},
     system = {},
-    analytics = {},
-    activity_chart = []
+    analytics = {}
   } = metrics;
+  const activity_chart = Array.isArray(metrics?.activity_chart) ? metrics.activity_chart : [];
 
-  const maxActivityValue = Math.max(1, ...activity_chart.map(a => Math.max(a.inquiries || 0, a.activity || 0)));
+  const maxActivityValue = activity_chart.length > 0
+    ? Math.max(1, ...activity_chart.map(a => Math.max(Number(a?.inquiries) || 0, Number(a?.activity) || 0)))
+    : 1;
 
   return (
     <div className="cms-vuexy-grid" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
@@ -707,7 +725,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
                 {recent_activity.map((act) => (
                   <tr key={act.id}>
                     <td style={{ color: 'var(--cms-text-subtle)', whiteSpace: 'nowrap' }}>
-                      {new Date(act.created_at * 1000).toLocaleString()}
+                      {safeFormatDate(act.created_at)}
                     </td>
                     <td>
                       <span style={{

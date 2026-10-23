@@ -6,6 +6,7 @@ import FullScreenLightbox from './components/FullScreenLightbox'
 import StoreEmbed, { clearStoreCheckout, preloadStore } from './components/StoreEmbed'
 import deployedBlogPosts from '../data/blog-posts.json'
 import CmsApp from './components/cms/CmsApp'
+import CmsErrorBoundary from './components/cms/CmsErrorBoundary'
 import LegalPage from './components/LegalPage'
 import { LEGAL_DOCUMENTS } from './data/legal-content'
 import typhonFactoryEngineerAsset from './assets/typhon_factory_engineer.png'
@@ -6371,11 +6372,17 @@ export default function App() {
   ];
 
   if (currentView === 'admin-blog') {
+    const initialCmsTab = dashboardTab === 'blog' || dashboardTab === 'posts'
+      ? 'posts'
+      : (dashboardTab && dashboardTab !== 'home' ? dashboardTab : 'overview');
+
     return (
-      <CmsApp
-        onBackToSite={() => navigate('home')}
-        initialTab="overview"
-      />
+      <CmsErrorBoundary onBackToSite={() => navigate('home')}>
+        <CmsApp
+          onBackToSite={() => navigate('home')}
+          initialTab={initialCmsTab}
+        />
+      </CmsErrorBoundary>
     );
   }
 

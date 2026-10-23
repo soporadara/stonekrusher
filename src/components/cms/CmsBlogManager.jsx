@@ -10,6 +10,19 @@ function sanitizeHtml(html = '') {
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
 }
 
+function safeIsoDate(val) {
+  if (!val) return '';
+  try {
+    const num = Number(val);
+    const d = !isNaN(num) && num > 0
+      ? (num < 1e11 ? new Date(num * 1000) : new Date(num))
+      : new Date(val);
+    return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 16);
+  } catch {
+    return '';
+  }
+}
+
 export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId, initialStatusFilter = '' }) {
   // Navigation / View state
   const [view, setView] = useState('list'); // 'list' | 'editor'
@@ -65,11 +78,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
     try {
       const res = await fetch('/api/cms.php?action=categories_list');
       const data = await res.json();
-      if (data.success) {
-        setCategories(data.categories || []);
+      if (data && data.success && Array.isArray(data.categories)) {
+        setCategories(data.categories);
+      } else {
+        setCategories([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch categories:', err);
+      setCategories([]);
     }
   };
 
@@ -84,13 +100,20 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
 
       const res = await fetch(url);
       const data = await res.json();
-      if (data.success) {
-        setPosts(data.posts || []);
+      if (data && data.success && Array.isArray(data.posts)) {
+        setPosts(data.posts);
         setTotal(data.total || 0);
         setTotalPages(data.total_pages || 1);
+      } else {
+        setPosts([]);
+        setTotal(0);
+        setTotalPages(1);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch blog posts:', err);
+      setPosts([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -113,6 +136,15 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       if (onClearEditingId) onClearEditingId();
     }
   }, [editingPostId]);
+
+  // Synchronize visual editor DOM when entering visual mode or loading an article
+  useEffect(() => {
+    if (view === 'editor' && editorTab === 'visual' && visualEditorRef.current) {
+      if (visualEditorRef.current.innerHTML !== (form.content || '')) {
+        visualEditorRef.current.innerHTML = form.content || '';
+      }
+    }
+  }, [view, editorTab, form.id]);
 
   // Check Slug Availability
   const checkSlugCollision = async (slugVal, postId) => {
@@ -171,14 +203,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           excerpt: p.excerpt || '',
           content: p.content || '',
           status: p.status || 'Draft',
-          scheduled_at: p.scheduled_at ? new Date(p.scheduled_at * 1000).toISOString().slice(0, 16) : '',
+          scheduled_at: safeIsoDate(p.scheduled_at),
           video_url: parsedData.video_url || '',
           meta_title: parsedData.meta_title || '',
           meta_description: parsedData.meta_description || '',
           tags: Array.isArray(tagsArr) ? tagsArr.join(', ') : '',
           published_date: p.published_date || new Date().toISOString().split('T')[0]
         });
-        setRevisions(data.revisions || []);
+        setRevisions(Array.isArray(data.revisions) ? data.revisions : []);
         setIsEditing(true);
         setView('editor');
         setEditorTab('visual');
@@ -477,7 +509,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             <div className="cms-card cms-article-card">
               <div className="cms-card-header-row">
                 <label className="cms-card-label">Article Summary / Excerpt</label>
-                <span className="cms-char-counter">{form.excerpt.length}/300 chars</span>
+                <span className="cms-char-counter">{(form.excerpt || '').length}/300 chars</span>
               </div>
               <textarea
                 className="cms-textarea"
@@ -604,7 +636,6 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                     className="cms-visual-editor"
                     contentEditable
                     suppressContentEditableWarning
-                    dangerouslySetInnerHTML={{ __html: form.content }}
                     onInput={(e) => {
                       setForm(prev => ({ ...prev, content: e.currentTarget.innerHTML }));
                       setHasUnsavedChanges(true);
@@ -656,8 +687,8 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             <div className="cms-card cms-article-card">
               <div className="cms-card-header-row">
                 <h3 className="cms-card-title">Publishing Status</h3>
-                <span className={`cms-status-badge is-${form.status.toLowerCase()}`}>
-                  {form.status === 'Published' ? 'Public' : form.status}
+                <span className={`cms-status-badge is-${(form.status || 'Draft').toLowerCase()}`}>
+                  {form.status === 'Published' ? 'Public' : (form.status || 'Draft')}
                 </span>
               </div>
 
@@ -733,7 +764,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                 />
                 <div className="cms-author-pill">
                   <div className="cms-author-avatar">
-                    {form.author ? form.author.charAt(0).toUpperCase() : 'A'}
+                    {(typeof form.author === 'string' && form.author ? form.author.charAt(0) : 'A').toUpperCase()}
                   </div>
                   <div>
                     <div className="cms-author-name">{form.author || 'Admin'}</div>
@@ -757,7 +788,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       setHasUnsavedChanges(true);
                     }}
                   >
-                    {categories.length > 0 ? (
+                    {Array.isArray(categories) && categories.length > 0 ? (
                       categories.map(cat => (
                         <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
                       ))
@@ -1006,9 +1037,11 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
             <option value="">All Categories</option>
-            {categories.map(c => (
-              <option key={c.id || c.name} value={c.name}>{c.name}</option>
-            ))}
+            {(Array.isArray(categories) ? categories : []).map(c => {
+              const name = typeof c === 'string' ? c : (c.name || c.id || '');
+              const id = typeof c === 'string' ? c : (c.id || c.name || '');
+              return <option key={id} value={name}>{name}</option>;
+            })}
           </select>
 
           <select
@@ -1046,7 +1079,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                     Loading articles...
                   </td>
                 </tr>
-              ) : posts.length === 0 ? (
+              ) : (Array.isArray(posts) ? posts : []).length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--cms-text-muted)' }}>
                     <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📝</div>
@@ -1057,7 +1090,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                   </td>
                 </tr>
               ) : (
-                posts.map(p => (
+                (Array.isArray(posts) ? posts : []).filter(Boolean).map(p => (
                   <tr key={p.id}>
                     <td style={{ maxWidth: '340px' }}>
                       <div className="cms-table-article-cell">
