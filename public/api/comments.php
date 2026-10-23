@@ -127,7 +127,7 @@ if ($method === 'GET') {
 
         send_json(200, ['success' => true, 'comments' => $comments]);
     } catch (Exception $e) {
-        send_json(200, ['success' => true, 'comments' => []]);
+        send_json(200, ['success' => true, 'comments' => [], 'debug_err' => $e->getMessage()]);
     }
 }
 
