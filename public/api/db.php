@@ -333,6 +333,36 @@ function ensure_cms_schema_migrated($pdo) {
             updated_at BIGINT
         )");
 
+        // Safe column check & migration for products table
+        $existingProdCols = [];
+        if ($isMysql) {
+            $q = $pdo->query("SHOW COLUMNS FROM products");
+            while ($row = $q->fetch()) {
+                $existingProdCols[] = strtolower($row['Field']);
+            }
+        } else {
+            $q = $pdo->query("PRAGMA table_info(products)");
+            while ($row = $q->fetch()) {
+                $existingProdCols[] = strtolower($row['name']);
+            }
+        }
+
+        $prodColsToAdd = [
+            'brand' => "VARCHAR(100) NULL",
+            'short_description' => "TEXT NULL",
+            'sale_price' => "VARCHAR(100) NULL",
+            'stock' => "INT DEFAULT 1",
+            'featured' => "INT DEFAULT 0",
+            'add_to_cart' => "INT DEFAULT 1",
+            'buy_url' => "VARCHAR(1000) NULL"
+        ];
+
+        foreach ($prodColsToAdd as $col => $definition) {
+            if (!in_array(strtolower($col), $existingProdCols)) {
+                $pdo->exec("ALTER TABLE products ADD COLUMN {$col} {$definition}");
+            }
+        }
+
         // 13. Password Reset Tokens Table
         $pdo->exec("CREATE TABLE IF NOT EXISTS cms_password_resets (
             token VARCHAR(128) PRIMARY KEY,
@@ -575,14 +605,191 @@ function seed_cms_defaults($pdo) {
         }
     }
 
+function convert_sections_to_html($sections) {
+    if (!is_array($sections) || empty($sections)) return '';
+    $htmlParts = [];
+    foreach ($sections as $sec) {
+        if (!empty($sec['h2'])) {
+            $htmlParts[] = '<h2>' . htmlspecialchars($sec['h2'], ENT_QUOTES, 'UTF-8') . '</h2>';
+        }
+        if (!empty($sec['body'])) {
+            $body = (string)$sec['body'];
+            $paragraphs = preg_split('/\r?\n\r?\n+/', $body);
+            foreach ($paragraphs as $para) {
+                $trimmed = trim($para);
+                if ($trimmed === '') continue;
+
+                $lines = explode("\n", $trimmed);
+                $renderedLines = [];
+                foreach ($lines as $line) {
+                    $lTrim = trim($line);
+                    if ($lTrim === '') continue;
+
+                    // Match image URL on its own line
+                    if (preg_match('/^(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif|\.svg))$/i', $lTrim, $im)) {
+                        if (!empty($renderedLines)) {
+                            $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                            $renderedLines = [];
+                        }
+                        $url = htmlspecialchars($im[1]);
+                        $alt = htmlspecialchars($sec['h2'] ?? 'StoneKrusher machinery');
+                        $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
+                        continue;
+                    }
+
+                    // Match markdown image ![alt](url)
+                    if (preg_match('/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/', $lTrim, $im)) {
+                        if (!empty($renderedLines)) {
+                            $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                            $renderedLines = [];
+                        }
+                        $alt = htmlspecialchars($im[1] ?: ($sec['h2'] ?? 'StoneKrusher machinery'));
+                        $url = htmlspecialchars($im[2]);
+                        $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
+                        continue;
+                    }
+
+                    // Format markdown link [text](url) -> <a href="url" target="_blank" rel="noopener">text</a>
+                    $formatted = preg_replace_callback('/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/', function($lm) {
+                        return '<a href="' . htmlspecialchars($lm[2]) . '" target="_blank" rel="noopener">' . htmlspecialchars($lm[1]) . '</a>';
+                    }, htmlspecialchars($lTrim, ENT_NOQUOTES, 'UTF-8'));
+
+                    // Format **bold**
+                    $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+
+                    $renderedLines[] = $formatted;
+                }
+
+                if (!empty($renderedLines)) {
+                    $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                }
+            }
+        }
+
+        if (!empty($sec['h3'])) {
+            $htmlParts[] = '<h3>' . htmlspecialchars($sec['h3'], ENT_QUOTES, 'UTF-8') . '</h3>';
+        }
+        if (!empty($sec['h3Body'])) {
+            $htmlParts[] = '<p>' . nl2br(htmlspecialchars(trim($sec['h3Body']))) . '</p>';
+        }
+    }
+    return implode("\n", $htmlParts);
+}
+
+function seed_products_from_json($pdo, $force = false) {
+    $now = time();
+    $prodCountStmt = $pdo->query("SELECT COUNT(*) FROM products");
+    $currentCount = (int)$prodCountStmt->fetchColumn();
+    if ($currentCount > 0 && !$force) {
+        return 0;
+    }
+
+    $candidatePaths = [
+        __DIR__ . '/equipment-products.json',
+        dirname(__DIR__) . '/api/equipment-products.json',
+        dirname(__DIR__) . '/data/equipment-products.json',
+        dirname(__DIR__, 2) . '/src/data/equipment-products.json',
+        dirname(__DIR__, 2) . '/hbuilds/last-source/src/data/equipment-products.json',
+        dirname(__DIR__, 2) . '/data/equipment-products.json',
+    ];
+
+    $prodJsonFile = null;
+    foreach ($candidatePaths as $p) {
+        if (file_exists($p) && filesize($p) > 100) {
+            $prodJsonFile = $p;
+            break;
+        }
+    }
+
+    if (!$prodJsonFile) {
+        return 0;
+    }
+
+    $prodsData = json_decode(file_get_contents($prodJsonFile), true);
+    if (!is_array($prodsData)) {
+        return 0;
+    }
+
+    $inserted = 0;
+    $existingSlugs = $pdo->query("SELECT slug FROM products")->fetchAll(PDO::FETCH_COLUMN);
+    $existingSlugMap = array_flip($existingSlugs);
+
+    $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, description, short_description, brand, status, featured, add_to_cart, buy_url, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+    foreach ($prodsData as $pr) {
+        $slug = $pr['slug'] ?? ('prod-' . uniqid());
+        if (isset($existingSlugMap[$slug])) continue;
+
+        $name = $pr['name'] ?? 'Equipment Product';
+        $sku = 'TYPH-' . strtoupper(substr(md5($slug), 0, 6));
+        $cat = $pr['category'] ?? 'Machinery';
+        $price = isset($pr['price']) ? (string)$pr['price'] : '';
+        $salePrice = isset($pr['salePrice']) ? (string)$pr['salePrice'] : null;
+        $stock = isset($pr['stock']) ? (int)$pr['stock'] : rand(1, 5);
+        $img = $pr['image'] ?? '';
+        $gallery = isset($pr['images']) && is_array($pr['images']) ? json_encode($pr['images']) : json_encode([]);
+        $desc = $pr['fullDesc'] ?? ($pr['desc'] ?? '');
+        $shortDesc = $pr['desc'] ?? substr(strip_tags($desc), 0, 150);
+        $brand = $pr['brand'] ?? 'StoneKrusher';
+        $buyUrl = $pr['checkoutUrl'] ?? ($pr['hash'] ?? '');
+        $status = $pr['status'] ?? 'Published';
+        $featured = !empty($pr['featured']) ? 1 : 0;
+        $addToCart = 1;
+        $dataJson = json_encode($pr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        try {
+            $stmt->execute([
+                $slug,
+                $slug,
+                $name,
+                $sku,
+                $cat,
+                $price,
+                $salePrice,
+                $stock,
+                $img,
+                $gallery,
+                $desc,
+                $shortDesc,
+                $brand,
+                $status,
+                $featured,
+                $addToCart,
+                $buyUrl,
+                $dataJson,
+                $now,
+                $now
+            ]);
+            $inserted++;
+            $existingSlugMap[$slug] = true;
+        } catch (Exception $e) {
+            // Ignore duplicate key or malformed item
+        }
+    }
+
+    return $inserted;
+}
+
     // 5. Seed Existing Blog Posts into database if table is empty
     $postCountStmt = $pdo->query("SELECT COUNT(*) FROM blog_posts");
     if ((int)$postCountStmt->fetchColumn() === 0) {
-        $blogJsonFile = dirname(__DIR__, 2) . '/data/blog-posts.json';
-        if (file_exists($blogJsonFile)) {
+        $candidateBlogFiles = [
+            dirname(__DIR__, 2) . '/data/blog-posts.json',
+            dirname(__DIR__) . '/api/blog-posts-data.json',
+            __DIR__ . '/blog-posts-data.json',
+            __DIR__ . '/blog-posts-default.json'
+        ];
+        $blogJsonFile = null;
+        foreach ($candidateBlogFiles as $bf) {
+            if (file_exists($bf) && filesize($bf) > 100) {
+                $blogJsonFile = $bf;
+                break;
+            }
+        }
+        if ($blogJsonFile) {
             $postsData = json_decode(file_get_contents($blogJsonFile), true);
             if (is_array($postsData)) {
-                $stmt = $pdo->prepare("INSERT INTO blog_posts (id, slug, title, category, author, featured_image, excerpt, data_json, status, published_date, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt = $pdo->prepare("INSERT INTO blog_posts (id, slug, title, category, author, featured_image, excerpt, content, data_json, status, published_date, updated_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($postsData as $p) {
                     $slug = $p['slug'] ?? ('post-' . uniqid());
                     $title = $p['title'] ?? 'Untitled Article';
@@ -590,6 +797,10 @@ function seed_cms_defaults($pdo) {
                     $author = $p['author'] ?? 'Admin KONSTRUCTZ';
                     $img = $p['image'] ?? ($p['featuredImage'] ?? '');
                     $desc = $p['desc'] ?? ($p['excerpt'] ?? '');
+                    $content = $p['content'] ?? '';
+                    if (empty($content) && !empty($p['sections'])) {
+                        $content = convert_sections_to_html($p['sections']);
+                    }
                     $dataJson = json_encode($p, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                     $pubDate = $p['publishedDate'] ?? ($p['date'] ?? date('Y-m-d'));
                     $status = $p['status'] ?? 'Published';
@@ -601,6 +812,7 @@ function seed_cms_defaults($pdo) {
                         $author,
                         $img,
                         $desc,
+                        $content,
                         $dataJson,
                         $status,
                         $pubDate,
@@ -612,43 +824,28 @@ function seed_cms_defaults($pdo) {
         }
     }
 
-    // 6. Seed Products from equipment-products.json if table is empty
-    $prodCountStmt = $pdo->query("SELECT COUNT(*) FROM products");
-    if ((int)$prodCountStmt->fetchColumn() === 0) {
-        $prodJsonFile = dirname(__DIR__, 2) . '/src/data/equipment-products.json';
-        if (file_exists($prodJsonFile)) {
-            $prodsData = json_decode(file_get_contents($prodJsonFile), true);
-            if (is_array($prodsData)) {
-                $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, image_url, gallery_json, description, status, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                foreach ($prodsData as $idx => $pr) {
-                    $slug = $pr['slug'] ?? ('prod-' . uniqid());
-                    $name = $pr['name'] ?? 'Equipment Product';
-                    $sku = 'SKU-' . strtoupper(substr(md5($slug), 0, 8));
-                    $cat = $pr['category'] ?? 'Machinery';
-                    $price = isset($pr['price']) ? (string)$pr['price'] : '';
-                    $img = $pr['image'] ?? '';
-                    $gallery = isset($pr['images']) ? json_encode($pr['images']) : json_encode([]);
-                    $desc = $pr['desc'] ?? ($pr['fullDesc'] ?? '');
-                    $dataJson = json_encode($pr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-                    $stmt->execute([
-                        $slug,
-                        $slug,
-                        $name,
-                        $sku,
-                        $cat,
-                        $price,
-                        $img,
-                        $gallery,
-                        $desc,
-                        'Published',
-                        $dataJson,
-                        $now,
-                        $now
-                    ]);
+    // Auto-migrate any existing posts that have NULL or empty content:
+    try {
+        $postsWithNull = $pdo->query("SELECT id, data_json FROM blog_posts WHERE content IS NULL OR content = ''")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($postsWithNull as $row) {
+            if (!empty($row['data_json'])) {
+                $pData = json_decode($row['data_json'], true);
+                if (!empty($pData['sections']) && is_array($pData['sections'])) {
+                    $html = convert_sections_to_html($pData['sections']);
+                    if (!empty($html)) {
+                        $pdo->prepare("UPDATE blog_posts SET content = ? WHERE id = ?")->execute([$html, $row['id']]);
+                    }
+                } elseif (!empty($pData['content'])) {
+                    $pdo->prepare("UPDATE blog_posts SET content = ? WHERE id = ?")->execute([$pData['content'], $row['id']]);
                 }
             }
         }
+    } catch (Exception $e) {
+        // Non-fatal
     }
+
+    // 6. Seed Products from equipment-products.json if table is empty
+    seed_products_from_json($pdo);
 
     // 7. Seed Sample Inquiries / CRM Leads if empty
     $inqCountStmt = $pdo->query("SELECT COUNT(*) FROM cms_inquiries");

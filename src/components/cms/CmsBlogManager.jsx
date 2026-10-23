@@ -23,6 +23,74 @@ function safeIsoDate(val) {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function convertSectionsToHtml(sections) {
+  if (!Array.isArray(sections) || sections.length === 0) return '';
+  const parts = [];
+  sections.forEach(sec => {
+    if (sec.h2) {
+      parts.push(`<h2>${escapeHtml(sec.h2)}</h2>`);
+    }
+    if (sec.body) {
+      const paragraphs = String(sec.body).split(/\r?\n\r?\n+/);
+      paragraphs.forEach(para => {
+        const trimmed = para.trim();
+        if (!trimmed) return;
+        const lines = trimmed.split('\n');
+        const renderedLines = [];
+        lines.forEach(line => {
+          const lTrim = line.trim();
+          if (!lTrim) return;
+          // Standalone image URL
+          const imgMatch = lTrim.match(/^(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif|\.svg))$/i);
+          if (imgMatch) {
+            if (renderedLines.length > 0) {
+              parts.push(`<p>${renderedLines.join('<br />')}</p>`);
+              renderedLines.length = 0;
+            }
+            parts.push(`<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(imgMatch[1])}" alt="${escapeHtml(sec.h2 || 'StoneKrusher machinery')}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>`);
+            return;
+          }
+          // Markdown image ![alt](url)
+          const mdImgMatch = lTrim.match(/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/);
+          if (mdImgMatch) {
+            if (renderedLines.length > 0) {
+              parts.push(`<p>${renderedLines.join('<br />')}</p>`);
+              renderedLines.length = 0;
+            }
+            parts.push(`<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(mdImgMatch[2])}" alt="${escapeHtml(mdImgMatch[1] || sec.h2 || 'StoneKrusher machinery')}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>`);
+            return;
+          }
+          // Markdown links [text](url)
+          let formatted = escapeHtml(lTrim).replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+          // **bold**
+          formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          renderedLines.push(formatted);
+        });
+        if (renderedLines.length > 0) {
+          parts.push(`<p>${renderedLines.join('<br />')}</p>`);
+        }
+      });
+    }
+    if (sec.h3) {
+      parts.push(`<h3>${escapeHtml(sec.h3)}</h3>`);
+    }
+    if (sec.h3Body) {
+      parts.push(`<p>${escapeHtml(sec.h3Body).replace(/\n/g, '<br />')}</p>`);
+    }
+  });
+  return parts.join('\n');
+}
+
 export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId, initialStatusFilter = '' }) {
   // Navigation / View state
   const [view, setView] = useState('list'); // 'list' | 'editor'
@@ -141,11 +209,11 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   // Synchronize visual editor DOM when entering visual mode or loading an article
   useEffect(() => {
     if (view === 'editor' && editorTab === 'visual' && visualEditorRef.current) {
-      if (visualEditorRef.current.innerHTML !== (form.content || '')) {
+      if (document.activeElement !== visualEditorRef.current && visualEditorRef.current.innerHTML !== (form.content || '')) {
         visualEditorRef.current.innerHTML = form.content || '';
       }
     }
-  }, [view, editorTab, form.id]);
+  }, [view, editorTab, form.id, form.content]);
 
   // Check Slug Availability
   const checkSlugCollision = async (slugVal, postId) => {
@@ -193,6 +261,11 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           parsedData = {};
         }
 
+        let contentVal = p.content || '';
+        if (!contentVal && parsedData && Array.isArray(parsedData.sections) && parsedData.sections.length > 0) {
+          contentVal = convertSectionsToHtml(parsedData.sections);
+        }
+
         setForm({
           id: p.id,
           title: p.title || '',
@@ -202,7 +275,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           featured_image: p.featured_image || '',
           cover_image_alt: parsedData.cover_image_alt || '',
           excerpt: p.excerpt || '',
-          content: p.content || '',
+          content: contentVal,
           status: p.status || 'Draft',
           scheduled_at: safeIsoDate(p.scheduled_at),
           video_url: parsedData.video_url || '',
@@ -596,7 +669,27 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       }}
                       title="Insert Image from Media Library"
                     >
-                      🖼️ Image
+                      🖼️ Media Library
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-tool-btn"
+                      onClick={() => {
+                        const url = prompt('Enter direct Image URL (e.g. https://img.miniexcavator.org/...):');
+                        if (url) {
+                          const alt = prompt('Enter Image Description / Alt text (optional):') || 'StoneKrusher equipment';
+                          const imgHtml = `<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p><p></p>`;
+                          if (editorTab === 'visual') {
+                            execFormat('insertHTML', imgHtml);
+                          } else {
+                            setForm(prev => ({ ...prev, content: prev.content + '\n\n' + imgHtml }));
+                            setHasUnsavedChanges(true);
+                          }
+                        }
+                      }}
+                      title="Insert Image by direct web URL"
+                    >
+                      🌐 Image URL
                     </button>
                     <button
                       type="button"

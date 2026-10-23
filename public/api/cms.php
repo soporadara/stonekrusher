@@ -102,6 +102,47 @@ function sync_products_to_catalog($pdo) {
     }
 }
 
+function convert_html_to_sections($html) {
+    if (empty(trim((string)$html))) return [];
+
+    // Convert <img> tags to isolated image URLs with newlines
+    $normalized = preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\'][^>]*\/?>/i', function($m) {
+        return "\n\n" . $m[1] . "\n\n";
+    }, (string)$html);
+
+    // Convert <br> and </p> to newlines
+    $normalized = preg_replace('/<br\s*\/?>/i', "\n", $normalized);
+    $normalized = preg_replace('/<\/p>/i', "\n\n", $normalized);
+
+    // Split by <h2> tags
+    $parts = preg_split('/<h2[^>]*>(.*?)<\/h2>/is', $normalized, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $sections = [];
+
+    if (count($parts) === 1) {
+        $clean = trim(strip_tags($parts[0]));
+        if (!empty($clean)) {
+            $sections[] = ['h2' => 'Overview', 'body' => $clean];
+        }
+    } else {
+        if (!empty(trim(strip_tags($parts[0])))) {
+            $sections[] = ['h2' => 'Introduction', 'body' => trim(strip_tags($parts[0]))];
+        }
+        for ($i = 1; $i < count($parts); $i += 2) {
+            $h2 = trim(strip_tags($parts[$i]));
+            $bodyHtml = $parts[$i + 1] ?? '';
+            $cleanBody = trim(strip_tags($bodyHtml));
+            $cleanBody = preg_replace("/\n{3,}/", "\n\n", $cleanBody);
+            if (!empty($h2) || !empty($cleanBody)) {
+                $sections[] = [
+                    'h2' => $h2 ?: 'Section',
+                    'body' => $cleanBody
+                ];
+            }
+        }
+    }
+    return $sections;
+}
+
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true) ?: $_POST;
 $pdo = get_cms_pdo();
@@ -372,12 +413,22 @@ switch ($action) {
         $id = $_GET['id'] ?? ($_GET['slug'] ?? '');
         $stmt = $pdo->prepare("SELECT * FROM blog_posts WHERE id = ? OR slug = ?");
         $stmt->execute([$id, $id]);
-        $post = $stmt->fetch();
+        $post = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$post) {
             http_response_code(404);
             echo json_encode(['error' => 'Post not found']);
             exit;
+        }
+
+        // If content is empty or null, reconstruct rich HTML from data_json.sections
+        if (empty(trim((string)($post['content'] ?? ''))) && !empty($post['data_json'])) {
+            $pData = json_decode($post['data_json'], true) ?: [];
+            if (!empty($pData['sections']) && is_array($pData['sections'])) {
+                $post['content'] = convert_sections_to_html($pData['sections']);
+            } elseif (!empty($pData['content'])) {
+                $post['content'] = $pData['content'];
+            }
         }
 
         // Get revision history
@@ -437,10 +488,11 @@ switch ($action) {
         }
 
         // If existing post, save revision before updating
+        $prevPost = null;
         if (!$isNew) {
             $prevStmt = $pdo->prepare("SELECT * FROM blog_posts WHERE id = ?");
             $prevStmt->execute([$postId]);
-            $prevPost = $prevStmt->fetch();
+            $prevPost = $prevStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($prevPost) {
                 $revId = 'rev-' . bin2hex(random_bytes(10));
@@ -456,8 +508,19 @@ switch ($action) {
             }
         }
 
+        // Preserve existing data_json properties and sync sections
+        $prevData = [];
+        if (!$isNew && !empty($prevPost['data_json'])) {
+            $prevData = json_decode($prevPost['data_json'], true) ?: [];
+        }
+
+        $parsedSections = convert_html_to_sections($content);
+        if (empty($parsedSections) && !empty($prevData['sections'])) {
+            $parsedSections = $prevData['sections'];
+        }
+
         // Construct full json for website compatibility
-        $structuredData = [
+        $structuredData = array_merge($prevData, [
             'id' => $slug,
             'slug' => $slug,
             'title' => $title,
@@ -468,12 +531,18 @@ switch ($action) {
             'desc' => $excerpt,
             'excerpt' => $excerpt,
             'content' => $content,
+            'sections' => $parsedSections,
             'status' => $status,
-            'tags' => json_decode($tagsJson, true) ?: [],
+            'tags' => json_decode($tagsJson, true) ?: ($prevData['tags'] ?? []),
             'publishedDate' => $pubDate,
             'date' => $pubDate,
             'updatedAt' => $now
-        ];
+        ]);
+        if (!empty($input['meta_title'])) $structuredData['meta_title'] = trim($input['meta_title']);
+        if (!empty($input['meta_description'])) $structuredData['meta_description'] = trim($input['meta_description']);
+        if (!empty($input['cover_image_alt'])) $structuredData['cover_image_alt'] = trim($input['cover_image_alt']);
+        if (!empty($input['video_url'])) $structuredData['video_url'] = trim($input['video_url']);
+
         $dataJson = json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         if ($isNew) {
@@ -708,32 +777,43 @@ switch ($action) {
     case 'products_list':
         Security::requirePermission($currentUser, 'products.view');
 
+        // Check if products table is empty. If so, auto-seed immediately!
+        $countStmt = $pdo->query("SELECT COUNT(*) FROM products");
+        if ((int)$countStmt->fetchColumn() === 0) {
+            seed_products_from_json($pdo);
+        }
+
         $search = trim($_GET['search'] ?? '');
         $category = trim($_GET['category'] ?? '');
         $status = trim($_GET['status'] ?? '');
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = max(1, min(100, (int)($_GET['limit'] ?? 12)));
+        $limit = max(1, min(200, (int)($_GET['limit'] ?? 15)));
         $offset = ($page - 1) * $limit;
 
         $where = [];
         $params = [];
 
         if (!empty($search)) {
-            $where[] = "(name LIKE ? OR slug LIKE ? OR sku LIKE ? OR description LIKE ?)";
+            $where[] = "(name LIKE ? OR slug LIKE ? OR sku LIKE ? OR description LIKE ? OR brand LIKE ?)";
+            $params[] = "%{$search}%";
             $params[] = "%{$search}%";
             $params[] = "%{$search}%";
             $params[] = "%{$search}%";
             $params[] = "%{$search}%";
         }
 
-        if (!empty($category)) {
+        if (!empty($category) && strtolower($category) !== 'all') {
             $where[] = "category = ?";
             $params[] = $category;
         }
 
-        if (!empty($status)) {
-            $where[] = "status = ?";
-            $params[] = $status;
+        if (!empty($status) && strtolower($status) !== 'all') {
+            if ($status === 'low-stock') {
+                $where[] = "(stock <= 2 OR stock IS NULL)";
+            } else {
+                $where[] = "LOWER(status) = LOWER(?)";
+                $params[] = $status;
+            }
         }
 
         $whereSql = count($where) ? "WHERE " . implode(" AND ", $where) : "";
@@ -742,10 +822,29 @@ switch ($action) {
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
-        $sql = "SELECT id, slug, name, sku, category, price, image_url, status, updated_at FROM products {$whereSql} ORDER BY updated_at DESC LIMIT {$limit} OFFSET {$offset}";
+        $sql = "SELECT id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, description, short_description, brand, status, featured, add_to_cart, buy_url, updated_at, data_json FROM products {$whereSql} ORDER BY updated_at DESC LIMIT {$limit} OFFSET {$offset}";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $prods = $stmt->fetchAll();
+        $rawProds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $prods = [];
+        foreach ($rawProds as $r) {
+            $data = !empty($r['data_json']) ? (json_decode($r['data_json'], true) ?: []) : [];
+            $r['brand'] = $r['brand'] ?: ($data['brand'] ?? 'StoneKrusher');
+            $r['short_description'] = $r['short_description'] ?: ($data['shortDescription'] ?? ($data['desc'] ?? ''));
+            $r['stock'] = isset($r['stock']) ? (int)$r['stock'] : ($data['stock'] ?? 1);
+            $r['sale_price'] = $r['sale_price'] ?: ($data['salePrice'] ?? null);
+            $r['featured'] = isset($r['featured']) ? (int)$r['featured'] : (!empty($data['featured']) ? 1 : 0);
+            $r['add_to_cart'] = isset($r['add_to_cart']) ? (int)$r['add_to_cart'] : ($data['addToCartEnabled'] !== false ? 1 : 0);
+            $r['buy_url'] = $r['buy_url'] ?: ($data['buyUrl'] ?? ($data['hash'] ?? ''));
+            $prods[] = $r;
+        }
+
+        // Global metric counts for metric cards
+        $totalAll = (int)$pdo->query("SELECT COUNT(*) FROM products")->fetchColumn();
+        $publishedCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE LOWER(status) = 'published'")->fetchColumn();
+        $draftCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE LOWER(status) = 'draft'")->fetchColumn();
+        $lowStockCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE stock <= 2 OR stock IS NULL")->fetchColumn();
 
         // Get unique categories for filter
         $cats = $pdo->query("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != '' ORDER BY category ASC")->fetchAll(PDO::FETCH_COLUMN);
@@ -754,6 +853,12 @@ switch ($action) {
             'success' => true,
             'products' => $prods,
             'categories' => $cats,
+            'metrics' => [
+                'total' => $totalAll,
+                'published' => $publishedCount,
+                'drafts' => $draftCount,
+                'low_stock' => $lowStockCount
+            ],
             'total' => $total,
             'page' => $page,
             'limit' => $limit,
@@ -767,13 +872,27 @@ switch ($action) {
         $id = $_GET['id'] ?? ($_GET['slug'] ?? '');
         $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? OR slug = ?");
         $stmt->execute([$id, $id]);
-        $prod = $stmt->fetch();
+        $prod = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$prod) {
             http_response_code(404);
             echo json_encode(['error' => 'Product not found.']);
             exit;
         }
+
+        $data = !empty($prod['data_json']) ? (json_decode($prod['data_json'], true) ?: []) : [];
+        $gallery = !empty($prod['gallery_json']) ? (json_decode($prod['gallery_json'], true) ?: []) : ($data['images'] ?? []);
+        $specs = !empty($prod['specs_json']) ? (json_decode($prod['specs_json'], true) ?: []) : ($data['specifications'] ?? []);
+
+        $prod['gallery'] = is_array($gallery) ? $gallery : (array)$gallery;
+        $prod['specs'] = $specs;
+        $prod['brand'] = $prod['brand'] ?: ($data['brand'] ?? 'StoneKrusher');
+        $prod['short_description'] = $prod['short_description'] ?: ($data['shortDescription'] ?? ($data['desc'] ?? ''));
+        $prod['sale_price'] = $prod['sale_price'] ?: ($data['salePrice'] ?? null);
+        $prod['stock'] = isset($prod['stock']) ? (int)$prod['stock'] : ($data['stock'] ?? 1);
+        $prod['buy_url'] = $prod['buy_url'] ?: ($data['buyUrl'] ?? ($data['checkoutUrl'] ?? ($data['hash'] ?? '')));
+        $prod['featured'] = isset($prod['featured']) ? (int)$prod['featured'] : (!empty($data['featured']) ? 1 : 0);
+        $prod['add_to_cart'] = isset($prod['add_to_cart']) ? (int)$prod['add_to_cart'] : ($data['addToCartEnabled'] !== false ? 1 : 0);
 
         echo json_encode([
             'success' => true,
@@ -818,28 +937,43 @@ switch ($action) {
         }
 
         $category = trim($input['category'] ?? 'Machinery');
-        $price = trim($input['price'] ?? '');
+        $brand = trim($input['brand'] ?? 'StoneKrusher');
+        $price = trim((string)($input['price'] ?? ''));
+        $salePrice = !empty($input['sale_price']) ? trim((string)$input['sale_price']) : null;
+        $stock = isset($input['stock']) && $input['stock'] !== '' ? (int)$input['stock'] : 1;
         $imageUrl = trim($input['image_url'] ?? ($input['image'] ?? ''));
         $gallery = is_array($input['gallery'] ?? null) ? json_encode($input['gallery']) : ($input['gallery_json'] ?? '[]');
-        $specs = is_array($input['specs'] ?? null) ? json_encode($input['specs']) : ($input['specs_json'] ?? '{}');
+        $specs = is_array($input['specs'] ?? null) ? json_encode($input['specs']) : ($input['specs_json'] ?? '[]');
         $desc = trim($input['description'] ?? ($input['desc'] ?? ''));
+        $shortDesc = trim($input['short_description'] ?? ($input['shortDesc'] ?? substr(strip_tags($desc), 0, 150)));
         $status = trim($input['status'] ?? 'Published');
+        $featured = !empty($input['featured']) ? 1 : 0;
+        $addToCart = isset($input['add_to_cart']) ? (int)$input['add_to_cart'] : 1;
+        $buyUrl = trim($input['buy_url'] ?? ($input['buyUrl'] ?? ''));
 
         $fullObj = [
             'name' => $name,
             'slug' => $slug,
             'sku' => $sku,
             'category' => $category,
-            'price' => $price,
+            'brand' => $brand,
+            'price' => is_numeric($price) ? (float)$price : $price,
+            'salePrice' => $salePrice ? (is_numeric($salePrice) ? (float)$salePrice : $salePrice) : null,
+            'stock' => $stock,
             'image' => $imageUrl,
             'images' => json_decode($gallery, true) ?: [],
-            'desc' => $desc,
-            'status' => $status
+            'specifications' => json_decode($specs, true) ?: [],
+            'desc' => $shortDesc,
+            'fullDesc' => $desc,
+            'status' => $status,
+            'featured' => $featured,
+            'addToCartEnabled' => $addToCart === 1,
+            'buyUrl' => $buyUrl
         ];
         $dataJson = json_encode($fullObj, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
         if ($isNew) {
-            $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, image_url, gallery_json, specs_json, description, status, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, specs_json, description, short_description, brand, status, featured, add_to_cart, buy_url, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([
                 $prodId,
                 $slug,
@@ -847,29 +981,43 @@ switch ($action) {
                 $sku,
                 $category,
                 $price,
+                $salePrice,
+                $stock,
                 $imageUrl,
                 $gallery,
                 $specs,
                 $desc,
+                $shortDesc,
+                $brand,
                 $status,
+                $featured,
+                $addToCart,
+                $buyUrl,
                 $dataJson,
                 $now,
                 $now
             ]);
             Security::logAudit($currentUser['id'], 'product.create', 'product', $prodId, ['name' => $name]);
         } else {
-            $stmt = $pdo->prepare("UPDATE products SET slug = ?, name = ?, sku = ?, category = ?, price = ?, image_url = ?, gallery_json = ?, specs_json = ?, description = ?, status = ?, data_json = ?, updated_at = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE products SET slug = ?, name = ?, sku = ?, category = ?, price = ?, sale_price = ?, stock = ?, image_url = ?, gallery_json = ?, specs_json = ?, description = ?, short_description = ?, brand = ?, status = ?, featured = ?, add_to_cart = ?, buy_url = ?, data_json = ?, updated_at = ? WHERE id = ?");
             $stmt->execute([
                 $slug,
                 $name,
                 $sku,
                 $category,
                 $price,
+                $salePrice,
+                $stock,
                 $imageUrl,
                 $gallery,
                 $specs,
                 $desc,
+                $shortDesc,
+                $brand,
                 $status,
+                $featured,
+                $addToCart,
+                $buyUrl,
                 $dataJson,
                 $now,
                 $prodId
@@ -884,6 +1032,94 @@ switch ($action) {
             'message' => 'Product saved and synced to live catalog successfully.',
             'product' => $fullObj,
             'catalog_published_count' => $publishedCount
+        ]);
+        exit;
+
+    case 'product_toggle_status':
+        Security::requirePermission($currentUser, 'products.edit');
+        $id = $input['id'] ?? ($_GET['id'] ?? '');
+        $stmt = $pdo->prepare("SELECT id, status, name FROM products WHERE id = ?");
+        $stmt->execute([$id]);
+        $prod = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$prod) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Product not found']);
+            exit;
+        }
+        $newStatus = (strtolower($prod['status']) === 'published') ? 'Draft' : 'Published';
+        $pdo->prepare("UPDATE products SET status = ?, updated_at = ? WHERE id = ?")->execute([$newStatus, $now, $id]);
+        Security::logAudit($currentUser['id'], 'product.status_toggle', 'product', $id, ['status' => $newStatus]);
+        sync_products_to_catalog($pdo);
+        echo json_encode(['success' => true, 'new_status' => $newStatus, 'message' => "Product status changed to {$newStatus}."]);
+        exit;
+
+    case 'product_duplicate':
+        Security::requirePermission($currentUser, 'products.create');
+        $id = $input['id'] ?? ($_GET['id'] ?? '');
+        $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
+        $stmt->execute([$id]);
+        $prod = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$prod) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Product not found to duplicate']);
+            exit;
+        }
+
+        $newId = 'prod-' . uniqid();
+        $newSlug = $prod['slug'] . '-copy-' . time();
+        $newName = $prod['name'] . ' (Copy)';
+        $newSku = ($prod['sku'] ? $prod['sku'] . '-CPY' : 'TYPH-' . strtoupper(substr(md5($newSlug), 0, 6)));
+
+        $dataObj = [];
+        if (!empty($prod['data_json'])) {
+            $dataObj = json_decode($prod['data_json'], true) ?: [];
+            $dataObj['name'] = $newName;
+            $dataObj['slug'] = $newSlug;
+            $dataObj['sku'] = $newSku;
+            $dataObj['status'] = 'Draft';
+        }
+        $newDataJson = json_encode($dataObj, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, specs_json, description, short_description, brand, status, featured, add_to_cart, buy_url, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            ->execute([
+                $newId,
+                $newSlug,
+                $newName,
+                $newSku,
+                $prod['category'],
+                $prod['price'],
+                $prod['sale_price'] ?? null,
+                $prod['stock'] ?? 1,
+                $prod['image_url'],
+                $prod['gallery_json'],
+                $prod['specs_json'],
+                $prod['description'],
+                $prod['short_description'] ?? null,
+                $prod['brand'] ?? 'StoneKrusher',
+                'Draft',
+                0,
+                $prod['add_to_cart'] ?? 1,
+                $prod['buy_url'] ?? null,
+                $newDataJson,
+                $now,
+                $now
+            ]);
+
+        Security::logAudit($currentUser['id'], 'product.duplicate', 'product', $newId, ['source' => $id, 'name' => $newName]);
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Product duplicated as draft.",
+            'new_id' => $newId
+        ]);
+        exit;
+
+    case 'products_seed_sync':
+        Security::requirePermission($currentUser, 'products.create');
+        $importedCount = seed_products_from_json($pdo, true);
+        echo json_encode([
+            'success' => true,
+            'message' => "Catalog synchronization completed. {$importedCount} equipment products seeded/verified."
         ]);
         exit;
 
