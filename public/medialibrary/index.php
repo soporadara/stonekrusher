@@ -27,9 +27,6 @@ $pageUrl = $_SERVER['PHP_SELF'];
 |--------------------------------------------------------------------------
 */
 
-$ADMIN_USER = '';
-$ADMIN_PASS_HASH = '';
-$DELETE_PASS_HASH = '';
 $MAX_LOGIN_ATTEMPTS = 5;
 $IMAGE_MAX_DIMENSION = 1800;
 $WEBP_QUALITY = 82;
@@ -1160,18 +1157,6 @@ function versionedImageUrl($url, $mtime = 0, $size = 0, $changedAt = 0)
     return $url.(strpos($url, '?') === false ? '?' : '&').'v='.rawurlencode($version);
 }
 
-function verifyAdminPassword($password)
-{
-    global $ADMIN_PASS_HASH;
-
-    return is_string($password) && password_verify($password, $ADMIN_PASS_HASH);
-}
-
-function verifyDeletePassword($password)
-{
-    return true;
-}
-
 function loginDeviceId()
 {
     global $secureCookie;
@@ -1596,26 +1581,8 @@ function deleteDashboardThemeImage($themeUrl)
 
 function defaultUsers()
 {
-    global $ADMIN_USER, $ADMIN_PASS_HASH;
-
     return [
-        'users' => [
-            [
-                'id' => 'main-admin',
-                'username' => $ADMIN_USER,
-                'password_hash' => $ADMIN_PASS_HASH,
-                'role' => 'admin',
-                'status' => 'active',
-                'display_name' => 'Main Admin',
-                'avatar_url' => '',
-                'theme' => 'light',
-                'dashboard_theme_url' => '',
-                'is_main_admin' => true,
-                'can_view_login_activity' => true,
-                'created_at' => time(),
-                'updated_at' => time(),
-            ],
-        ],
+        'users' => [],
     ];
 }
 
@@ -2211,7 +2178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $uploadAjaxRequest = isset($_POST['upload_ajax']) && $_POST['upload_ajax'] === '1';
     $redirectToTrash = $trashMode || in_array($action, ['restore_trash_item', 'delete_trash_item', 'empty_trash', 'restore_trash_selected', 'delete_trash_selected'], true);
     $redirectOverride = '';
-    $adminOnlyActions = ['unban_device', 'save_app_settings', 'clear_login_activity', 'create_user', 'set_user_role', 'change_user_password', 'freeze_user', 'unfreeze_user', 'delete_user', 'update_user_permissions'];
+    $adminOnlyActions = ['unban_device', 'save_app_settings', 'clear_login_activity'];
     $adminFileActions = ['create_file', 'edit_file'];
     $converterAllowedActions = ['set_theme', 'set_dashboard_theme', 'upload_dashboard_theme', 'delete_dashboard_theme', 'get_folder_options', 'get_storage_stats', 'create_folder', 'upload_files', 'delete_item', 'delete_selected', 'download_selected', 'copy_to_folder', 'duplicate_selected'];
 
