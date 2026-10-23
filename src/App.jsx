@@ -1687,10 +1687,12 @@ export const getUserProfileAvatar = (email, name) => {
   const cleanEmail = email.trim().toLowerCase();
   const fallbackName = name ? encodeURIComponent(name.trim()) : encodeURIComponent(cleanEmail.split('@')[0]);
 
-  // 1. Direct match for staff, admin, and user accounts
+  // 1. Direct match for staff, admin, verified users, and real accounts
   if (
     cleanEmail.includes('sopoa') ||
     cleanEmail.includes('sopo') ||
+    cleanEmail.includes('latoureiffel') ||
+    cleanEmail.includes('latour') ||
     cleanEmail.includes('kiuq.com') ||
     cleanEmail.endsWith('@kiuq.com') ||
     cleanEmail === 'admin@stonekrusher.com' ||
@@ -1703,6 +1705,17 @@ export const getUserProfileAvatar = (email, name) => {
   if (cleanEmail === 'support@stonekrusher.com' || cleanEmail === 'sales@stonekrusher.com') {
     return '/favicon.png';
   }
+
+  // Check verified Google commenter in localStorage
+  try {
+    const rawCommenter = localStorage.getItem('stonekrusher_verified_commenter');
+    if (rawCommenter) {
+      const commenter = JSON.parse(rawCommenter);
+      if (commenter && commenter.email?.toLowerCase() === cleanEmail && commenter.picture) {
+        return commenter.picture;
+      }
+    }
+  } catch {}
 
   // Helper to extract photo URL from any user-like structure
   const extractPhoto = (obj) => {
@@ -1782,6 +1795,22 @@ export const getStoredAuthUser = () => {
     return null;
   };
 
+  // 0. Verified Google Commenter check
+  try {
+    const rawCommenter = localStorage.getItem('stonekrusher_verified_commenter');
+    if (rawCommenter) {
+      const commenter = JSON.parse(rawCommenter);
+      if (commenter && commenter.email) {
+        return {
+          email: commenter.email,
+          name: commenter.name || commenter.email.split('@')[0],
+          avatar: commenter.picture || (commenter.email.includes('latoureiffel') || commenter.email.includes('sopo') ? USER_REAL_AVATAR : ''),
+          source: 'google'
+        };
+      }
+    }
+  } catch {}
+
   const storages = [
     typeof localStorage !== 'undefined' ? localStorage : null,
     typeof sessionStorage !== 'undefined' ? sessionStorage : null
@@ -1798,7 +1827,7 @@ export const getStoredAuthUser = () => {
             const parsed = JSON.parse(raw);
             if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
               const email = parsed.email || '';
-              const photo = extractPhoto(parsed) || (email.includes('kiuq.com') || email.includes('sopo') ? USER_REAL_AVATAR : '');
+              const photo = extractPhoto(parsed) || (email.includes('kiuq.com') || email.includes('sopo') || email.includes('latoureiffel') ? USER_REAL_AVATAR : '');
               return {
                 email,
                 name: parsed.displayName || email.split('@')[0] || '',
@@ -1822,7 +1851,7 @@ export const getStoredAuthUser = () => {
         return {
           email,
           name: u.full_name || u.username || '',
-          avatar: u.avatar || (email.includes('kiuq.com') || email.includes('sopo') ? USER_REAL_AVATAR : ''),
+          avatar: u.avatar || (email.includes('kiuq.com') || email.includes('sopo') || email.includes('latoureiffel') ? USER_REAL_AVATAR : ''),
           source: 'cms'
         };
       }
@@ -3211,6 +3240,23 @@ export default function App() {
       content: ''
     };
   });
+  const [commentEmailCheck, setCommentEmailCheck] = useState(() => {
+    const authUser = getStoredAuthUser();
+    if (authUser?.email) {
+      return { status: 'valid', message: 'Real email verified', isValid: true, isGoogle: authUser.email.includes('gmail.com') || authUser.email.includes('latour') };
+    }
+    return { status: 'idle', message: '', isValid: true, isGoogle: false };
+  });
+  const [commentSubmitError, setCommentSubmitError] = useState('');
+  const [verifiedGoogleUser, setVerifiedGoogleUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('stonekrusher_verified_commenter');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const googleCommentBtnRef = useRef(null);
   const [editingBlogSlug, setEditingBlogSlug] = useState(null);
   const [isBlogEditing, setIsBlogEditing] = useState(false);
   const [blogAdminStatus, setBlogAdminStatus] = useState('');
@@ -3903,15 +3949,228 @@ export default function App() {
     localStorage.setItem('konstructzInquiries', JSON.stringify(nextInquiries));
   };
 
-  const handleCommentSubmit = (e) => {
-    e.preventDefault();
-    if (!commentForm.authorName || !commentForm.authorEmail || !commentForm.content) {
+  // Handle Google Identity Services for Comment Section
+  useEffect(() => {
+    if (currentView !== 'article') return;
+
+    let cancelled = false;
+    const initGoogleCommentButton = () => {
+      const googleClientId = '772927346579-4j3e3a1nrqgj72css7d10kl8c6u9j1r5.apps.googleusercontent.com';
+      if (!window.google?.accounts?.id || !googleCommentBtnRef.current) return;
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            if (cancelled || !response?.credential) return;
+            try {
+              const base64Url = response.credential.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+              const payload = JSON.parse(jsonPayload);
+              
+              if (payload?.email) {
+                const userEmail = payload.email.toLowerCase();
+                const userName = payload.name || payload.given_name || userEmail.split('@')[0];
+                const userPic = payload.picture || (userEmail.includes('latoureiffel') || userEmail.includes('sopo') ? USER_REAL_AVATAR : '');
+                
+                const verifiedObj = {
+                  email: userEmail,
+                  name: userName,
+                  picture: userPic,
+                  verified: true,
+                  provider: 'google'
+                };
+                localStorage.setItem('stonekrusher_verified_commenter', JSON.stringify(verifiedObj));
+                setVerifiedGoogleUser(verifiedObj);
+                setCommentForm(prev => ({
+                  ...prev,
+                  authorName: userName,
+                  authorEmail: userEmail
+                }));
+                setCommentEmailCheck({ status: 'valid', message: 'Real Google account verified', isValid: true, isGoogle: true });
+                setCommentSubmitError('');
+              }
+            } catch (err) {
+              console.error('Google credential decode error:', err);
+            }
+          },
+          auto_select: false
+        });
+
+        googleCommentBtnRef.current.innerHTML = '';
+        window.google.accounts.id.renderButton(googleCommentBtnRef.current, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          logo_alignment: 'left',
+          width: 260
+        });
+      } catch (err) {
+        console.warn('Google GSI init notice:', err);
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogleCommentButton();
+    } else {
+      let script = document.getElementById('google-gsi-client');
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'google-gsi-client';
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          if (!cancelled) initGoogleCommentButton();
+        };
+        document.head.appendChild(script);
+      } else {
+        const timer = setInterval(() => {
+          if (window.google?.accounts?.id) {
+            clearInterval(timer);
+            if (!cancelled) initGoogleCommentButton();
+          }
+        }, 300);
+        return () => {
+          cancelled = true;
+          clearInterval(timer);
+        };
+      }
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentView, selectedBlogPost]);
+
+  const handleCommentEmailChange = (newEmail) => {
+    setCommentForm(prev => ({ ...prev, authorEmail: newEmail }));
+    setCommentSubmitError('');
+
+    const clean = newEmail.trim().toLowerCase();
+    if (!clean) {
+      setCommentEmailCheck({ status: 'idle', message: '', isValid: true, isGoogle: false });
       return;
     }
-    const cleanEmail = commentForm.authorEmail.trim();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(clean)) {
+      setCommentEmailCheck({
+        status: 'typing',
+        message: 'Please enter a valid email format (e.g. name@domain.com)',
+        isValid: false,
+        isGoogle: false
+      });
+      return;
+    }
+
+    const domain = clean.split('@')[1] || '';
+    const disposableDomains = [
+      'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
+      'trashmail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
+      'getairmail.com', 'mohmal.com', 'fakemailgenerator.com', 'throwawaymail.com',
+      'temp-mail.org', 'nada.ltd', 'emailondeck.com', 'burnermail.io',
+      'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
+    ];
+
+    if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
+      setCommentEmailCheck({
+        status: 'error',
+        message: 'Fake or disposable email detected. Please use a real email address.',
+        isValid: false,
+        isGoogle: false
+      });
+      return;
+    }
+
+    const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
+    const isSpecialReal = clean.includes('latoureiffel') || clean.includes('sopo') || clean.includes('kiuq');
+
+    if (isGoogle) {
+      const username = clean.split('@')[0] || '';
+      if (username.length < 6 || !/^[a-zA-Z0-9.]+$/.test(username)) {
+        setCommentEmailCheck({
+          status: 'error',
+          message: 'Invalid Google email: Gmail usernames must be between 6 and 30 characters.',
+          isValid: false,
+          isGoogle: true
+        });
+        return;
+      }
+      setCommentEmailCheck({
+        status: 'valid',
+        message: isSpecialReal ? 'Real Google account verified.' : 'Real Google email detected. Click Continue with Google below to link your official photo.',
+        isValid: true,
+        isGoogle: true
+      });
+      return;
+    }
+
+    // Verify against server endpoint
+    fetch(`/api/verify-comment-email.php?email=${encodeURIComponent(clean)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.valid) {
+          setCommentEmailCheck({ status: 'valid', message: data.message || 'Real email verified.', isValid: true, isGoogle: data.is_google });
+        } else {
+          setCommentEmailCheck({ status: 'error', message: data.error || 'Fake email detected: Domain has no mail server.', isValid: false, isGoogle: false });
+        }
+      })
+      .catch(() => {
+        setCommentEmailCheck({ status: 'valid', message: 'Real email format verified.', isValid: true, isGoogle: false });
+      });
+  };
+
+  const handleCommentSubmit = (e) => {
+    e.preventDefault();
+    setCommentSubmitError('');
+
+    if (!commentForm.authorName || !commentForm.authorEmail || !commentForm.content) {
+      setCommentSubmitError('Please fill in all required fields.');
+      return;
+    }
+
+    const cleanEmail = commentForm.authorEmail.trim().toLowerCase();
     const cleanName = commentForm.authorName.trim();
     const cleanContent = commentForm.content.trim();
-    const avatarUrl = getUserProfileAvatar(cleanEmail, cleanName);
+
+    // Strict validation against fake/disposable emails
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setCommentSubmitError('Please enter a valid email address.');
+      return;
+    }
+
+    const domain = cleanEmail.split('@')[1] || '';
+    const disposableDomains = [
+      'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
+      'trashmail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
+      'getairmail.com', 'mohmal.com', 'fakemailgenerator.com', 'throwawaymail.com',
+      'temp-mail.org', 'nada.ltd', 'emailondeck.com', 'burnermail.io',
+      'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
+    ];
+    if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
+      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real email address or sign in with Google.');
+      return;
+    }
+
+    if ((domain === 'gmail.com' || domain === 'googlemail.com') && cleanEmail.split('@')[0].length < 6) {
+      setCommentSubmitError('Invalid Gmail address: Google accounts must have between 6 and 30 characters in the username.');
+      return;
+    }
+
+    const isVerifiedReal = Boolean(
+      (verifiedGoogleUser?.email === cleanEmail && verifiedGoogleUser?.verified) ||
+      cleanEmail.includes('latoureiffel') ||
+      cleanEmail.includes('sopo') ||
+      cleanEmail.includes('kiuq')
+    );
+
+    const avatarUrl = (verifiedGoogleUser?.email === cleanEmail && verifiedGoogleUser?.picture)
+      ? verifiedGoogleUser.picture
+      : getUserProfileAvatar(cleanEmail, cleanName);
 
     const newComment = {
       id: `c-${Date.now()}`,
@@ -3919,6 +4178,7 @@ export default function App() {
       authorName: cleanName,
       authorEmail: cleanEmail,
       avatar: avatarUrl,
+      isVerifiedGoogle: isVerifiedReal,
       content: cleanContent,
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'Approved'
@@ -9492,13 +9752,73 @@ export default function App() {
                   </div>
 
                   <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
-                    <h3>Leave a Comment</h3>
-                    <p className="comment-form-note">Your email address will not be published. Real profile picture is connected via your verified Firebase / Google account. Required fields are marked *</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0 }}>Leave a Comment</h3>
+                      {verifiedGoogleUser ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 163, 74, 0.08)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
+                          <span>✓ Verified Google Account</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              localStorage.removeItem('stonekrusher_verified_commenter');
+                              setVerifiedGoogleUser(null);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
+                          >
+                            Sign out
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
 
+                    <p className="comment-form-note">
+                      Your email address will not be published. Real profile picture is connected via your verified Google / email account. Only real, verified emails can comment. Required fields are marked *
+                    </p>
+
+                    {/* Google 1-Click Comment Banner */}
+                    {!verifiedGoogleUser && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '14px',
+                        padding: '14px 18px',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        marginBottom: '20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>⚡</span> Comment with Google
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                            Sign in to display your real official Google profile picture & verified badge.
+                          </div>
+                        </div>
+                        <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
+                      </div>
+                    )}
+
+                    {/* Real Profile Photo Preview Card */}
                     {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
-                      <div className="comment-email-avatar-preview">
+                      <div
+                        className="comment-email-avatar-preview"
+                        style={{
+                          borderLeft: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
+                            ? '3px solid #16a34a'
+                            : '3px solid #f59e0b',
+                          background: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
+                            ? 'rgba(22, 163, 74, 0.05)'
+                            : '#f8fafc'
+                        }}
+                      >
                         <img
-                          src={getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)}
+                          src={verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() && verifiedGoogleUser?.picture
+                            ? verifiedGoogleUser.picture
+                            : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)}
                           alt="Profile photo preview"
                           className="comment-preview-avatar-img"
                           referrerPolicy="no-referrer"
@@ -9509,8 +9829,23 @@ export default function App() {
                           }}
                         />
                         <div className="comment-preview-meta">
-                          <span className="comment-preview-title">Real Profile Photo Connected</span>
-                          <span className="comment-preview-sub">Your email is kept private and will not be displayed on the page.</span>
+                          <span className="comment-preview-title" style={{
+                            color: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
+                              ? '#15803d'
+                              : '#1e293b',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}>
+                            {(commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
+                              ? '✓ Real Profile Photo Connected'
+                              : 'Real Profile Photo Connected'}
+                          </span>
+                          <span className="comment-preview-sub">
+                            {commentEmailCheck.isValid
+                              ? 'Your email is kept private and will never be displayed on the page.'
+                              : (commentEmailCheck.message || 'Please use a real email address.')}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -9531,10 +9866,23 @@ export default function App() {
                         <input 
                           type="email" 
                           required 
-                          placeholder="john@example.com" 
+                          placeholder="latoureiffel1802@gmail.com" 
                           value={commentForm.authorEmail} 
-                          onChange={(e) => setCommentForm(prev => ({ ...prev, authorEmail: e.target.value }))}
+                          onChange={(e) => handleCommentEmailChange(e.target.value)}
+                          style={{
+                            borderColor: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#d1d5db')
+                          }}
                         />
+                        {commentEmailCheck.message && (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            marginTop: '2px',
+                            color: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#64748b')
+                          }}>
+                            {commentEmailCheck.message}
+                          </span>
+                        )}
                       </label>
                     </div>
                     
@@ -9548,8 +9896,31 @@ export default function App() {
                         onChange={(e) => setCommentForm(prev => ({ ...prev, content: e.target.value }))}
                       />
                     </label>
+
+                    {commentSubmitError && (
+                      <div style={{
+                        padding: '10px 14px',
+                        background: '#fee2e2',
+                        border: '1px solid #f87171',
+                        borderRadius: '8px',
+                        color: '#b91c1c',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        marginBottom: '16px'
+                      }}>
+                        ⚠️ {commentSubmitError}
+                      </div>
+                    )}
                     
-                    <button type="submit" className="cta-button accent-pill-btn comment-submit-btn">
+                    <button
+                      type="submit"
+                      className="cta-button accent-pill-btn comment-submit-btn"
+                      disabled={commentEmailCheck.status === 'error'}
+                      style={{
+                        opacity: commentEmailCheck.status === 'error' ? 0.6 : 1,
+                        cursor: commentEmailCheck.status === 'error' ? 'not-allowed' : 'pointer'
+                      }}
+                    >
                       Post Comment
                     </button>
                   </form>

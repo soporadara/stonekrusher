@@ -359,6 +359,7 @@ def main():
         backend_files = [
             ("public/api/blog-posts.php", f"{REMOTE_PUBLIC}/api/blog-posts.php"),
             ("public/api/config.php", f"{REMOTE_PUBLIC}/api/config.php"),
+            ("public/api/verify-comment-email.php", f"{REMOTE_PUBLIC}/api/verify-comment-email.php"),
             ("public/medialibrary/index.php", f"{REMOTE_PUBLIC}/medialibrary/index.php"),
             ("public/medialibrary/.users.json", f"{REMOTE_PUBLIC}/medialibrary/.users.json"),
             ("public/medialibrary/features/config.php", f"{REMOTE_PUBLIC}/medialibrary/features/config.php"),
