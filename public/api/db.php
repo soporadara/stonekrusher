@@ -605,171 +605,6 @@ function seed_cms_defaults($pdo) {
         }
     }
 
-function convert_sections_to_html($sections) {
-    if (!is_array($sections) || empty($sections)) return '';
-    $htmlParts = [];
-    foreach ($sections as $sec) {
-        if (!empty($sec['h2'])) {
-            $htmlParts[] = '<h2>' . htmlspecialchars($sec['h2'], ENT_QUOTES, 'UTF-8') . '</h2>';
-        }
-        if (!empty($sec['body'])) {
-            $body = (string)$sec['body'];
-            $paragraphs = preg_split('/\r?\n\r?\n+/', $body);
-            foreach ($paragraphs as $para) {
-                $trimmed = trim($para);
-                if ($trimmed === '') continue;
-
-                $lines = explode("\n", $trimmed);
-                $renderedLines = [];
-                foreach ($lines as $line) {
-                    $lTrim = trim($line);
-                    if ($lTrim === '') continue;
-
-                    // Match image URL on its own line
-                    if (preg_match('/^(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif|\.svg))$/i', $lTrim, $im)) {
-                        if (!empty($renderedLines)) {
-                            $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
-                            $renderedLines = [];
-                        }
-                        $url = htmlspecialchars($im[1]);
-                        $alt = htmlspecialchars($sec['h2'] ?? 'StoneKrusher machinery');
-                        $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
-                        continue;
-                    }
-
-                    // Match markdown image ![alt](url)
-                    if (preg_match('/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/', $lTrim, $im)) {
-                        if (!empty($renderedLines)) {
-                            $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
-                            $renderedLines = [];
-                        }
-                        $alt = htmlspecialchars($im[1] ?: ($sec['h2'] ?? 'StoneKrusher machinery'));
-                        $url = htmlspecialchars($im[2]);
-                        $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
-                        continue;
-                    }
-
-                    // Format markdown link [text](url) -> <a href="url" target="_blank" rel="noopener">text</a>
-                    $formatted = preg_replace_callback('/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/', function($lm) {
-                        return '<a href="' . htmlspecialchars($lm[2]) . '" target="_blank" rel="noopener">' . htmlspecialchars($lm[1]) . '</a>';
-                    }, htmlspecialchars($lTrim, ENT_NOQUOTES, 'UTF-8'));
-
-                    // Format **bold**
-                    $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
-
-                    $renderedLines[] = $formatted;
-                }
-
-                if (!empty($renderedLines)) {
-                    $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
-                }
-            }
-        }
-
-        if (!empty($sec['h3'])) {
-            $htmlParts[] = '<h3>' . htmlspecialchars($sec['h3'], ENT_QUOTES, 'UTF-8') . '</h3>';
-        }
-        if (!empty($sec['h3Body'])) {
-            $htmlParts[] = '<p>' . nl2br(htmlspecialchars(trim($sec['h3Body']))) . '</p>';
-        }
-    }
-    return implode("\n", $htmlParts);
-}
-
-function seed_products_from_json($pdo, $force = false) {
-    $now = time();
-    $prodCountStmt = $pdo->query("SELECT COUNT(*) FROM products");
-    $currentCount = (int)$prodCountStmt->fetchColumn();
-    if ($currentCount > 0 && !$force) {
-        return 0;
-    }
-
-    $candidatePaths = [
-        __DIR__ . '/equipment-products.json',
-        dirname(__DIR__) . '/api/equipment-products.json',
-        dirname(__DIR__) . '/data/equipment-products.json',
-        dirname(__DIR__, 2) . '/src/data/equipment-products.json',
-        dirname(__DIR__, 2) . '/hbuilds/last-source/src/data/equipment-products.json',
-        dirname(__DIR__, 2) . '/data/equipment-products.json',
-    ];
-
-    $prodJsonFile = null;
-    foreach ($candidatePaths as $p) {
-        if (file_exists($p) && filesize($p) > 100) {
-            $prodJsonFile = $p;
-            break;
-        }
-    }
-
-    if (!$prodJsonFile) {
-        return 0;
-    }
-
-    $prodsData = json_decode(file_get_contents($prodJsonFile), true);
-    if (!is_array($prodsData)) {
-        return 0;
-    }
-
-    $inserted = 0;
-    $existingSlugs = $pdo->query("SELECT slug FROM products")->fetchAll(PDO::FETCH_COLUMN);
-    $existingSlugMap = array_flip($existingSlugs);
-
-    $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, description, short_description, brand, status, featured, add_to_cart, buy_url, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-    foreach ($prodsData as $pr) {
-        $slug = $pr['slug'] ?? ('prod-' . uniqid());
-        if (isset($existingSlugMap[$slug])) continue;
-
-        $name = $pr['name'] ?? 'Equipment Product';
-        $sku = 'TYPH-' . strtoupper(substr(md5($slug), 0, 6));
-        $cat = $pr['category'] ?? 'Machinery';
-        $price = isset($pr['price']) ? (string)$pr['price'] : '';
-        $salePrice = isset($pr['salePrice']) ? (string)$pr['salePrice'] : null;
-        $stock = isset($pr['stock']) ? (int)$pr['stock'] : rand(1, 5);
-        $img = $pr['image'] ?? '';
-        $gallery = isset($pr['images']) && is_array($pr['images']) ? json_encode($pr['images']) : json_encode([]);
-        $desc = $pr['fullDesc'] ?? ($pr['desc'] ?? '');
-        $shortDesc = $pr['desc'] ?? substr(strip_tags($desc), 0, 150);
-        $brand = $pr['brand'] ?? 'StoneKrusher';
-        $buyUrl = $pr['checkoutUrl'] ?? ($pr['hash'] ?? '');
-        $status = $pr['status'] ?? 'Published';
-        $featured = !empty($pr['featured']) ? 1 : 0;
-        $addToCart = 1;
-        $dataJson = json_encode($pr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-        try {
-            $stmt->execute([
-                $slug,
-                $slug,
-                $name,
-                $sku,
-                $cat,
-                $price,
-                $salePrice,
-                $stock,
-                $img,
-                $gallery,
-                $desc,
-                $shortDesc,
-                $brand,
-                $status,
-                $featured,
-                $addToCart,
-                $buyUrl,
-                $dataJson,
-                $now,
-                $now
-            ]);
-            $inserted++;
-            $existingSlugMap[$slug] = true;
-        } catch (Exception $e) {
-            // Ignore duplicate key or malformed item
-        }
-    }
-
-    return $inserted;
-}
-
     // 5. Seed Existing Blog Posts into database if table is empty
     $postCountStmt = $pdo->query("SELECT COUNT(*) FROM blog_posts");
     if ((int)$postCountStmt->fetchColumn() === 0) {
@@ -1006,5 +841,174 @@ function seed_products_from_json($pdo, $force = false) {
                 $tkt['updated_at']
             ]);
         }
+    }
+}
+
+if (!function_exists('convert_sections_to_html')) {
+    function convert_sections_to_html($sections) {
+        if (!is_array($sections) || empty($sections)) return '';
+        $htmlParts = [];
+        foreach ($sections as $sec) {
+            if (!empty($sec['h2'])) {
+                $htmlParts[] = '<h2>' . htmlspecialchars($sec['h2'], ENT_QUOTES, 'UTF-8') . '</h2>';
+            }
+            if (!empty($sec['body'])) {
+                $body = (string)$sec['body'];
+                $paragraphs = preg_split('/\r?\n\r?\n+/', $body);
+                foreach ($paragraphs as $para) {
+                    $trimmed = trim($para);
+                    if ($trimmed === '') continue;
+
+                    $lines = explode("\n", $trimmed);
+                    $renderedLines = [];
+                    foreach ($lines as $line) {
+                        $lTrim = trim($line);
+                        if ($lTrim === '') continue;
+
+                        // Match image URL on its own line
+                        if (preg_match('/^(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif|\.svg))$/i', $lTrim, $im)) {
+                            if (!empty($renderedLines)) {
+                                $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                                $renderedLines = [];
+                            }
+                            $url = htmlspecialchars($im[1]);
+                            $alt = htmlspecialchars($sec['h2'] ?? 'StoneKrusher machinery');
+                            $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
+                            continue;
+                        }
+
+                        // Match markdown image ![alt](url)
+                        if (preg_match('/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/', $lTrim, $im)) {
+                            if (!empty($renderedLines)) {
+                                $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                                $renderedLines = [];
+                            }
+                            $alt = htmlspecialchars($im[1] ?: ($sec['h2'] ?? 'StoneKrusher machinery'));
+                            $url = htmlspecialchars($im[2]);
+                            $htmlParts[] = '<p style="text-align: center; margin: 24px 0;"><img src="' . $url . '" alt="' . $alt . '" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>';
+                            continue;
+                        }
+
+                        // Format markdown link [text](url) -> <a href="url" target="_blank" rel="noopener">text</a>
+                        $formatted = preg_replace_callback('/\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/', function($lm) {
+                            return '<a href="' . htmlspecialchars($lm[2]) . '" target="_blank" rel="noopener">' . htmlspecialchars($lm[1]) . '</a>';
+                        }, htmlspecialchars($lTrim, ENT_NOQUOTES, 'UTF-8'));
+
+                        // Format **bold**
+                        $formatted = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formatted);
+
+                        $renderedLines[] = $formatted;
+                    }
+
+                    if (!empty($renderedLines)) {
+                        $htmlParts[] = '<p>' . implode('<br />', $renderedLines) . '</p>';
+                    }
+                }
+            }
+
+            if (!empty($sec['h3'])) {
+                $htmlParts[] = '<h3>' . htmlspecialchars($sec['h3'], ENT_QUOTES, 'UTF-8') . '</h3>';
+            }
+            if (!empty($sec['h3Body'])) {
+                $htmlParts[] = '<p>' . nl2br(htmlspecialchars(trim($sec['h3Body']))) . '</p>';
+            }
+        }
+        return implode("\n", $htmlParts);
+    }
+}
+
+if (!function_exists('seed_products_from_json')) {
+    function seed_products_from_json($pdo, $force = false) {
+        $now = time();
+        $prodCountStmt = $pdo->query("SELECT COUNT(*) FROM products");
+        $currentCount = (int)$prodCountStmt->fetchColumn();
+        if ($currentCount > 0 && !$force) {
+            return 0;
+        }
+
+        $candidatePaths = [
+            __DIR__ . '/equipment-products.json',
+            dirname(__DIR__) . '/api/equipment-products.json',
+            dirname(__DIR__) . '/data/equipment-products.json',
+            dirname(__DIR__, 2) . '/src/data/equipment-products.json',
+            dirname(__DIR__, 2) . '/hbuilds/last-source/src/data/equipment-products.json',
+            dirname(__DIR__, 2) . '/data/equipment-products.json',
+        ];
+
+        $prodJsonFile = null;
+        foreach ($candidatePaths as $p) {
+            if (file_exists($p) && filesize($p) > 100) {
+                $prodJsonFile = $p;
+                break;
+            }
+        }
+
+        if (!$prodJsonFile) {
+            return 0;
+        }
+
+        $prodsData = json_decode(file_get_contents($prodJsonFile), true);
+        if (!is_array($prodsData)) {
+            return 0;
+        }
+
+        $inserted = 0;
+        $existingSlugs = $pdo->query("SELECT slug FROM products")->fetchAll(PDO::FETCH_COLUMN);
+        $existingSlugMap = array_flip($existingSlugs);
+
+        $stmt = $pdo->prepare("INSERT INTO products (id, slug, name, sku, category, price, sale_price, stock, image_url, gallery_json, description, short_description, brand, status, featured, add_to_cart, buy_url, data_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        foreach ($prodsData as $pr) {
+            $slug = $pr['slug'] ?? ('prod-' . uniqid());
+            if (isset($existingSlugMap[$slug])) continue;
+
+            $name = $pr['name'] ?? 'Equipment Product';
+            $sku = 'TYPH-' . strtoupper(substr(md5($slug), 0, 6));
+            $cat = $pr['category'] ?? 'Machinery';
+            $price = isset($pr['price']) ? (string)$pr['price'] : '';
+            $salePrice = isset($pr['salePrice']) ? (string)$pr['salePrice'] : null;
+            $stock = isset($pr['stock']) ? (int)$pr['stock'] : rand(1, 5);
+            $img = $pr['image'] ?? '';
+            $gallery = isset($pr['images']) && is_array($pr['images']) ? json_encode($pr['images']) : json_encode([]);
+            $desc = $pr['fullDesc'] ?? ($pr['desc'] ?? '');
+            $shortDesc = $pr['desc'] ?? substr(strip_tags($desc), 0, 150);
+            $brand = $pr['brand'] ?? 'StoneKrusher';
+            $buyUrl = $pr['checkoutUrl'] ?? ($pr['hash'] ?? '');
+            $status = $pr['status'] ?? 'Published';
+            $featured = !empty($pr['featured']) ? 1 : 0;
+            $addToCart = 1;
+            $dataJson = json_encode($pr, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            try {
+                $stmt->execute([
+                    $slug,
+                    $slug,
+                    $name,
+                    $sku,
+                    $cat,
+                    $price,
+                    $salePrice,
+                    $stock,
+                    $img,
+                    $gallery,
+                    $desc,
+                    $shortDesc,
+                    $brand,
+                    $status,
+                    $featured,
+                    $addToCart,
+                    $buyUrl,
+                    $dataJson,
+                    $now,
+                    $now
+                ]);
+                $inserted++;
+                $existingSlugMap[$slug] = true;
+            } catch (Exception $e) {
+                // Ignore duplicate key or malformed item
+            }
+        }
+
+        return $inserted;
     }
 }
