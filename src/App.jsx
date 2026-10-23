@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import './App.css'
 import { attachmentProducts, catalogProducts, featuredProducts } from './data/catalog'
 import ProductCard from './components/ProductCard'
-import V900Showcase from './components/v900/V900Showcase'
 import FullScreenLightbox from './components/FullScreenLightbox'
 import StoreEmbed, { clearStoreCheckout, preloadStore } from './components/StoreEmbed'
 import deployedBlogPosts from '../data/blog-posts.json'
@@ -4923,11 +4922,6 @@ export default function App() {
 
   const products = catalogProducts;
   const homeProducts = featuredProducts;
-  const v900Product = useMemo(() => (
-    catalogProducts.find(p => p.sku === 'TYPH-V900Y') ||
-    catalogProducts.find(p => p.name && p.name.includes('V900')) ||
-    null
-  ), []);
   const attachments = attachmentProducts;
   const activeSystemSlide = systemAttachmentSlides[activeSystemAttachment];
   const goToPreviousSystemAttachment = () => {
@@ -6144,10 +6138,10 @@ export default function App() {
     let image = defaultImage;
     
     if (currentView === 'home') {
-      title = 'V900 Compact Track Loader | Engine, Hydraulics and Lifting Capacity';
-      description = 'Explore the V900 compact track loader, featuring a Kubota D1105 engine, 3-pump / 3-valve hydraulic system, triangular track design, protective side guards, and 460 kg rated operating capacity.';
+      title = 'KONSTRUCTZ | Official Compact Machinery Website';
+      description = 'Shop KONSTRUCTZ compact construction equipment at stonekrusher.com, including mini excavators, SKOOP II wheel loaders, skid steers, compact track loaders, forklifts, backhoes, and attachments.';
       canonicalPath = '/';
-      image = `${siteUrl}/images/v900/v900-compact-track-loader-hero.webp`;
+      image = `${siteUrl}${kuvuoProduct}`;
     } else if (currentView === 'all-products') {
       title = activeCategorySeo
         ? `KONSTRUCTZ ${activeCategorySeo.title}`
@@ -7347,12 +7341,86 @@ export default function App() {
       {currentView === 'home' ? (
         <>
           {/* HERO SECTION */}
-          {/* V900 COMPACT TRACK LOADER SHOWCASE & HERO */}
-          <V900Showcase
-            onNavigate={navigate}
-            onViewProduct={handleProductDetail}
-            v900Product={v900Product}
-          />
+          <section id="home" className="hero-section dark-bg">
+            {heroSlides.map((slide, idx) => (
+              <video
+                key={idx}
+                className="hero-background-video"
+                style={{
+                  opacity: idx === currentHeroVideoIndex ? 1 : 0,
+                  transition: 'opacity 0.5s ease-in-out',
+                  pointerEvents: 'none',
+                  zIndex: idx === currentHeroVideoIndex ? 1 : 0,
+                  background: '#000000'
+                }}
+                autoPlay
+                muted
+                playsInline
+                preload="auto"
+                disablePictureInPicture
+                aria-label={`STONEKRUSHER ${slide.productName} video`}
+                onLoadedMetadata={(e) => {
+                  e.currentTarget.playbackRate = 1.0;
+                }}
+                onCanPlay={(e) => {
+                  e.currentTarget.playbackRate = 1.0;
+                }}
+                onPlay={(e) => {
+                  e.currentTarget.playbackRate = 1.0;
+                }}
+                onTimeUpdate={(e) => {
+                  if (e.currentTarget.playbackRate !== 1.0) {
+                    e.currentTarget.playbackRate = 1.0;
+                  }
+                }}
+                onEnded={() => {
+                  if (idx === currentHeroVideoIndex) {
+                    setCurrentHeroVideoIndex((prev) => (prev + 1) % heroSlides.length);
+                  }
+                }}
+              >
+                <source src={slide.videoUrl} type="video/mp4" />
+              </video>
+            ))}
+            <div className="hero-overlay"></div>
+            <div className="section-content hero-full-content hero-center-layout">
+              <div className="hero-copy-centered">
+                <div className="hero-pill-badge">
+                  <span>{heroSlides[currentHeroVideoIndex]?.badge}</span>
+                </div>
+                <h1 className="hero-title-headline">
+                  {heroSlides[currentHeroVideoIndex]?.titlePrefix}{' '}
+                  <span className="hero-title-highlight">{heroSlides[currentHeroVideoIndex]?.titleHighlight}</span>
+                </h1>
+                <p className="hero-description-centered">
+                  {heroSlides[currentHeroVideoIndex]?.description}
+                </p>
+                <div className="hero-actions-centered">
+                  <a href={heroSlides[currentHeroVideoIndex]?.learnMoreUrl} className="hero-btn hero-btn-outline">
+                    LEARN MORE
+                  </a>
+                  <a href="?page=contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }} className="hero-btn hero-btn-primary">
+                    {heroSlides[currentHeroVideoIndex]?.ctaText}
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Hero 3 Video Navigation Bars */}
+            <div className="hero-video-indicators" aria-label="Hero Video Navigation">
+              {heroSlides.map((slide, idx) => (
+                <button
+                  key={idx}
+                  className={`hero-video-indicator ${idx === currentHeroVideoIndex ? 'active' : ''}`}
+                  onClick={() => setCurrentHeroVideoIndex(idx)}
+                  title={`Play Video ${idx + 1}`}
+                  aria-label={`Switch to Video ${idx + 1}`}
+                >
+                  <span className="hero-video-indicator-bar"></span>
+                </button>
+              ))}
+            </div>
+          </section>
 
       {/* Brand Logos Infinite Marquee Section */}
       <section className="brand-logo-marquee-section">

@@ -204,23 +204,6 @@ const byCatalogPosition = (a, b) => a.catalogPosition - b.catalogPosition;
 const csvEquipmentProducts = csvProducts.filter(product => product.category).sort(byCatalogPosition);
 const csvAttachmentProducts = csvProducts.filter(product => product.fitmentCategory).sort(byCatalogPosition);
 
-const v900Specifications = `<p>The TYPHON STOMP V900 is an easy-to-use 1.4-ton compact track loader engineered for demanding work in confined spaces. Powered by a proven Kubota D1105 diesel engine, it combines responsive 3-pump / 3-valve hydraulics, an elevated triangular track configuration for superior traction, protective side safety guards, and a 460 kg (1,014 lbs) rated operating capacity.</p>
-<p>Its dual auxiliary hydraulic circuits provide 48 L/min (12.7 GPM) flow at 16 MPa (2,321 PSI) rated pressure, allowing operators to run a wide range of specialized attachments from trenchers and augers to grapples and sweeper brooms. The narrow profile and 360-degree spin-turning capability make the V900 ideal for farms, construction sites, landscaping, and property maintenance.</p>
-<h2>Specifications</h2>
-<ul>
-<li><strong>Engine:</strong> Kubota D1105 Diesel Engine</li>
-<li><strong>Operating Weight:</strong> 1,400 kg (3,086 lb)</li>
-<li><strong>Rated Operating Capacity (ROC):</strong> 460 kg (1,014 lb)</li>
-<li><strong>Maximum Load Capacity:</strong> 500 kg (1,102 lb)</li>
-<li><strong>Hydraulic Flow:</strong> 48 L/min (12.7 GPM)</li>
-<li><strong>Rated Hydraulic Pressure:</strong> 16 MPa (2,321 PSI)</li>
-<li><strong>Hydraulic Configuration:</strong> 3 Pumps / 3 Valves System</li>
-<li><strong>Undercarriage:</strong> Triangular Track System with Elevated Drive Sprocket</li>
-<li><strong>Safety Features:</strong> Heavy-Duty Protective Side Guards</li>
-<li><strong>Bucket Capacity:</strong> 5.30 FT³ (0.15 m³)</li>
-<li><strong>Max Breakout Force:</strong> 1,012 LBF</li>
-</ul>`;
-
 const v950Specifications = `<p>The TYPHON STOMP V950 is a compact 1.5-ton track loader powered by a fuel-efficient 25 HP Kubota D1105 three-cylinder diesel engine. Built to deliver dependable power in confined environments, it combines a narrow 1,050 mm profile with 360-degree turning for controlled movement through gates, doorways, narrow paths, and busy jobsites.</p>
 <p>Its full hydraulic system provides smooth, responsive operation for lifting, loading, grading, and material handling. Automatic leveling helps keep loads stable, while durable triangular rubber tracks maintain traction across wet, muddy, uneven, and sloped ground. The 0.2 m³ steel bucket can also be exchanged for compatible attachments to support a wider range of work.</p>
 <p>Designed for construction, landscaping, farms, gardens, orchards, property maintenance, and site preparation, the V950 delivers practical lifting capacity and reliable daily performance in a compact, easy-to-maintain machine.</p>
@@ -519,34 +502,6 @@ const featuredCatalogProducts = [
   { id: "featured-10", sku: "TYPH-KV25", slug: "kuvuo-2-5-mini-excavator-2-5-ton", name: "KUVUO 2.5", category: "Konstructz", subcategory: "Excavator", weight: "2.5 Ton", engine: "Gasoline Engine", cap: "Call for pricing", price: "Call for pricing", image: "https://wheelloadersusa.com/wp-content/uploads/2026/09/kuvuo2.5.webp", images: ["https://wheelloadersusa.com/wp-content/uploads/2026/09/kuvuo2.5.webp"] },
   { id: "featured-11", sku: "TYPH-TD180", slug: "typhon-thunderdump-180-power-barrow-1-8-ton", name: "TYPHON ThunderDump 180 Power Barrow", category: "Konstructz", subcategory: "Dumper", weight: "1.8 Ton", engine: "Gasoline Engine", cap: "$6,061.66", price: "$6,061.66", ecwidProductId: 865478804, hash: "#!/TYPHON-THUNDERDUMP-180-Wheeled-Dumper-Konstructz-Series-Honda-GX390-11-HP-2-866-lb-Capacity/p/865478804", image: "http://americanminiexcavator.com/wp-content/uploads/2026/08/TD021.png", images: ["http://americanminiexcavator.com/wp-content/uploads/2026/08/TD021.png", "http://americanminiexcavator.com/wp-content/uploads/2026/08/TD022.png", "http://americanminiexcavator.com/wp-content/uploads/2026/08/TD023.png", "http://americanminiexcavator.com/wp-content/uploads/2026/08/TD024.png"] },
   { id: "featured-12", sku: "TYPH-K1", slug: "stonekrusher-k1-compact-stone-crusher-1-0-ton", name: "STONEKRUSHER K1 Compact Stone Crusher", category: "Konstructz", subcategory: "Stone Crusher", weight: "1.0 Ton", engine: "Honda GX390 11.7 HP", cap: "$7,509.22", price: "$7,509.22", ecwidProductId: 865508276, hash: "#!/TYPHON-STONEKRUSHER-K1-Compact-Rock-Crusher-11-7-HP-Honda-GX390-Towable-Jaw-Crusher-Konstructz-Series/p/865508276", image: "https://mobilecranes.org/wp-content/uploads/2026/09/k1-scaled.png", images: ["https://mobilecranes.org/wp-content/uploads/2026/09/k1-scaled.png", "https://mobilecranes.org/wp-content/uploads/2026/09/16-scaled.jpg", "https://mobilecranes.org/wp-content/uploads/2026/09/12-scaled.jpg", "https://mobilecranes.org/wp-content/uploads/2026/09/11-scaled.jpg"], richDescription: stoneKrusherK1Description },
-  {
-    id: "featured-v900",
-    sku: "TYPH-V900Y",
-    slug: "brand-new-typhon-stomp-v900-1-4-ton-compact-track-loader-with-25hp-kubota-diesel-engine-1-102-lb-max-load-typh-v900y",
-    name: "TYPHON STOMP V900 Compact Track Loader",
-    category: "Konstructz",
-    subcategory: "Skid Steer",
-    weight: "1.4 Ton",
-    engine: "Kubota D1105 Diesel Engine",
-    cap: "$11,999.00",
-    price: "$11,999.00",
-    ecwidProductId: 849060904,
-    hash: "#!/Brand-New-TYPHON-STOMP-V900-1-4-Ton-Compact-Track-Loader-with-25HP-Kubota-Diesel-Engine-1-102-lb-Max-Load/p/849060904",
-    externalUrl: "https://stonekrusher.com/store/brand-new-typhon-stomp-v900-1-4-ton-compact-track-loader-with-25hp-kubota-diesel-engine-1-102-lb-max-load-p849060904",
-    checkoutUrl: "/store/brand-new-typhon-stomp-v900-1-4-ton-compact-track-loader-with-25hp-kubota-diesel-engine-1-102-lb-max-load-p849060904",
-    image: "/images/v900/v900-compact-track-loader-hero.webp",
-    images: [
-      "/images/v900/v900-compact-track-loader-hero.webp",
-      "/images/v900/v900-kubota-d1105-engine.webp",
-      "/images/v900/v900-kubota-d1105-engine-angle.webp",
-      "/images/v900/v900-hydraulic-system.webp",
-      "/images/v900/v900-triangular-track-system.webp",
-      "/images/v900/v900-protective-side-guards.webp",
-      "/images/v900/v900-loader-raised-front.webp",
-      "/images/v900/v900-lifting-capacity-poster.webp"
-    ],
-    richDescription: v900Specifications
-  },
   { id: "featured-13", sku: "TYPH-K2", slug: "typhon-stone-krusher-k2-compact-stone-crusher-2-2-ton", name: "TYPHON Stone Krusher K2 Compact Stone Crusher", category: "Konstructz", subcategory: "Stone Crusher", weight: "2.2 Ton", engine: "Honda GX690 22.1 HP", cap: "$9,849.56", price: "$9,849.56", ecwidProductId: 865478525, hash: "#!/TYPHON-STONEKRUSHER-K2-Konstructz-Series-Tracked-Jaw-Crusher-22-1-HP-Honda-GX690-Heavy-Duty-Rock-&-Concrete/p/865478525", image: "https://mobilecranes.org/wp-content/uploads/2026/09/K2-scaled.png", images: ["https://mobilecranes.org/wp-content/uploads/2026/09/K2-scaled.png", "https://mobilecranes.org/wp-content/uploads/2026/09/1-scaled.jpg", "https://mobilecranes.org/wp-content/uploads/2026/09/11-1-scaled.jpg"], richDescription: stoneKrusherK2Description },
 ];
 
