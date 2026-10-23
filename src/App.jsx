@@ -3324,12 +3324,6 @@ export default function App() {
   });
   const [showPublicEmail, setShowPublicEmail] = useState(false);
   const [commentHoneypot, setCommentHoneypot] = useState('');
-  const [commentEmailCheck, setCommentEmailCheck] = useState({
-    status: 'idle',
-    message: '',
-    isValid: true,
-    isGoogle: false
-  });
   const [commentSubmitError, setCommentSubmitError] = useState('');
   const [commentSubmitSuccess, setCommentSubmitSuccess] = useState('');
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
@@ -4211,73 +4205,6 @@ export default function App() {
   const handleCommentEmailChange = (newEmail) => {
     setCommentForm(prev => ({ ...prev, authorEmail: newEmail }));
     setCommentSubmitError('');
-
-    const clean = newEmail.trim().toLowerCase();
-    if (!clean) {
-      setCommentEmailCheck({ status: 'idle', message: '', isValid: true, isGoogle: false });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(clean)) {
-      setCommentEmailCheck({
-        status: 'typing',
-        message: 'Please enter a valid email format (e.g. name@domain.com)',
-        isValid: false,
-        isGoogle: false
-      });
-      return;
-    }
-
-    const domain = clean.split('@')[1] || '';
-    const disposableDomains = [
-      'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
-      'trashmail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
-      'getairmail.com', 'mohmal.com', 'fakemailgenerator.com', 'throwawaymail.com',
-      'temp-mail.org', 'nada.ltd', 'emailondeck.com', 'burnermail.io',
-      'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
-    ];
-
-    if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
-      setCommentEmailCheck({
-        status: 'error',
-        message: 'Fake or disposable email detected. Please use a real email address or leave blank.',
-        isValid: false,
-        isGoogle: false
-      });
-      return;
-    }
-
-    const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
-
-    // Check with backend API
-    fetch(`/api/verify-comment-email.php?email=${encodeURIComponent(clean)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.valid) {
-          setCommentEmailCheck({
-            status: 'valid',
-            message: data.message || 'Valid email format (guest mode)',
-            isValid: true,
-            isGoogle: Boolean(data.is_google)
-          });
-        } else {
-          setCommentEmailCheck({
-            status: 'error',
-            message: data.error || 'Fake or invalid email detected.',
-            isValid: false,
-            isGoogle: Boolean(data.is_google)
-          });
-        }
-      })
-      .catch(() => {
-        setCommentEmailCheck({
-          status: 'valid',
-          message: 'Valid email format (guest mode)',
-          isValid: true,
-          isGoogle: isGoogle
-        });
-      });
   };
 
   const handleCommentSubmit = async (e) => {
@@ -4340,8 +4267,8 @@ export default function App() {
         }
 
         isGuest = true;
-        emailVerified = Boolean(finalEmail);
-        photoURL = finalEmail ? getGmailAvatarSvg(finalEmail, finalName) : null;
+        emailVerified = false;
+        photoURL = null;
         uid = null;
       }
 
@@ -9886,14 +9813,12 @@ export default function App() {
                       comments
                         .filter(c => (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug) && (c.status === 'Approved' || c.moderationStatus === 'Approved'))
                         .map(comment => {
-                          const isGuestComment = Boolean(comment.isGuest);
+                          const isGuestComment = Boolean(comment.isGuest || !comment.emailVerified);
                           const commenterName = comment.displayName || comment.authorName || 'Guest';
                           const commenterEmail = comment.authorEmail || comment.publicEmail || '';
-                          const avatarUrl = comment.photoURL || comment.avatar || (
-                            commenterEmail
-                              ? getGmailAvatarSvg(commenterEmail, commenterName)
-                              : getNeutralAvatarSvg(commenterName)
-                          );
+                          const avatarUrl = isGuestComment
+                            ? getNeutralAvatarSvg(commenterName)
+                            : (comment.photoURL || comment.avatar || getUserProfileAvatar(comment.authorEmail, commenterName, false));
 
                           const displayPublicEmail = (comment.showPublicEmail && comment.authorEmail) || comment.publicEmail;
                           const commentDate = comment.date || (comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently');
@@ -9926,26 +9851,12 @@ export default function App() {
                                           <span>{displayPublicEmail}</span>
                                         </span>
                                       )}
-                                      {!comment.isGuest && comment.emailVerified ? (
+                                      {!isGuestComment && comment.emailVerified ? (
                                         <span className="comment-verified-badge" title="Verified Account">
                                           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                                           </svg>
                                           <span>Verified</span>
-                                        </span>
-                                      ) : commenterEmail ? (
-                                        <span className="comment-email-badge" style={{
-                                          background: '#eff6ff',
-                                          color: '#1d4ed8',
-                                          fontSize: '11px',
-                                          fontWeight: '600',
-                                          padding: '2px 7px',
-                                          borderRadius: '4px',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '3px'
-                                        }} title="Email Profile Connected">
-                                          <span>✓ Profile Connected</span>
                                         </span>
                                       ) : (
                                         <span className="comment-guest-badge" title="Guest Commenter">
@@ -10083,26 +9994,8 @@ export default function App() {
                           type="email" 
                           placeholder="Email" 
                           value={commentForm.authorEmail} 
-                          onChange={(e) => handleCommentEmailChange(e.target.value)}
-                          style={{
-                            borderColor: (!commentForm.authorEmail)
-                              ? '#d1d5db'
-                              : commentEmailCheck.status === 'error'
-                              ? '#ef4444'
-                              : '#d1d5db'
-                          }}
+                          onChange={(e) => setCommentForm(prev => ({ ...prev, authorEmail: e.target.value }))}
                         />
-                        {!authVisitor && commentEmailCheck.message && (
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: '500',
-                            marginTop: '2px',
-                            display: 'block',
-                            color: commentEmailCheck.status === 'error' ? '#ef4444' : '#64748b'
-                          }}>
-                            {commentEmailCheck.message}
-                          </span>
-                        )}
                       </label>
                     </div>
 
@@ -10115,50 +10008,6 @@ export default function App() {
                       />
                       <span>Display my email address publicly on this comment</span>
                     </label>
-
-                    {/* Auto-Detected Email Profile Card (No Verification Code Required) */}
-                    {!authVisitor && commentForm.authorEmail && commentForm.authorEmail.includes('@') && commentEmailCheck.isValid && (
-                      <div className="comment-auto-profile-preview" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '10px',
-                        padding: '10px 14px',
-                        marginTop: '8px',
-                        marginBottom: '16px'
-                      }}>
-                        <img
-                          src={getGmailAvatarSvg(commentForm.authorEmail, commentForm.authorName)}
-                          alt="Detected Profile Avatar"
-                          style={{ width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <strong style={{ fontSize: '13px', color: '#0f172a' }}>
-                              {commentForm.authorName.trim() || commentForm.authorEmail.split('@')[0]}
-                            </strong>
-                            <span style={{
-                              background: commentEmailCheck.isGoogle ? '#e8f0fe' : '#f1f5f9',
-                              color: commentEmailCheck.isGoogle ? '#1a73e8' : '#475569',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}>
-                              {commentEmailCheck.isGoogle ? '✉️ Gmail Profile Detected' : '✉️ Email Profile Detected'}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
-                            Profile auto-detected for {commentForm.authorEmail} — ready to comment
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
                     <label className="comment-textarea-label">
                       Comment *
