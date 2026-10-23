@@ -9934,38 +9934,11 @@ export default function App() {
 
                     <p className="comment-form-note">
                       {authVisitor ? (
-                        <span><strong>Verified Profile:</strong> Commenting as <strong>{authVisitor.displayName || authVisitor.name}</strong> ({authVisitor.email}). Your verified badge will appear next to your comment.</span>
+                        <span><strong>Verified Profile:</strong> Commenting as <strong>{authVisitor.displayName || authVisitor.name}</strong> ({authVisitor.email}).</span>
                       ) : (
-                        <span><strong>Guest Discussion:</strong> Visitors are welcome to comment as a guest. No account, login, or registration required! (Want an official verified badge? Sign in with Google below).</span>
+                        <span><strong>Discussion:</strong> Leave a question or feedback. Your email address will remain strictly private and will never be published.</span>
                       )}
                     </p>
-
-                    {/* Google 1-Click Comment Banner (Optional Convenience for Visitors) */}
-                    {!authVisitor && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '14px',
-                        padding: '12px 18px',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        marginBottom: '18px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-                      }}>
-                        <div>
-                          <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>⚡</span> Comment with Google <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>(Optional)</span>
-                          </div>
-                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                            Sign in to automatically attach your official Google profile photo & verified badge.
-                          </div>
-                        </div>
-                        <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
-                      </div>
-                    )}
 
                     {/* Hidden Honeypot Anti-Spam Field */}
                     <input
@@ -9998,16 +9971,6 @@ export default function App() {
                         />
                       </label>
                     </div>
-
-                    {/* Public Email Authorization Checkbox */}
-                    <label className="comment-optin-checkbox-row">
-                      <input 
-                        type="checkbox" 
-                        checked={showPublicEmail} 
-                        onChange={(e) => setShowPublicEmail(e.target.checked)} 
-                      />
-                      <span>Display my email address publicly on this comment</span>
-                    </label>
 
                     <label className="comment-textarea-label">
                       Comment *
