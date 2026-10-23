@@ -3318,15 +3318,6 @@ export default function App() {
   });
   const [showPublicEmail, setShowPublicEmail] = useState(false);
   const [commentHoneypot, setCommentHoneypot] = useState('');
-  const [guestVerifyState, setGuestVerifyState] = useState({
-    step: 'idle',
-    code: '',
-    email: '',
-    message: '',
-    isVerifying: false,
-    verified: false
-  });
-  const [guestVerifyCode, setGuestVerifyCode] = useState('');
   const [commentEmailCheck, setCommentEmailCheck] = useState({
     status: 'idle',
     message: '',
@@ -4267,73 +4258,6 @@ export default function App() {
       });
   };
 
-  const handleSendGuestVerification = async () => {
-    const email = (commentForm.authorEmail || '').trim().toLowerCase();
-    if (!email || !email.includes('@')) {
-      setCommentSubmitError('Please enter a valid email address first.');
-      return;
-    }
-    setGuestVerifyState(prev => ({ ...prev, isVerifying: true, message: 'Sending verification code...' }));
-    try {
-      const res = await fetch(`/api/verify-comment-email.php?action=send_code&email=${encodeURIComponent(email)}`);
-      const data = await res.json();
-      if (data.success) {
-        setGuestVerifyState({
-          step: 'code_sent',
-          code: data.code_preview || '',
-          email: email,
-          message: data.message || 'Verification code sent! Check your inbox.',
-          isVerifying: false,
-          verified: false
-        });
-      } else {
-        setGuestVerifyState(prev => ({ ...prev, isVerifying: false, message: data.error || 'Failed to send verification code.' }));
-      }
-    } catch {
-      setGuestVerifyState({
-        step: 'code_sent',
-        code: '582914',
-        email: email,
-        message: 'Verification code generated: 582914. Enter below to verify ownership.',
-        isVerifying: false,
-        verified: false
-      });
-    }
-  };
-
-  const handleConfirmGuestVerification = async (enteredCode) => {
-    const email = guestVerifyState.email || commentForm.authorEmail;
-    try {
-      const res = await fetch('/api/verify-comment-email.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify_code', email, code: enteredCode })
-      });
-      const data = await res.json();
-      if (data.success && data.verified) {
-        setGuestVerifyState({
-          step: 'verified',
-          code: enteredCode,
-          email: email,
-          message: '✓ Email ownership confirmed! Your comment will receive a verified badge.',
-          isVerifying: false,
-          verified: true
-        });
-      } else {
-        setGuestVerifyState(prev => ({ ...prev, message: data.error || 'Invalid code. Please try again.' }));
-      }
-    } catch {
-      setGuestVerifyState({
-        step: 'verified',
-        code: enteredCode,
-        email: email,
-        message: '✓ Email ownership verified!',
-        isVerifying: false,
-        verified: true
-      });
-    }
-  };
-
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     setCommentSubmitError('');
@@ -4394,8 +4318,8 @@ export default function App() {
         }
 
         isGuest = true;
-        emailVerified = Boolean(guestVerifyState.verified && guestVerifyState.email === finalEmail);
-        photoURL = null;
+        emailVerified = Boolean(finalEmail);
+        photoURL = finalEmail ? getGmailAvatarSvg(finalEmail, finalName) : null;
         uid = null;
       }
 
@@ -4433,6 +4357,7 @@ export default function App() {
           content: cleanContent,
           display_name: finalName,
           email: finalEmail,
+          photo_url: photoURL || null,
           show_public_email: Boolean(showPublicEmail && finalEmail),
           google_credential: (verifiedGoogleUser?.credential || null),
           website_hp: commentHoneypot
@@ -9939,11 +9864,14 @@ export default function App() {
                       comments
                         .filter(c => (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug) && (c.status === 'Approved' || c.moderationStatus === 'Approved'))
                         .map(comment => {
-                          const isGuestComment = Boolean(comment.isGuest || !comment.emailVerified);
+                          const isGuestComment = Boolean(comment.isGuest);
                           const commenterName = comment.displayName || comment.authorName || 'Guest';
-                          const avatarUrl = isGuestComment
-                            ? getNeutralAvatarSvg(commenterName)
-                            : (comment.photoURL || comment.avatar || getUserProfileAvatar(comment.authorEmail, commenterName, false));
+                          const commenterEmail = comment.authorEmail || comment.publicEmail || '';
+                          const avatarUrl = comment.photoURL || comment.avatar || (
+                            commenterEmail
+                              ? getGmailAvatarSvg(commenterEmail, commenterName)
+                              : getNeutralAvatarSvg(commenterName)
+                          );
 
                           const displayPublicEmail = (comment.showPublicEmail && comment.authorEmail) || comment.publicEmail;
                           const commentDate = comment.date || (comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently');
@@ -9976,12 +9904,26 @@ export default function App() {
                                           <span>{displayPublicEmail}</span>
                                         </span>
                                       )}
-                                      {!isGuestComment && comment.emailVerified ? (
+                                      {!comment.isGuest && comment.emailVerified ? (
                                         <span className="comment-verified-badge" title="Verified Account">
                                           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                                           </svg>
                                           <span>Verified</span>
+                                        </span>
+                                      ) : commenterEmail ? (
+                                        <span className="comment-email-badge" style={{
+                                          background: '#eff6ff',
+                                          color: '#1d4ed8',
+                                          fontSize: '11px',
+                                          fontWeight: '600',
+                                          padding: '2px 7px',
+                                          borderRadius: '4px',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '3px'
+                                        }} title="Email Profile Connected">
+                                          <span>✓ Profile Connected</span>
                                         </span>
                                       ) : (
                                         <span className="comment-guest-badge" title="Guest Commenter">
@@ -10121,52 +10063,47 @@ export default function App() {
                       <span>Display my email address publicly on this comment</span>
                     </label>
 
-                    {/* Optional Email Ownership Verification without Registration */}
-                    {!authVisitor && commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', marginTop: '6px', marginBottom: '14px', fontSize: '12px', color: '#475569' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                          <span>Want to verify ownership of this email without creating an account?</span>
-                          {guestVerifyState.step === 'idle' && (
-                            <button
-                              type="button"
-                              onClick={handleSendGuestVerification}
-                              style={{ background: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
-                            >
-                              {guestVerifyState.isVerifying ? 'Sending...' : '✉️ Send Verification Code'}
-                            </button>
-                          )}
-                          {guestVerifyState.step === 'verified' && (
-                            <span style={{ color: '#16a34a', fontWeight: '700' }}>✓ Email Verified!</span>
-                          )}
+                    {/* Auto-Detected Email Profile Card (No Verification Code Required) */}
+                    {!authVisitor && commentForm.authorEmail && commentForm.authorEmail.includes('@') && commentEmailCheck.isValid && (
+                      <div className="comment-auto-profile-preview" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        background: '#f8fafc',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        marginTop: '8px',
+                        marginBottom: '16px'
+                      }}>
+                        <img
+                          src={getGmailAvatarSvg(commentForm.authorEmail, commentForm.authorName)}
+                          alt="Detected Profile Avatar"
+                          style={{ width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: '13px', color: '#0f172a' }}>
+                              {commentForm.authorName.trim() || commentForm.authorEmail.split('@')[0]}
+                            </strong>
+                            <span style={{
+                              background: commentEmailCheck.isGoogle ? '#e8f0fe' : '#f1f5f9',
+                              color: commentEmailCheck.isGoogle ? '#1a73e8' : '#475569',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              {commentEmailCheck.isGoogle ? '✉️ Gmail Profile Detected' : '✉️ Email Profile Detected'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '2px' }}>
+                            Profile auto-detected for {commentForm.authorEmail} — ready to comment
+                          </span>
                         </div>
-                        {guestVerifyState.step === 'code_sent' && (
-                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span>Enter 6-digit code:</span>
-                            <input
-                              type="text"
-                              maxLength={6}
-                              placeholder="123456"
-                              value={guestVerifyCode}
-                              onChange={e => setGuestVerifyCode(e.target.value)}
-                              style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '13px', textAlign: 'center' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleConfirmGuestVerification(guestVerifyCode)}
-                              style={{ background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
-                            >
-                              Confirm Code
-                            </button>
-                            {guestVerifyState.code && (
-                              <span style={{ fontSize: '11px', color: '#64748b' }}>Demo code: {guestVerifyState.code}</span>
-                            )}
-                          </div>
-                        )}
-                        {guestVerifyState.message && (
-                          <div style={{ fontSize: '11px', color: guestVerifyState.verified ? '#16a34a' : '#64748b', marginTop: '4px' }}>
-                            {guestVerifyState.message}
-                          </div>
-                        )}
                       </div>
                     )}
 

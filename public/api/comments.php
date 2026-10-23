@@ -325,9 +325,14 @@ if ($method === 'POST') {
             $authorEmail = null;
         }
 
-        // STRICT SECURITY: Guests are NEVER falsely marked as emailVerified!
         $emailVerified = false;
         $photoUrl = null;
+        if (!empty($input['photo_url']) && is_string($input['photo_url'])) {
+            $candidatePhoto = trim($input['photo_url']);
+            if (str_starts_with($candidatePhoto, 'data:image/svg+xml') || str_starts_with($candidatePhoto, 'https://')) {
+                $photoUrl = $candidatePhoto;
+            }
+        }
         $uid = null;
     }
 
