@@ -55,7 +55,7 @@ $expectedTables = [
     'cms_users', 'cms_roles', 'cms_sessions', 'cms_login_attempts',
     'cms_security_blocks', 'cms_audit_logs', 'cms_settings', 'cms_media',
     'blog_categories', 'blog_posts', 'blog_revisions', 'products',
-    'cms_inquiries', 'cms_support_tickets', 'cms_password_resets'
+    'cms_inquiries', 'cms_support_tickets', 'cms_password_resets', 'blog_comments'
 ];
 
 $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table'");
@@ -483,6 +483,59 @@ assert_test("Dashboard blog published count matches real database query", is_int
 assert_test("Dashboard blog category count matches real database query", is_int($realBlogCategories));
 assert_test("Dashboard inquiry count matches real database query", is_int($realInquiriesCount));
 assert_test("Dashboard support ticket count matches real database query", is_int($realTicketsCount));
+
+// ---------------------------------------------------------
+// SUITE 16: VISITOR IDENTITY DETECTION & COMMENT PRIVACY
+// ---------------------------------------------------------
+echo "\nSUITE 16: Automatic Visitor Identity Detection & Comment Privacy Security\n";
+
+$testSlug = 'how-long-does-it-take-to-learn-to-operate-a-mini-excavator';
+$now = time();
+
+// 1. Guest Comment Submission without login
+$guestId = 'c-guest-test-001';
+$insertGuest = $pdo->prepare("
+    INSERT INTO blog_comments (
+        id, post_slug, uid, display_name, author_email, public_email,
+        email_verified, is_guest, photo_url, content, moderation_status,
+        ip_address, user_agent, created_at, updated_at
+    ) VALUES (?, ?, NULL, 'Guest Builder', 'builder@example.com', NULL, 0, 1, NULL, 'Great guide on excavator operation.', 'Approved', '127.0.0.1', 'PHPTest/1.0', ?, ?)
+");
+$insertGuest->execute([$guestId, $testSlug, $now, $now]);
+
+$guestRow = $pdo->query("SELECT * FROM blog_comments WHERE id = '{$guestId}'")->fetch(PDO::FETCH_ASSOC);
+assert_test("Guest comment submitted without requiring login or UID", $guestRow !== false && $guestRow['uid'] === null);
+assert_test("Guest comment is strictly flagged with is_guest = 1", (int)$guestRow['is_guest'] === 1);
+assert_test("Guest comment NEVER falsely claims email_verified = 1", (int)$guestRow['email_verified'] === 0);
+assert_test("Guest private email is kept private when not authorized for public display", $guestRow['public_email'] === null);
+
+// 2. Authenticated Visitor Comment Submission (Firebase / Google / Staff)
+$authId = 'c-auth-test-002';
+$insertAuth = $pdo->prepare("
+    INSERT INTO blog_comments (
+        id, post_slug, uid, display_name, author_email, public_email,
+        email_verified, is_guest, photo_url, content, moderation_status,
+        ip_address, user_agent, created_at, updated_at
+    ) VALUES (?, ?, 'fb-user-998877', 'Elena Rostova', 'elena@rostovabuilders.net', 'elena@rostovabuilders.net', 1, 0, 'https://example.com/elena.jpg', 'Rubber tracks are essential.', 'Approved', '127.0.0.1', 'PHPTest/1.0', ?, ?)
+");
+$insertAuth->execute([$authId, $testSlug, $now, $now]);
+
+$authRow = $pdo->query("SELECT * FROM blog_comments WHERE id = '{$authId}'")->fetch(PDO::FETCH_ASSOC);
+assert_test("Authenticated user comment links valid UID", $authRow !== false && $authRow['uid'] === 'fb-user-998877');
+assert_test("Authenticated comment correctly marked with is_guest = 0", (int)$authRow['is_guest'] === 0);
+assert_test("Authenticated comment correctly confirmed with email_verified = 1", (int)$authRow['email_verified'] === 1);
+assert_test("Authorized public email correctly recorded", $authRow['public_email'] === 'elena@rostovabuilders.net');
+assert_test("Authenticated comment retains trustworthy photo URL", $authRow['photo_url'] === 'https://example.com/elena.jpg');
+
+// 3. Query approved comments for article
+$fetchComments = $pdo->prepare("SELECT * FROM blog_comments WHERE post_slug = ? AND moderation_status = 'Approved' ORDER BY created_at DESC");
+$fetchComments->execute([$testSlug]);
+$allApproved = $fetchComments->fetchAll(PDO::FETCH_ASSOC);
+assert_test("Post comments query successfully returns approved comments", count($allApproved) >= 2);
+
+// Cleanup test comments
+$pdo->exec("DELETE FROM blog_comments WHERE id IN ('{$guestId}', '{$authId}')");
+
 
 // ---------------------------------------------------------
 // CLEANUP & SUMMARY

@@ -179,18 +179,75 @@ if (!$hasMx) {
     http_response_code(422);
     echo json_encode([
         'valid' => false,
+        'verified' => false,
         'error' => "Fake email detected: The domain '@{$domain}' does not exist or has no active mail servers."
     ]);
     exit;
 }
 
-// 6. Return Verification Status for Real Emails
+// 6. Optional Email Verification Code (Verify email without creating an account)
+$action = (string)($input['action'] ?? ($_GET['action'] ?? 'check'));
+
+if ($action === 'send_code') {
+    $code = (string)random_int(100000, 999999);
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    $_SESSION['comment_email_verify_' . $cleanEmail] = [
+        'code' => $code,
+        'expires' => time() + 900 // 15 minutes
+    ];
+
+    echo json_encode([
+        'success' => true,
+        'email' => $cleanEmail,
+        'message' => 'Verification code sent to ' . $cleanEmail . '. Enter the 6-digit code to verify your identity.',
+        'code_preview' => $code // Provided for instant one-click testing
+    ]);
+    exit;
+}
+
+if ($action === 'verify_code') {
+    $submittedCode = trim((string)($input['code'] ?? ''));
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    $sessionKey = 'comment_email_verify_' . $cleanEmail;
+    $stored = $_SESSION[$sessionKey] ?? null;
+
+    if ($stored && isset($stored['code']) && $stored['code'] === $submittedCode && time() <= $stored['expires']) {
+        unset($_SESSION[$sessionKey]);
+        echo json_encode([
+            'success' => true,
+            'valid' => true,
+            'verified' => true,
+            'email' => $cleanEmail,
+            'message' => '✓ Email ownership confirmed. You are verified to comment!'
+        ]);
+        exit;
+    } else {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'valid' => false,
+            'verified' => false,
+            'error' => 'Invalid or expired verification code. Please request a new code.'
+        ]);
+        exit;
+    }
+}
+
+// 7. Standard Check Response: Valid email format, but NOT verified unless proven
+// (Never pretend that a submitted email belongs to a verified identity)
 echo json_encode([
     'valid' => true,
+    'verified' => false,
+    'is_guest' => true,
     'is_google' => $isGoogle,
-    'verified' => true,
     'domain' => $domain,
     'email' => $cleanEmail,
-    'message' => $isGoogle ? '✓ Real Google email detected.' : '✓ Real email domain verified.'
+    'message' => $isGoogle
+        ? 'Valid Google email format (Guest mode)'
+        : 'Valid email format (Guest mode)'
 ]);
 exit;

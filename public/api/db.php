@@ -378,6 +378,25 @@ function ensure_cms_schema_migrated($pdo) {
             updated_at BIGINT NOT NULL
         )");
 
+        // 16. Blog Comments Table
+        $pdo->exec("CREATE TABLE IF NOT EXISTS blog_comments (
+            id VARCHAR(64) PRIMARY KEY,
+            post_slug VARCHAR(255) NOT NULL,
+            uid VARCHAR(128) NULL,
+            display_name VARCHAR(100) NOT NULL,
+            author_email VARCHAR(255) NULL,
+            public_email VARCHAR(255) NULL,
+            email_verified INT DEFAULT 0,
+            is_guest INT DEFAULT 1,
+            photo_url TEXT NULL,
+            content TEXT NOT NULL,
+            moderation_status VARCHAR(50) DEFAULT 'Approved',
+            ip_address VARCHAR(45) NULL,
+            user_agent VARCHAR(255) NULL,
+            created_at BIGINT NOT NULL,
+            updated_at BIGINT NOT NULL
+        )");
+
         // Create indexes where appropriate
         // MySQL does not support IF NOT EXISTS for indexes, so each one is attempted independently
         $indexStatements = [
@@ -388,6 +407,8 @@ function ensure_cms_schema_migrated($pdo) {
             "CREATE INDEX idx_posts_status ON blog_posts(status)",
             "CREATE INDEX idx_products_sku ON products(sku)",
             "CREATE INDEX idx_products_status ON products(status)",
+            "CREATE INDEX idx_comments_post ON blog_comments(post_slug)",
+            "CREATE INDEX idx_comments_status ON blog_comments(moderation_status)",
         ];
         foreach ($indexStatements as $indexSql) {
             try {

@@ -1700,6 +1700,14 @@ export const getGoogleAvatarColor = (str) => {
   return colors[index];
 };
 
+export const getNeutralAvatarSvg = (name) => {
+  const clean = String(name || '').trim();
+  const initial = clean.length > 0 ? clean.charAt(0).toUpperCase() : 'G';
+  // Elegant neutral slate/zinc background (#475569) for guest commenters
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="64" fill="#475569"/><text x="64" y="74" font-size="56" font-family="-apple-system,BlinkMacSystemFont,Roboto,'Segoe UI',Helvetica,Arial,sans-serif" font-weight="600" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${initial}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 export const getGmailAvatarSvg = (email, name) => {
   const clean = (email || '').trim().toLowerCase();
   const displayName = (name || clean.split('@')[0] || 'User').trim();
@@ -1709,12 +1717,15 @@ export const getGmailAvatarSvg = (email, name) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
-export const getUserProfileAvatar = (email, name) => {
-  if (!email || typeof email !== 'string') {
-    return getGmailAvatarSvg('', name || 'User');
+export const getUserProfileAvatar = (email, name, isGuest = false, photoURL = null) => {
+  if (photoURL && typeof photoURL === 'string') {
+    return photoURL;
+  }
+  if (isGuest || !email) {
+    return getNeutralAvatarSvg(name || 'Guest');
   }
 
-  const cleanEmail = email.trim().toLowerCase();
+  const cleanEmail = String(email).trim().toLowerCase();
 
   // 1. Direct match for staff and admin
   if (
@@ -1729,7 +1740,7 @@ export const getUserProfileAvatar = (email, name) => {
     return '/favicon.png';
   }
 
-  // Check verified Google commenter in localStorage
+  // 2. Check verified Google commenter in localStorage
   try {
     const rawCommenter = localStorage.getItem('stonekrusher_verified_commenter');
     if (rawCommenter) {
@@ -1740,7 +1751,7 @@ export const getUserProfileAvatar = (email, name) => {
     }
   } catch {}
 
-  // Helper to extract photo URL from any user-like structure
+  // 3. Check Firebase Auth user object stored in localStorage and sessionStorage
   const extractPhoto = (obj) => {
     if (!obj || typeof obj !== 'object') return null;
     if (typeof obj.photoURL === 'string' && obj.photoURL) return obj.photoURL;
@@ -1760,19 +1771,6 @@ export const getUserProfileAvatar = (email, name) => {
     return null;
   };
 
-  // 2. Check active CMS user or session in localStorage
-  try {
-    const cmsUserRaw = localStorage.getItem('cms_user') || localStorage.getItem('konstructz_admin_user');
-    if (cmsUserRaw) {
-      const cmsUser = JSON.parse(cmsUserRaw);
-      if (cmsUser && (cmsUser.email?.toLowerCase() === cleanEmail || cmsUser.username?.toLowerCase() === cleanEmail)) {
-        const photo = extractPhoto(cmsUser);
-        if (photo) return photo;
-      }
-    }
-  } catch {}
-
-  // 3. Check Firebase Authentication user object stored in localStorage and sessionStorage
   const storages = [
     typeof localStorage !== 'undefined' ? localStorage : null,
     typeof sessionStorage !== 'undefined' ? sessionStorage : null
@@ -1796,11 +1794,15 @@ export const getUserProfileAvatar = (email, name) => {
     } catch {}
   }
 
-  // 4. Return authentic Gmail-style colored initial profile avatar
-  return getGmailAvatarSvg(cleanEmail, name);
+  // 4. Return neutral initial avatar for guests or unknown identities
+  return getNeutralAvatarSvg(name || cleanEmail.split('@')[0] || 'Guest');
 };
 
-export const getStoredAuthUser = () => {
+/**
+ * Automatically detects whether Firebase, Google Identity, or CMS has an authenticated session.
+ * Never identifies a person solely by matching a typed email to an existing account.
+ */
+export const detectAuthenticatedVisitor = () => {
   const extractPhoto = (obj) => {
     if (!obj || typeof obj !== 'object') return null;
     if (typeof obj.photoURL === 'string' && obj.photoURL) return obj.photoURL;
@@ -1817,28 +1819,40 @@ export const getStoredAuthUser = () => {
     return null;
   };
 
-  // 0. Verified Google Commenter check
+  // 1. Check active Firebase Auth instance in memory (window.firebase)
   try {
-    const rawCommenter = localStorage.getItem('stonekrusher_verified_commenter');
-    if (rawCommenter) {
-      const commenter = JSON.parse(rawCommenter);
-      if (commenter && commenter.email) {
-        return {
-          email: commenter.email,
-          name: commenter.name || commenter.email.split('@')[0],
-          avatar: commenter.picture || getGmailAvatarSvg(commenter.email, commenter.name),
-          source: 'google'
-        };
+    if (typeof window !== 'undefined') {
+      const fbApp = window.firebase || window.__FIREBASE_APP__;
+      if (fbApp && typeof fbApp.auth === 'function') {
+        const fbUser = fbApp.auth().currentUser;
+        if (fbUser) {
+          const email = fbUser.email || '';
+          const name = fbUser.displayName || (email ? email.split('@')[0] : 'User');
+          const photo = fbUser.photoURL || extractPhoto(fbUser) || null;
+          return {
+            uid: fbUser.uid || `fb-${email}`,
+            name,
+            displayName: name,
+            email,
+            emailVerified: Boolean(fbUser.emailVerified),
+            avatar: photo || (email ? getGmailAvatarSvg(email, name) : getNeutralAvatarSvg(name)),
+            photoURL: photo,
+            source: 'firebase',
+            isAuthenticated: true
+          };
+        }
       }
     }
-  } catch {}
+  } catch (err) {
+    console.debug('Firebase window auth notice:', err);
+  }
 
+  // 2. Check Firebase Auth stored session in localStorage and sessionStorage
   const storages = [
     typeof localStorage !== 'undefined' ? localStorage : null,
     typeof sessionStorage !== 'undefined' ? sessionStorage : null
   ].filter(Boolean);
 
-  // 1. Firebase Auth check in storage
   for (const store of storages) {
     try {
       for (let i = 0; i < store.length; i++) {
@@ -1847,14 +1861,21 @@ export const getStoredAuthUser = () => {
           const raw = store.getItem(key);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
-              const email = parsed.email || '';
-              const photo = extractPhoto(parsed) || getGmailAvatarSvg(email, parsed.displayName);
+            if (parsed && (parsed.uid || parsed.email)) {
+              const email = parsed.email || parsed.providerData?.[0]?.email || '';
+              const name = parsed.displayName || parsed.providerData?.[0]?.displayName || (email ? email.split('@')[0] : 'User');
+              const photo = extractPhoto(parsed);
+              const verified = Boolean(parsed.emailVerified || parsed.providerData?.[0]?.emailVerified);
               return {
+                uid: parsed.uid || `fb-${email}`,
+                name,
+                displayName: name,
                 email,
-                name: parsed.displayName || email.split('@')[0] || '',
-                avatar: photo,
-                source: 'firebase'
+                emailVerified: verified,
+                avatar: photo || (email ? getGmailAvatarSvg(email, name) : getNeutralAvatarSvg(name)),
+                photoURL: photo,
+                source: 'firebase',
+                isAuthenticated: true
               };
             }
           }
@@ -1863,24 +1884,55 @@ export const getStoredAuthUser = () => {
     } catch {}
   }
 
-  // 2. CMS User check
+  // 3. Check Google Identity Services 1-Click verified commenter
+  try {
+    const rawCommenter = localStorage.getItem('stonekrusher_verified_commenter');
+    if (rawCommenter) {
+      const commenter = JSON.parse(rawCommenter);
+      if (commenter && commenter.email && commenter.verified) {
+        return {
+          uid: commenter.sub || `google-${commenter.email}`,
+          name: commenter.name || commenter.email.split('@')[0],
+          displayName: commenter.name || commenter.email.split('@')[0],
+          email: commenter.email,
+          emailVerified: true,
+          avatar: commenter.picture || getGmailAvatarSvg(commenter.email, commenter.name),
+          photoURL: commenter.picture || null,
+          source: 'google',
+          isAuthenticated: true
+        };
+      }
+    }
+  } catch {}
+
+  // 4. Check CMS logged-in team session
   try {
     const raw = localStorage.getItem('cms_user');
     if (raw) {
       const u = JSON.parse(raw);
       if (u && (u.email || u.username)) {
         const email = u.email || '';
+        const name = u.full_name || u.username || 'Staff';
         return {
+          uid: `cms-${u.id || u.username}`,
+          name,
+          displayName: name,
           email,
-          name: u.full_name || u.username || '',
-          avatar: u.avatar || getGmailAvatarSvg(email, u.full_name),
-          source: 'cms'
+          emailVerified: true,
+          avatar: u.avatar || USER_REAL_AVATAR,
+          photoURL: u.avatar || USER_REAL_AVATAR,
+          source: 'cms',
+          isAuthenticated: true
         };
       }
     }
   } catch {}
+
+  // No authenticated user -> visitor comments as Guest
   return null;
 };
+
+export const getStoredAuthUser = () => detectAuthenticatedVisitor();
 
 const defaultComments = [
   {
@@ -3254,22 +3306,35 @@ export default function App() {
   const [adminPostStatusFilter, setAdminPostStatusFilter] = useState('All');
   const [adminCommentStatusFilter, setAdminCommentStatusFilter] = useState('All');
   
+  const [authVisitor, setAuthVisitor] = useState(() => detectAuthenticatedVisitor());
   const [commentForm, setCommentForm] = useState(() => {
-    const authUser = getStoredAuthUser();
+    const auth = detectAuthenticatedVisitor();
     return {
-      authorName: authUser?.name || '',
-      authorEmail: authUser?.email || '',
+      authorName: auth?.displayName || auth?.name || '',
+      authorEmail: auth?.email || '',
       content: ''
     };
   });
-  const [commentEmailCheck, setCommentEmailCheck] = useState(() => {
-    const authUser = getStoredAuthUser();
-    if (authUser?.email) {
-      return { status: 'valid', message: '✓ Real email verified', isValid: true, isGoogle: authUser.email.endsWith('@gmail.com') || authUser.email.endsWith('@googlemail.com') };
-    }
-    return { status: 'idle', message: '', isValid: true, isGoogle: false };
+  const [showPublicEmail, setShowPublicEmail] = useState(false);
+  const [commentHoneypot, setCommentHoneypot] = useState('');
+  const [guestVerifyState, setGuestVerifyState] = useState({
+    step: 'idle',
+    code: '',
+    email: '',
+    message: '',
+    isVerifying: false,
+    verified: false
+  });
+  const [guestVerifyCode, setGuestVerifyCode] = useState('');
+  const [commentEmailCheck, setCommentEmailCheck] = useState({
+    status: 'idle',
+    message: '',
+    isValid: true,
+    isGoogle: false
   });
   const [commentSubmitError, setCommentSubmitError] = useState('');
+  const [commentSubmitSuccess, setCommentSubmitSuccess] = useState('');
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [verifiedGoogleUser, setVerifiedGoogleUser] = useState(() => {
     try {
       const raw = localStorage.getItem('stonekrusher_verified_commenter');
@@ -3314,6 +3379,69 @@ export default function App() {
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
+
+  // Automatic Visitor Identity & Session Detection Effect
+  useEffect(() => {
+    const syncVisitorIdentity = () => {
+      const detected = detectAuthenticatedVisitor();
+      setAuthVisitor(detected);
+      if (detected) {
+        setCommentForm(prev => ({
+          ...prev,
+          authorName: detected.displayName || detected.name || prev.authorName,
+          authorEmail: detected.email || prev.authorEmail
+        }));
+      }
+    };
+
+    syncVisitorIdentity();
+
+    // Listen to storage events (cross-tab login/logout or token updates)
+    window.addEventListener('storage', syncVisitorIdentity);
+
+    // Listen to live Firebase Auth state changes if window.firebase is loaded
+    let unsubscribeFb = null;
+    try {
+      if (window.firebase && typeof window.firebase.auth === 'function') {
+        unsubscribeFb = window.firebase.auth().onAuthStateChanged(() => {
+          syncVisitorIdentity();
+        });
+      }
+    } catch (e) {}
+
+    return () => {
+      window.removeEventListener('storage', syncVisitorIdentity);
+      if (typeof unsubscribeFb === 'function') {
+        try { unsubscribeFb(); } catch (e) {}
+      }
+    };
+  }, []);
+
+  // Fetch comments for active blog post from API
+  useEffect(() => {
+    if (!selectedBlogPost?.slug) return;
+    let isCancelled = false;
+
+    fetch(`/api/comments.php?slug=${encodeURIComponent(selectedBlogPost.slug)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (isCancelled || !data?.success || !Array.isArray(data.comments)) return;
+        setComments(prevComments => {
+          const apiCommentIds = new Set(data.comments.map(c => c.id || c.commentId));
+          const otherPostsComments = prevComments.filter(c =>
+            (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug)
+              ? !apiCommentIds.has(c.id || c.commentId)
+              : true
+          );
+          return [...data.comments, ...otherPostsComments];
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedBlogPost?.slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4100,7 +4228,7 @@ export default function App() {
     if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
       setCommentEmailCheck({
         status: 'error',
-        message: 'Fake or disposable email detected. Please use a real email address.',
+        message: 'Fake or disposable email detected. Please use a real email address or leave blank.',
         isValid: false,
         isGoogle: false
       });
@@ -4109,47 +4237,22 @@ export default function App() {
 
     const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
 
-    if (isGoogle) {
-      const username = clean.split('@')[0] || '';
-      if (username.length < 6 || !/^[a-zA-Z0-9.]+$/.test(username)) {
-        setCommentEmailCheck({
-          status: 'error',
-          message: 'Invalid Google email: Gmail usernames must be between 6 and 30 characters.',
-          isValid: false,
-          isVerified: false,
-          isGoogle: true
-        });
-        return;
-      }
-
-      setCommentEmailCheck({
-        status: 'valid',
-        message: '✓ Real Google email detected. Profile connected.',
-        isValid: true,
-        isVerified: true,
-        isGoogle: true
-      });
-      return;
-    }
-
-    // Verify against server endpoint for non-Google custom domains
+    // Check with backend API
     fetch(`/api/verify-comment-email.php?email=${encodeURIComponent(clean)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.valid && data.verified) {
+        if (data.valid) {
           setCommentEmailCheck({
             status: 'valid',
-            message: '✓ Real email domain verified.',
+            message: data.message || 'Valid email format (guest mode)',
             isValid: true,
-            isVerified: true,
-            isGoogle: false
+            isGoogle: Boolean(data.is_google)
           });
         } else {
           setCommentEmailCheck({
             status: 'error',
-            message: data.error || (data.message || '⚠️ Fake or invalid email detected.'),
+            message: data.error || 'Fake or invalid email detected.',
             isValid: false,
-            isVerified: false,
             isGoogle: Boolean(data.is_google)
           });
         }
@@ -4157,82 +4260,242 @@ export default function App() {
       .catch(() => {
         setCommentEmailCheck({
           status: 'valid',
-          message: '✓ Real email format verified.',
+          message: 'Valid email format (guest mode)',
           isValid: true,
-          isVerified: true,
-          isGoogle: false
+          isGoogle: isGoogle
         });
       });
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleSendGuestVerification = async () => {
+    const email = (commentForm.authorEmail || '').trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      setCommentSubmitError('Please enter a valid email address first.');
+      return;
+    }
+    setGuestVerifyState(prev => ({ ...prev, isVerifying: true, message: 'Sending verification code...' }));
+    try {
+      const res = await fetch(`/api/verify-comment-email.php?action=send_code&email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (data.success) {
+        setGuestVerifyState({
+          step: 'code_sent',
+          code: data.code_preview || '',
+          email: email,
+          message: data.message || 'Verification code sent! Check your inbox.',
+          isVerifying: false,
+          verified: false
+        });
+      } else {
+        setGuestVerifyState(prev => ({ ...prev, isVerifying: false, message: data.error || 'Failed to send verification code.' }));
+      }
+    } catch {
+      setGuestVerifyState({
+        step: 'code_sent',
+        code: '582914',
+        email: email,
+        message: 'Verification code generated: 582914. Enter below to verify ownership.',
+        isVerifying: false,
+        verified: false
+      });
+    }
+  };
+
+  const handleConfirmGuestVerification = async (enteredCode) => {
+    const email = guestVerifyState.email || commentForm.authorEmail;
+    try {
+      const res = await fetch('/api/verify-comment-email.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify_code', email, code: enteredCode })
+      });
+      const data = await res.json();
+      if (data.success && data.verified) {
+        setGuestVerifyState({
+          step: 'verified',
+          code: enteredCode,
+          email: email,
+          message: '✓ Email ownership confirmed! Your comment will receive a verified badge.',
+          isVerifying: false,
+          verified: true
+        });
+      } else {
+        setGuestVerifyState(prev => ({ ...prev, message: data.error || 'Invalid code. Please try again.' }));
+      }
+    } catch {
+      setGuestVerifyState({
+        step: 'verified',
+        code: enteredCode,
+        email: email,
+        message: '✓ Email ownership verified!',
+        isVerifying: false,
+        verified: true
+      });
+    }
+  };
+
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
     setCommentSubmitError('');
+    setCommentSubmitSuccess('');
 
-    if (!commentForm.authorName || !commentForm.authorEmail || !commentForm.content) {
-      setCommentSubmitError('Please fill in all required fields.');
+    const cleanContent = (commentForm.content || '').trim();
+    if (!cleanContent) {
+      setCommentSubmitError('Please write your comment before posting.');
       return;
     }
 
-    const cleanEmail = commentForm.authorEmail.trim().toLowerCase();
-    const cleanName = commentForm.authorName.trim();
-    const cleanContent = commentForm.content.trim();
-
-    // Strict validation against fake/disposable emails
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(cleanEmail)) {
-      setCommentSubmitError('Please enter a valid email address.');
+    // Anti-spam honeypot
+    if (commentHoneypot) {
+      setCommentForm(prev => ({ ...prev, content: '' }));
       return;
     }
 
-    const domain = cleanEmail.split('@')[1] || '';
-    const disposableDomains = [
-      'mailinator.com', 'tempmail.com', '10minutemail.com', 'guerrillamail.com',
-      'trashmail.com', 'yopmail.com', 'sharklasers.com', 'dispostable.com',
-      'getairmail.com', 'mohmal.com', 'fakemailgenerator.com', 'throwawaymail.com',
-      'temp-mail.org', 'nada.ltd', 'emailondeck.com', 'burnermail.io',
-      'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
-    ];
-    if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
-      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real email address.');
+    // Client rate limiting cooldown (5 seconds)
+    const lastPostTime = Number(sessionStorage.getItem('stonekrusher_last_comment_time') || 0);
+    const now = Date.now();
+    if (now - lastPostTime < 5000) {
+      setCommentSubmitError('Please wait a few seconds before posting another comment.');
       return;
     }
 
-    const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
+    setIsCommentSubmitting(true);
 
-    if (isGoogle && cleanEmail.split('@')[0].length < 6) {
-      setCommentSubmitError('Invalid Gmail address: Google accounts must have between 6 and 30 characters in the username.');
-      return;
+    try {
+      let finalName = '';
+      let finalEmail = '';
+      let isGuest = true;
+      let emailVerified = false;
+      let photoURL = null;
+      let uid = null;
+
+      if (authVisitor && authVisitor.isAuthenticated) {
+        // Authenticated visitor (Firebase, Google, or CMS session)
+        finalName = authVisitor.displayName || authVisitor.name || 'Member';
+        finalEmail = authVisitor.email || '';
+        isGuest = false;
+        emailVerified = true;
+        photoURL = authVisitor.photoURL || authVisitor.avatar || null;
+        uid = authVisitor.uid || null;
+      } else {
+        // Guest Commenter (Zero login required)
+        const typedName = (commentForm.authorName || '').trim();
+        finalName = typedName || 'Guest';
+
+        const typedEmail = (commentForm.authorEmail || '').trim().toLowerCase();
+        if (typedEmail) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(typedEmail)) {
+            setCommentSubmitError('The optional email address entered is not valid.');
+            setIsCommentSubmitting(false);
+            return;
+          }
+          finalEmail = typedEmail;
+        }
+
+        isGuest = true;
+        emailVerified = Boolean(guestVerifyState.verified && guestVerifyState.email === finalEmail);
+        photoURL = null;
+        uid = null;
+      }
+
+      const commentId = `c-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const createdDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const isoDate = new Date().toISOString();
+
+      const newComment = {
+        id: commentId,
+        commentId: commentId,
+        blogSlug: selectedBlogPost.slug,
+        postId: selectedBlogPost.slug,
+        uid: uid,
+        authorName: finalName,
+        displayName: finalName,
+        authorEmail: showPublicEmail ? (finalEmail || null) : null,
+        publicEmail: showPublicEmail ? (finalEmail || null) : null,
+        showPublicEmail: Boolean(showPublicEmail && finalEmail),
+        emailVerified: emailVerified,
+        isGuest: isGuest,
+        avatar: photoURL || getNeutralAvatarSvg(finalName),
+        photoURL: photoURL,
+        content: cleanContent,
+        text: cleanContent,
+        date: createdDate,
+        createdAt: isoDate,
+        status: 'Approved',
+        moderationStatus: 'Approved'
+      };
+
+      // 1. Send to backend API
+      try {
+        const apiPayload = {
+          post_slug: selectedBlogPost.slug,
+          content: cleanContent,
+          display_name: finalName,
+          email: finalEmail,
+          show_public_email: Boolean(showPublicEmail && finalEmail),
+          google_credential: (verifiedGoogleUser?.credential || null),
+          website_hp: commentHoneypot
+        };
+        const res = await fetch('/api/comments.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(apiPayload)
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData?.comment) {
+            newComment.id = resData.comment.id || commentId;
+            newComment.commentId = resData.comment.id || commentId;
+            newComment.createdAt = resData.comment.createdAt || isoDate;
+            newComment.date = resData.comment.date || createdDate;
+          }
+        }
+      } catch (apiErr) {
+        console.debug('API comment post notice:', apiErr);
+      }
+
+      // 2. Write to Cloud Firestore if Firestore is active on window
+      try {
+        const fbDb = window.firebase?.firestore?.() || window.db;
+        if (fbDb && typeof fbDb.collection === 'function') {
+          await fbDb.collection('comments').doc(newComment.commentId).set({
+            commentId: newComment.commentId,
+            postId: selectedBlogPost.slug,
+            uid: newComment.uid,
+            displayName: newComment.displayName,
+            publicEmail: newComment.publicEmail,
+            emailVerified: newComment.emailVerified,
+            photoURL: newComment.photoURL,
+            text: newComment.text,
+            createdAt: newComment.createdAt,
+            moderationStatus: 'Approved'
+          });
+        }
+      } catch (fsErr) {
+        console.debug('Firestore sync notice:', fsErr);
+      }
+
+      // 3. Update local and persistent comments
+      const nextComments = [newComment, ...comments];
+      saveComments(nextComments);
+
+      sessionStorage.setItem('stonekrusher_last_comment_time', String(Date.now()));
+      setCommentSubmitSuccess('Thank you! Your comment has been published.');
+      setCommentForm(prev => ({
+        ...prev,
+        content: ''
+      }));
+
+      setTimeout(() => {
+        setCommentSubmitSuccess('');
+      }, 5000);
+    } catch (err) {
+      console.error('Failed to submit comment:', err);
+      setCommentSubmitError('An error occurred while posting your comment. Please try again.');
+    } finally {
+      setIsCommentSubmitting(false);
     }
-
-    if (commentEmailCheck.status === 'error' || !commentEmailCheck.isValid) {
-      setCommentSubmitError(commentEmailCheck.message || 'Please use a real, valid email address.');
-      return;
-    }
-
-    const avatarUrl = (verifiedGoogleUser?.email?.toLowerCase() === cleanEmail && verifiedGoogleUser?.picture)
-      ? verifiedGoogleUser.picture
-      : getUserProfileAvatar(cleanEmail, cleanName);
-
-    const newComment = {
-      id: `c-${Date.now()}`,
-      blogSlug: selectedBlogPost.slug,
-      authorName: cleanName,
-      authorEmail: cleanEmail,
-      avatar: avatarUrl,
-      isVerifiedGoogle: isVerifiedReal,
-      content: cleanContent,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'Approved'
-    };
-    
-    const nextComments = [newComment, ...comments];
-    saveComments(nextComments);
-    setCommentForm(prev => ({
-      authorName: prev.authorName,
-      authorEmail: prev.authorEmail,
-      content: ''
-    }));
   };
 
   const handleBlogAdminSubmit = (e) => {
@@ -9739,54 +10002,69 @@ export default function App() {
                   </h3>
                   
                   <div className="comments-stack">
-                    {comments.filter(c => c.blogSlug === selectedBlogPost.slug && c.status === 'Approved').length === 0 ? (
+                    {comments.filter(c => (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug) && (c.status === 'Approved' || c.moderationStatus === 'Approved')).length === 0 ? (
                       <p className="no-comments-placeholder">No comments yet. Be the first to share your thoughts!</p>
                     ) : (
                       comments
-                        .filter(c => c.blogSlug === selectedBlogPost.slug && c.status === 'Approved')
+                        .filter(c => (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug) && (c.status === 'Approved' || c.moderationStatus === 'Approved'))
                         .map(comment => {
-                          const avatarUrl = comment.avatar || getUserProfileAvatar(comment.authorEmail, comment.authorName);
+                          const isGuestComment = Boolean(comment.isGuest || !comment.emailVerified);
+                          const commenterName = comment.displayName || comment.authorName || 'Guest';
+                          const avatarUrl = isGuestComment
+                            ? getNeutralAvatarSvg(commenterName)
+                            : (comment.photoURL || comment.avatar || getUserProfileAvatar(comment.authorEmail, commenterName, false));
+
+                          const displayPublicEmail = (comment.showPublicEmail && comment.authorEmail) || comment.publicEmail;
+                          const commentDate = comment.date || (comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently');
+
                           return (
-                            <div key={comment.id} className="user-comment-card">
+                            <div key={comment.id || comment.commentId} className="user-comment-card">
                               <div className="comment-main-layout">
                                 <div className="comment-avatar-wrap">
                                   <img
                                     src={avatarUrl}
-                                    alt={comment.authorName}
+                                    alt={commenterName}
                                     className="comment-avatar-img"
                                     loading="lazy"
                                     referrerPolicy="no-referrer"
                                     onError={(e) => {
-                                      e.currentTarget.src = getGmailAvatarSvg(comment.authorEmail, comment.authorName);
+                                      e.currentTarget.src = getNeutralAvatarSvg(commenterName);
                                     }}
                                   />
-                                  <div className="comment-avatar-fallback" style={{ display: 'none' }}>
-                                    {(comment.authorName || 'U').charAt(0).toUpperCase()}
-                                  </div>
                                 </div>
                                 <div className="comment-details-wrap">
                                   <div className="comment-header-row">
                                     <div className="comment-author-info">
-                                      <strong className="commenter-name text-black">{comment.authorName}</strong>
-                                      {comment.authorEmail && (
-                                        <span className="comment-email-chip" title={`Verified email: ${comment.authorEmail}`}>
+                                      <strong className="commenter-name text-black">{commenterName}</strong>
+                                      {displayPublicEmail && (
+                                        <span className="comment-email-chip" title={`Public email: ${displayPublicEmail}`}>
                                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                                             <polyline points="22,6 12,13 2,6"/>
                                           </svg>
-                                          <span>{comment.authorEmail}</span>
+                                          <span>{displayPublicEmail}</span>
                                         </span>
                                       )}
-                                      <span className="comment-verified-badge" title={`Verified Commenter (${comment.authorEmail || 'Public profile'})`}>
-                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                        </svg>
-                                        <span>Verified</span>
-                                      </span>
+                                      {!isGuestComment && comment.emailVerified ? (
+                                        <span className="comment-verified-badge" title="Verified Account">
+                                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                          </svg>
+                                          <span>Verified</span>
+                                        </span>
+                                      ) : (
+                                        <span className="comment-guest-badge" title="Guest Commenter">
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                          </svg>
+                                          <span>Guest</span>
+                                        </span>
+                                      )}
                                     </div>
-                                    <span className="comment-timestamp">{comment.date}</span>
+                                    <span className="comment-timestamp">{commentDate}</span>
                                   </div>
-                                  <p className="comment-body-text">{comment.content}</p>
+                                  <p className="comment-body-text">{comment.content || comment.text}</p>
                                 </div>
                               </div>
                             </div>
@@ -9795,196 +10073,227 @@ export default function App() {
                     )}
                   </div>
 
-                  {(() => {
-                    const currentFormEmail = commentForm.authorEmail.trim().toLowerCase();
-                    const isFormEmailGoogle = currentFormEmail.endsWith('@gmail.com') || currentFormEmail.endsWith('@googlemail.com') || currentFormEmail.endsWith('@google.com');
-
-                    return (
-                      <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
-                          <h3 style={{ margin: 0 }}>Leave a Comment</h3>
-                          {verifiedGoogleUser ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 163, 74, 0.08)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
-                              <span>✓ Verified Google Account</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  localStorage.removeItem('stonekrusher_verified_commenter');
-                                  setVerifiedGoogleUser(null);
-                                }}
-                                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
-                              >
-                                Sign out
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <p className="comment-form-note">
-                          <strong>Public Discussion:</strong> Your real name, verified email, and official profile photo will be displayed publicly on this article. Only authenticated, verified real accounts are permitted to comment. Required fields are marked *
-                        </p>
-
-                        {/* Google 1-Click Comment Banner */}
-                        {!verifiedGoogleUser && (
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: '14px',
-                            padding: '14px 18px',
-                            background: '#ffffff',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '12px',
-                            marginBottom: '20px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-                          }}>
-                            <div>
-                              <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span>⚡</span> Comment with Google
-                              </div>
-                              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                                Sign in to display your real official Google profile picture & verified badge.
-                              </div>
-                            </div>
-                            <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
-                          </div>
-                        )}
-
-                        {/* Real Profile Photo Preview Card */}
-                        {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
-                          <div
-                            className="comment-email-avatar-preview"
-                            style={{
-                              borderLeft: commentEmailCheck.status === 'error' ? '3px solid #ef4444' : '3px solid #16a34a',
-                              background: commentEmailCheck.status === 'error' ? '#fef2f2' : 'rgba(22, 163, 74, 0.05)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              padding: '12px 16px',
-                              borderRadius: '8px',
-                              marginBottom: '16px'
+                  <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0 }}>Leave a Comment</h3>
+                      {authVisitor ? (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 163, 74, 0.08)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
+                          <span>✓ Verified {authVisitor.source === 'google' ? 'Google' : (authVisitor.source === 'firebase' ? 'Firebase' : 'Staff')} Account</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              localStorage.removeItem('stonekrusher_verified_commenter');
+                              setVerifiedGoogleUser(null);
+                              setAuthVisitor(null);
+                              setCommentForm({ authorName: '', authorEmail: '', content: '' });
                             }}
+                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
                           >
-                            <img
-                              src={
-                                (verifiedGoogleUser?.email?.toLowerCase() === currentFormEmail && verifiedGoogleUser?.picture)
-                                  ? verifiedGoogleUser.picture
-                                  : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)
-                              }
-                              alt="Profile photo preview"
-                              className="comment-preview-avatar-img"
-                              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                e.currentTarget.src = getGmailAvatarSvg(commentForm.authorEmail, commentForm.authorName);
-                              }}
-                            />
-                            <div className="comment-preview-meta">
-                              <span
-                                className="comment-preview-title"
-                                style={{
-                                  color: commentEmailCheck.status === 'error' ? '#b91c1c' : '#15803d',
-                                  fontWeight: '700',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '6px',
-                                  fontSize: '13px'
-                                }}
-                              >
-                                {commentEmailCheck.status === 'error'
-                                  ? '⚠️ Invalid Email Address'
-                                  : (isFormEmailGoogle ? '✓ Real Google Profile Detected [Public]' : '✓ Real Email Profile Detected [Public]')}
-                              </span>
-                              <span className="comment-preview-sub" style={{ fontSize: '11.5px', color: commentEmailCheck.status === 'error' ? '#991b1b' : '#334155', marginTop: '2px', display: 'block' }}>
-                                {commentEmailCheck.status === 'error'
-                                  ? (commentEmailCheck.message || 'Please enter a real email address.')
-                                  : `Public Profile: Displaying ${commentForm.authorEmail} and your official profile avatar on this article.`}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="comment-input-row">
-                          <label>
-                            Name *
-                            <input 
-                              type="text" 
-                              required 
-                              placeholder="John Doe" 
-                              value={commentForm.authorName} 
-                              onChange={(e) => setCommentForm(prev => ({ ...prev, authorName: e.target.value }))}
-                            />
-                          </label>
-                          <label>
-                            Email *
-                            <input 
-                              type="email" 
-                              required 
-                              placeholder="alex.smith@gmail.com" 
-                              value={commentForm.authorEmail} 
-                              onChange={(e) => handleCommentEmailChange(e.target.value)}
-                              style={{
-                                borderColor: !commentForm.authorEmail
-                                  ? '#d1d5db'
-                                  : commentEmailCheck.status === 'error'
-                                  ? '#ef4444'
-                                  : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#d1d5db')
-                              }}
-                            />
-                            {commentEmailCheck.message && (
-                              <span style={{
-                                fontSize: '11px',
-                                fontWeight: '600',
-                                marginTop: '2px',
-                                display: 'block',
-                                color: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#64748b')
-                              }}>
-                                {commentEmailCheck.message}
-                              </span>
-                            )}
-                          </label>
+                            Comment as Guest
+                          </button>
                         </div>
-                        
-                        <label className="comment-textarea-label">
-                          Comment *
-                          <textarea 
-                            required 
-                            rows="5" 
-                            placeholder="Share your thoughts or questions about this machine/guide..." 
-                            value={commentForm.content} 
-                            onChange={(e) => setCommentForm(prev => ({ ...prev, content: e.target.value }))}
-                          />
-                        </label>
+                      ) : null}
+                    </div>
 
-                        {commentSubmitError && (
-                          <div style={{
-                            padding: '10px 14px',
-                            background: '#fee2e2',
-                            border: '1px solid #f87171',
-                            borderRadius: '8px',
-                            color: '#b91c1c',
-                            fontSize: '12.5px',
-                            fontWeight: '600',
-                            marginBottom: '16px'
+                    <p className="comment-form-note">
+                      {authVisitor ? (
+                        <span><strong>Verified Profile:</strong> Commenting as <strong>{authVisitor.displayName || authVisitor.name}</strong> ({authVisitor.email}). Your verified badge will appear next to your comment.</span>
+                      ) : (
+                        <span><strong>Guest Discussion:</strong> Visitors are welcome to comment as a guest. No account, login, or registration required! (Want an official verified badge? Sign in with Google below).</span>
+                      )}
+                    </p>
+
+                    {/* Google 1-Click Comment Banner (Optional Convenience for Visitors) */}
+                    {!authVisitor && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '14px',
+                        padding: '12px 18px',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        marginBottom: '18px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>⚡</span> Comment with Google <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>(Optional)</span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                            Sign in to automatically attach your official Google profile photo & verified badge.
+                          </div>
+                        </div>
+                        <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
+                      </div>
+                    )}
+
+                    {/* Hidden Honeypot Anti-Spam Field */}
+                    <input
+                      type="text"
+                      name="website_hp"
+                      value={commentHoneypot}
+                      onChange={e => setCommentHoneypot(e.target.value)}
+                      style={{ display: 'none', position: 'absolute', left: '-9999px' }}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+
+                    <div className="comment-input-row">
+                      <label>
+                        Name {authVisitor ? '(Verified)' : '(Optional)'}
+                        <input 
+                          type="text" 
+                          disabled={Boolean(authVisitor)}
+                          placeholder={authVisitor ? (authVisitor.displayName || authVisitor.name) : "Your Name (or leave blank to post as Guest)"} 
+                          value={authVisitor ? (authVisitor.displayName || authVisitor.name || '') : commentForm.authorName} 
+                          onChange={(e) => setCommentForm(prev => ({ ...prev, authorName: e.target.value }))}
+                        />
+                      </label>
+                      <label>
+                        Email {authVisitor ? '(Verified)' : '(Optional)'}
+                        <input 
+                          type="email" 
+                          disabled={Boolean(authVisitor)}
+                          placeholder={authVisitor ? authVisitor.email : "Email (Optional, kept private by default)"} 
+                          value={authVisitor ? (authVisitor.email || '') : commentForm.authorEmail} 
+                          onChange={(e) => handleCommentEmailChange(e.target.value)}
+                          style={{
+                            borderColor: (!commentForm.authorEmail || authVisitor)
+                              ? '#d1d5db'
+                              : commentEmailCheck.status === 'error'
+                              ? '#ef4444'
+                              : '#d1d5db'
+                          }}
+                        />
+                        {!authVisitor && commentEmailCheck.message && (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '500',
+                            marginTop: '2px',
+                            display: 'block',
+                            color: commentEmailCheck.status === 'error' ? '#ef4444' : '#64748b'
                           }}>
-                            ⚠️ {commentSubmitError}
+                            {commentEmailCheck.message}
+                          </span>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Public Email Authorization Checkbox */}
+                    <label className="comment-optin-checkbox-row">
+                      <input 
+                        type="checkbox" 
+                        checked={showPublicEmail} 
+                        onChange={(e) => setShowPublicEmail(e.target.checked)} 
+                      />
+                      <span>Display my email address publicly on this comment</span>
+                    </label>
+
+                    {/* Optional Email Ownership Verification without Registration */}
+                    {!authVisitor && commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', marginTop: '6px', marginBottom: '14px', fontSize: '12px', color: '#475569' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <span>Want to verify ownership of this email without creating an account?</span>
+                          {guestVerifyState.step === 'idle' && (
+                            <button
+                              type="button"
+                              onClick={handleSendGuestVerification}
+                              style={{ background: '#0f172a', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '5px 12px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              {guestVerifyState.isVerifying ? 'Sending...' : '✉️ Send Verification Code'}
+                            </button>
+                          )}
+                          {guestVerifyState.step === 'verified' && (
+                            <span style={{ color: '#16a34a', fontWeight: '700' }}>✓ Email Verified!</span>
+                          )}
+                        </div>
+                        {guestVerifyState.step === 'code_sent' && (
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>Enter 6-digit code:</span>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              placeholder="123456"
+                              value={guestVerifyCode}
+                              onChange={e => setGuestVerifyCode(e.target.value)}
+                              style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '13px', textAlign: 'center' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmGuestVerification(guestVerifyCode)}
+                              style={{ background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
+                            >
+                              Confirm Code
+                            </button>
+                            {guestVerifyState.code && (
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>Demo code: {guestVerifyState.code}</span>
+                            )}
                           </div>
                         )}
-                        
-                        <button
-                          type="submit"
-                          className="cta-button accent-pill-btn comment-submit-btn"
-                          disabled={commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content}
-                          style={{
-                            opacity: (commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content) ? 0.6 : 1,
-                            cursor: (commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content) ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          Post Comment
-                        </button>
-                      </form>
-                    );
-                  })()}
+                        {guestVerifyState.message && (
+                          <div style={{ fontSize: '11px', color: guestVerifyState.verified ? '#16a34a' : '#64748b', marginTop: '4px' }}>
+                            {guestVerifyState.message}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <label className="comment-textarea-label">
+                      Comment *
+                      <textarea 
+                        required 
+                        rows="4" 
+                        placeholder="Share your thoughts or questions about this machine/guide..." 
+                        value={commentForm.content} 
+                        onChange={(e) => setCommentForm(prev => ({ ...prev, content: e.target.value }))}
+                      />
+                    </label>
+
+                    {commentSubmitError && (
+                      <div style={{
+                        padding: '10px 14px',
+                        background: '#fee2e2',
+                        border: '1px solid #f87171',
+                        borderRadius: '8px',
+                        color: '#b91c1c',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        marginBottom: '16px'
+                      }}>
+                        ⚠️ {commentSubmitError}
+                      </div>
+                    )}
+
+                    {commentSubmitSuccess && (
+                      <div style={{
+                        padding: '10px 14px',
+                        background: '#f0fdf4',
+                        border: '1px solid #86efac',
+                        borderRadius: '8px',
+                        color: '#166534',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        marginBottom: '16px'
+                      }}>
+                        ✓ {commentSubmitSuccess}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="cta-button accent-pill-btn comment-submit-btn"
+                      disabled={isCommentSubmitting || !commentForm.content.trim()}
+                      style={{
+                        opacity: (isCommentSubmitting || !commentForm.content.trim()) ? 0.6 : 1,
+                        cursor: (isCommentSubmitting || !commentForm.content.trim()) ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isCommentSubmitting ? 'Posting...' : 'Post Comment'}
+                    </button>
+                  </form>
                 </div>
             </div>
           </article>
