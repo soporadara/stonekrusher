@@ -13046,10 +13046,6 @@ export default function App() {
         </div>
 
         <div className="footer-bottom">
-          <div className="footer-legal-links">
-            <a href={CLEAN_VIEW_PATHS.terms} onClick={(e) => { e.preventDefault(); navigate('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Terms of Service</a>
-            <a href={CLEAN_VIEW_PATHS.privacy} onClick={(e) => { e.preventDefault(); navigate('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Privacy Policy</a>
-          </div>
           <p>© 2026 stonekrusher.com / KONSTRUCTZ. All Rights Reserved. Built for power and reliability.</p>
         </div>
       </footer>
