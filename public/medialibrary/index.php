@@ -27,9 +27,9 @@ $pageUrl = $_SERVER['PHP_SELF'];
 |--------------------------------------------------------------------------
 */
 
-$ADMIN_USER = 'admin@kiuq.kiuq';
-$ADMIN_PASS_HASH = '$2y$12$QEarLyHf0rz/6VrPvLyvQug1zqhhWFkLZsGhcabu4nSDI2as/426S';
-$DELETE_PASS_HASH = '$2y$12$SSR.q2dXmK49Rn/H9gaFOenTdql8BqlzsTwVabA05aSiKMzQZC7a.';
+$ADMIN_USER = '';
+$ADMIN_PASS_HASH = '';
+$DELETE_PASS_HASH = '';
 $MAX_LOGIN_ATTEMPTS = 5;
 $IMAGE_MAX_DIMENSION = 1800;
 $WEBP_QUALITY = 82;
@@ -1749,6 +1749,29 @@ function getCmsUser(): ?array
         try {
             require_once $securityFile;
             if (class_exists('Security')) {
+                if (!empty($_GET['cms_token']) && preg_match('/^[a-f0-9]{64}$/i', $_GET['cms_token'])) {
+                    $_COOKIE['cms_token'] = $_GET['cms_token'];
+                    if (!headers_sent()) {
+                        @setcookie('cms_token', $_GET['cms_token'], [
+                            'expires' => time() + 86400 * 30,
+                            'path' => '/',
+                            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                            'httponly' => true,
+                            'samesite' => 'Lax'
+                        ]);
+                    }
+                } elseif (!empty($_GET['token']) && preg_match('/^[a-f0-9]{64}$/i', $_GET['token'])) {
+                    $_COOKIE['cms_token'] = $_GET['token'];
+                    if (!headers_sent()) {
+                        @setcookie('cms_token', $_GET['token'], [
+                            'expires' => time() + 86400 * 30,
+                            'path' => '/',
+                            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                            'httponly' => true,
+                            'samesite' => 'Lax'
+                        ]);
+                    }
+                }
                 $user = Security::getCurrentUser();
                 if ($user && ($user['status'] ?? '') === 'active') {
                     $isSuperAdmin = ($user['role'] ?? '') === 'super_admin' || ($user['role'] ?? '') === 'admin';
@@ -2056,17 +2079,12 @@ $securityData = loadSecurityData();
 $currentBanId = findBanId($securityData, $loginIdentity);
 $appSettings = loadAppSettings();
 
-if (isset($_POST['login'])) {
-    header('Location: /ourcms');
-    exit;
-}
-
 if (isset($_GET['logout'])) {
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_unset();
         session_destroy();
     }
-    header('Location: /ourcmskiuq');
+    header('Location: /ourcmskiuq/');
     exit;
 }
 
@@ -2082,19 +2100,7 @@ if (!$currentUser) {
     }
 }
 
-if (!$currentUser && isset($_POST['username']) && isset($_POST['password'])) {
-    $u = trim($_POST['username']);
-    $p = $_POST['password'];
-    if (($u === 'admin@stonekrusher.com' || $u === 'admin' || $u === $ADMIN_USER) && ($p === 'Password@123' || password_verify($p, $ADMIN_PASS_HASH))) {
-        $_SESSION['user_id'] = 'main-admin';
-        $_SESSION['admin_logged_in'] = true;
-        header('Location: ' . $pageUrl);
-        exit;
-    } else {
-        $loginError = 'Invalid username or password.';
-    }
-}
-
+// Security: Direct CMS login required - no standalone login in Media Library
 if (! $currentUser) {
     $isAjax = (! empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
         || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false)
@@ -2109,586 +2115,15 @@ if (! $currentUser) {
         echo json_encode([
             'status' => 'error',
             'message' => 'Unauthorized: Please log in to StoneKrusher CMS to access the Media Library.',
-            'redirect' => '/ourcmskiuq',
+            'redirect' => '/ourcmskiuq/',
         ]);
         exit;
     }
-?>
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-<meta charset="UTF-8">
-<title><?php echo htmlspecialchars($appSettings['app_name']); ?> - Login</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<?php if (! empty($appSettings['favicon_url'])) { ?><link rel="icon" href="<?php echo htmlspecialchars($appSettings['favicon_url']); ?>"><?php } else { ?><link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=2"><link rel="icon" href="/favicon.ico?v=2"><?php } ?>
-<script>
-(() => {
-    const saved = localStorage.getItem('kiuqTheme') || 'light';
-    const theme = saved === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : saved;
-    document.documentElement.dataset.theme = theme;
-})();
-</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-    --accent: #4f46e5;
-    --accent2: #0ea5e9;
-    --accent3: #8b5cf6;
-    --danger: #ef4444;
-    --text: #0f172a;
-    --muted: #475569;
-}
-
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #f0f4ff;
-    position: relative;
-}
-[data-theme="dark"] .bg {
-    background:
-        radial-gradient(ellipse 900px 700px at 10% 20%, rgba(96,165,250,0.16) 0%, transparent 60%),
-        radial-gradient(ellipse 700px 600px at 90% 80%, rgba(148,163,184,0.18) 0%, transparent 55%),
-        #4a4f57;
-}
-[data-theme="dark"] body { background:#4a4f57; color:#f3f4f6; }
-[data-theme="dark"] .grid-overlay { background-image: linear-gradient(rgba(226,232,240,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(226,232,240,0.08) 1px, transparent 1px); }
-[data-theme="dark"] .login-card { background: rgba(58,63,71,0.92); border-color: rgba(107,114,128,0.7); }
-[data-theme="dark"] .login-title { background: linear-gradient(135deg, #e5edf8 0%, #60a5fa 60%, #a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-[data-theme="dark"] .field input { background: rgba(52,57,65,0.9); border-color:#667080; color:#f3f4f6; }
-[data-theme="dark"] .field input:focus { background: rgba(65,70,80,0.95); border-color: #60a5fa; box-shadow: 0 0 0 5px rgba(96,165,250,0.2), 0 4px 16px rgba(96,165,250,0.15); color: #f3f4f6; }
-[data-theme="dark"] input:-webkit-autofill,
-[data-theme="dark"] input:-webkit-autofill:hover, 
-[data-theme="dark"] input:-webkit-autofill:focus, 
-[data-theme="dark"] input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #343940 inset !important;
-    -webkit-text-fill-color: #f3f4f6 !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-[data-theme="dark"] .field input:-webkit-autofill,
-[data-theme="dark"] .field input:-webkit-autofill:hover, 
-[data-theme="dark"] .field input:-webkit-autofill:focus, 
-[data-theme="dark"] .field input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #343941 inset !important;
-}
-[data-theme="dark"] .login-sub, [data-theme="dark"] .field label, [data-theme="dark"] .login-badge { color:#cbd5e1; }
-[data-theme="dark"] .float-badge { background: #3a3f47; border-color: #667080; }
-
-.login-theme-switch {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 30;
-    width: 64px;
-    height: 32px;
-    background: #e6f0fa;
-    border-radius: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 8px;
-    border: 2px solid #dce8f5;
-    transition: all 0.3s ease;
-    box-shadow: 0 16px 40px rgba(79,70,229,0.14);
-    backdrop-filter: blur(18px);
-}
-.login-theme-switch .ts-icon {
-    font-size: 14px;
-    z-index: 2;
-    transition: color 0.3s ease;
-    line-height: 1;
-}
-.login-theme-switch .ts-icon.sun { color: #f59e0b; }
-.login-theme-switch .ts-icon.moon { color: #94a3b8; }
-.login-theme-switch .ts-thumb {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    left: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1;
-}
-[data-theme="dark"] .login-theme-switch {
-    background: #4b5563;
-    border-color: #6b7280;
-}
-[data-theme="dark"] .login-theme-switch .ts-thumb {
-    left: calc(100% - 28px);
-    background: #343940;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
-[data-theme="dark"] .login-theme-switch .ts-icon.sun { color: #9ca3af; filter: grayscale(1); }
-[data-theme="dark"] .login-theme-switch .ts-icon.moon { color: #60a5fa; }
-
-/* === BRIGHT ANIMATED BG === */
-.bg {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    background:
-        radial-gradient(ellipse 900px 700px at 10% 20%, rgba(165,180,252,0.6) 0%, transparent 60%),
-        radial-gradient(ellipse 700px 600px at 90% 80%, rgba(125,211,252,0.55) 0%, transparent 55%),
-        radial-gradient(ellipse 600px 600px at 60% 30%, rgba(196,181,253,0.5) 0%, transparent 55%),
-        radial-gradient(ellipse 500px 500px at 20% 80%, rgba(167,243,208,0.4) 0%, transparent 50%),
-        #dde8ff;
-    animation: bg-shift 14s ease-in-out infinite alternate;
-}
-
-@keyframes bg-shift {
-    0%   { background-position: 0% 0%, 100% 100%, 60% 30%, 20% 80%; }
-    100% { background-position: 5% 10%, 95% 90%, 65% 25%, 15% 85%; }
-}
-
-/* Grid */
-.grid-overlay {
-    position: fixed; inset: 0;
-    background-image:
-        linear-gradient(rgba(79,70,229,0.07) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(79,70,229,0.07) 1px, transparent 1px);
-    background-size: 56px 56px;
-    z-index: 1;
-    animation: grid-drift 20s linear infinite;
-}
-@keyframes grid-drift {
-    from { background-position: 0 0; }
-    to   { background-position: 56px 56px; }
-}
-
-/* Orbs */
-.orbs {
-    position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden;
-}
-.orb {
-    position: absolute; border-radius: 50%;
-    filter: blur(3px); opacity: 0;
-    animation: orb-float ease-in-out infinite;
-}
-.orb1 { width: 18px; height: 18px; background: radial-gradient(circle, #a5b4fc, #6366f1); left: 15%; animation-duration: 9s; animation-delay: 0s; }
-.orb2 { width: 10px; height: 10px; background: radial-gradient(circle, #7dd3fc, #0ea5e9); left: 35%; animation-duration: 13s; animation-delay: -3s; }
-.orb3 { width: 14px; height: 14px; background: radial-gradient(circle, #c4b5fd, #8b5cf6); left: 55%; animation-duration: 11s; animation-delay: -6s; }
-.orb4 { width: 8px;  height: 8px;  background: radial-gradient(circle, #a7f3d0, #10b981); left: 72%; animation-duration: 15s; animation-delay: -1s; }
-.orb5 { width: 20px; height: 20px; background: radial-gradient(circle, #fde68a, #f59e0b); left: 85%; animation-duration: 10s; animation-delay: -4s; }
-.orb6 { width: 12px; height: 12px; background: radial-gradient(circle, #fca5a5, #ef4444); left: 25%; animation-duration: 12s; animation-delay: -7s; }
-.orb7 { width: 9px;  height: 9px;  background: radial-gradient(circle, #a5b4fc, #4f46e5); left: 65%; animation-duration: 16s; animation-delay: -2s; }
-.orb8 { width: 16px; height: 16px; background: radial-gradient(circle, #fbcfe8, #ec4899); left: 48%; animation-duration: 14s; animation-delay: -5s; }
-
-@keyframes orb-float {
-    0%   { transform: translateY(110vh) rotate(0deg) scale(0.6); opacity: 0; }
-    8%   { opacity: 0.9; }
-    92%  { opacity: 0.7; }
-    100% { transform: translateY(-20px) rotate(360deg) scale(1.2); opacity: 0; }
-}
-
-/* Sparkles */
-.sparkle {
-    position: absolute; pointer-events: none; animation: sparkle-anim 2.5s ease-in-out infinite;
-    z-index: 3;
-}
-.sparkle::before, .sparkle::after {
-    content: '✦';
-    position: absolute;
-    color: rgba(99,102,241,0.5);
-    font-size: 12px;
-}
-.sparkle::after { color: rgba(14,165,233,0.4); font-size: 8px; top: 20px; left: 15px; animation-delay: 1s; }
-@keyframes sparkle-anim {
-    0%,100% { opacity: 0; transform: scale(0.5); }
-    50%      { opacity: 1; transform: scale(1); }
-}
-
-/* Login card */
-.login-wrap {
-    position: relative; z-index: 10;
-    width: 500px; max-width: calc(100vw - 32px);
-    width: 600px; max-width: calc(100vw - 32px);
-}
-
-.login-card {
-    background: rgba(255,255,255,0.88);
-    backdrop-filter: blur(40px) saturate(200%);
-    border: 1.5px solid rgba(255,255,255,0.8);
-    border-radius: 36px;
-    padding: 64px 52px 52px;
-    box-shadow:
-        0 0 0 1px rgba(255,255,255,0.9) inset,
-        0 60px 120px rgba(79,70,229,0.22),
-        0 24px 48px rgba(79,70,229,0.12),
-        0 0 80px rgba(139,92,246,0.08);
-    animation: card-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0;
-    position: relative;
-    overflow: hidden;
-}
-
-.login-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 50%);
-    pointer-events: none;
-    border-radius: 36px;
-}
-
-@keyframes card-in {
-    0%   { opacity: 0; transform: translateY(60px) scale(0.88) rotateX(8deg); }
-    100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
-}
-
-/* Logo */
-.logo-wrap {
-    display: flex; justify-content: center; margin-bottom: 36px;
-}
-
-.logo-outer {
-    position: relative;
-    width: 100px; height: 100px;
-    display: flex; align-items: center; justify-content: center;
-}
-
-.logo-ring-outer {
-    position: absolute; inset: -4px;
-    border-radius: 34px;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, #4f46e5, #0ea5e9, #8b5cf6, #ec4899, #4f46e5);
-    animation: ring-spin 3s linear infinite;
-    opacity: 0.7;
-}
-
-.logo-ring {
-    width: 100px; height: 100px;
-    border-radius: 30px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 50%, #0ea5e9 100%);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow:
-        0 24px 60px rgba(79,70,229,0.5),
-        0 8px 24px rgba(139,92,246,0.3),
-        inset 0 1px 1px rgba(255,255,255,0.3);
-    animation: logo-breathe 3s ease-in-out infinite;
-    position: relative; z-index: 1;
-}
-
-@keyframes logo-breathe {
-    0%,100% { transform: scale(1); box-shadow: 0 24px 60px rgba(79,70,229,0.5), 0 8px 24px rgba(139,92,246,0.3), inset 0 1px 1px rgba(255,255,255,0.3); }
-    50%      { transform: scale(1.04); box-shadow: 0 32px 80px rgba(79,70,229,0.65), 0 12px 32px rgba(139,92,246,0.4), inset 0 1px 1px rgba(255,255,255,0.3); }
-}
-
-@keyframes ring-spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-}
-
-.logo-inner-icon {
-    font-size: 46px; line-height: 1;
-    animation: icon-wobble 4s ease-in-out infinite;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
-}
-.login-logo-img {
-    width: 68px;
-    height: 68px;
-    object-fit: contain;
-    border-radius: 20px;
-    border-radius: 50%;
-}
-@keyframes icon-wobble {
-    0%,100% { transform: rotate(-3deg) scale(1); }
-    50%      { transform: rotate(3deg) scale(1.05); }
-}
-
-/* Floating badges */
-.float-badge {
-    position: absolute;
-    background: white;
-    border-radius: 12px;
-    padding: 6px 12px;
-    font-size: 11px;
-    font-weight: 800;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    white-space: nowrap;
-    border: 1px solid rgba(255,255,255,0.8);
-    animation: badge-float 4s ease-in-out infinite;
-    z-index: 5;
-}
-
-.badge-top { top: -14px; right: -60px; color: #4f46e5; animation-delay: 0s; }
-.badge-btm { bottom: -14px; left: -60px; color: #0ea5e9; animation-delay: -2s; }
-
-@keyframes badge-float {
-    0%,100% { transform: translateY(0); }
-    50%      { transform: translateY(-6px); }
-}
-
-/* Title */
-.login-title {
-    font-size: 34px; font-weight: 800; color: var(--text);
-    text-align: center; letter-spacing: -0.8px; margin-bottom: 6px;
-    background: linear-gradient(135deg, #0f172a 0%, #4f46e5 60%, #8b5cf6 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    animation: title-shine 4s ease infinite;
-}
-@keyframes title-shine {
-    0%,100% { background-position: 0% 50%; }
-    50%      { background-position: 100% 50%; }
-}
-
-.login-sub {
-    color: var(--muted); text-align: center; font-size: 15px;
-    font-weight: 500; margin-bottom: 40px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-
-.login-sub-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: linear-gradient(135deg, #4f46e5, #0ea5e9);
-    display: inline-block;
-    animation: dot-pulse 2s ease-in-out infinite;
-}
-@keyframes dot-pulse {
-    0%,100% { transform: scale(1); opacity: 1; }
-    50%      { transform: scale(1.4); opacity: 0.6; }
-}
-
-/* Fields */
-.field { margin-bottom: 18px; }
-
-.field label {
-    display: block; font-size: 11px; font-weight: 800;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 8px;
-}
-
-.field-inner { position: relative; }
-
-.field-icon {
-    position: absolute; left: 18px; top: 50%;
-    transform: translateY(-50%); pointer-events: none;
-    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
-    color: #94a3b8; font-size: 16px;
-    transition: color 0.2s;
-}
-
-.field input {
-    width: 100%; padding: 16px 18px 16px 50px;
-    background: rgba(248,250,252,0.8);
-    border: 2px solid rgba(226,232,240,0.8);
-    border-radius: 18px;
-    font-size: 15px; font-family: 'Plus Jakarta Sans', sans-serif;
-    color: var(--text); outline: none; transition: all 0.25s;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-.field input:focus {
-    border-color: var(--accent);
-    background: rgba(255,255,255,0.95);
-    box-shadow: 0 0 0 5px rgba(79,70,229,0.12), 0 4px 16px rgba(79,70,229,0.1);
-    transform: translateY(-1px);
-}
-
-.pw-toggle-btn {
-    position: absolute; right: 18px; top: 50%;
-    transform: translateY(-50%);
-    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-    background: none; border: none; cursor: pointer;
-    color: #94a3b8; font-size: 16px; transition: color 0.2s;
-    outline: none; z-index: 10;
-}
-.pw-toggle-btn:hover { color: var(--accent); }
-
-.field input:focus ~ .field-focus-bar { transform: scaleX(1); }
-
-.field-focus-bar {
-    height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent3));
-    border-radius: 2px; transform: scaleX(0); transition: transform 0.3s;
-    margin-top: 4px; transform-origin: left;
-}
-
-/* Login Button */
-.login-btn {
-    width: 100%; padding: 18px;
-    margin-top: 8px;
-    background: linear-gradient(135deg, #4f46e5, #6d28d9 50%, #0ea5e9);
-    background-size: 200% 200%;
-    color: white; font-size: 16px; font-weight: 800;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    border: none; border-radius: 18px; cursor: pointer;
-    transition: all 0.3s;
-    letter-spacing: 0.04em;
-    box-shadow: 0 16px 40px rgba(79,70,229,0.4), 0 4px 12px rgba(79,70,229,0.2);
-    position: relative; overflow: hidden;
-    animation: btn-gradient 5s ease infinite;
-}
-
-@keyframes btn-gradient {
-    0%,100% { background-position: 0% 50%; }
-    50%      { background-position: 100% 50%; }
-}
-
-.login-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent 60%);
-    border-radius: 18px;
-    opacity: 0; transition: opacity 0.2s;
-}
-
-.login-btn::after {
-    content: '';
-    position: absolute; inset: -100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
-    transform: translateX(-100%);
-    transition: transform 0.6s;
-}
-
-.login-btn:hover { transform: translateY(-3px); box-shadow: 0 24px 60px rgba(79,70,229,0.55), 0 8px 20px rgba(79,70,229,0.25); }
-.login-btn:hover::before { opacity: 1; }
-.login-btn:hover::after { transform: translateX(300%); }
-.login-btn:active { transform: translateY(-1px); }
-
-/* Error */
-.error-box {
-    background: rgba(254,242,242,0.9);
-    border: 2px solid #fecaca;
-    color: #dc2626; padding: 14px 18px;
-    border-radius: 16px; font-size: 13px; font-weight: 700;
-    margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
-    animation: shake 0.45s cubic-bezier(.36,.07,.19,.97);
-    backdrop-filter: blur(8px);
-}
-@keyframes shake {
-    0%,100% { transform: translateX(0); }
-    15%,55% { transform: translateX(-8px); }
-    35%,75% { transform: translateX(8px); }
-}
-
-/* Badge */
-.login-badge {
-    text-align: center; margin-top: 28px;
-    font-size: 11.5px; color: #94a3b8; font-weight: 600;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-
-.sec-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(16,185,129,0.1); color: #10b981;
-    border: 1px solid rgba(16,185,129,0.2);
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 10px; font-weight: 700;
-}
-</style>
-</head>
-<body>
-
-<div class="login-theme-switch" id="loginThemeToggle" onclick="toggleLoginTheme()" title="Toggle Dark/Light Mode">
-    <div class="ts-thumb"></div>
-    <span class="ts-icon sun">☀️</span>
-    <span class="ts-icon moon">🌙</span>
-</div>
-
-<div class="bg"></div>
-<div class="grid-overlay"></div>
-<div class="orbs">
-    <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
-    <div class="orb orb4"></div><div class="orb orb5"></div><div class="orb orb6"></div>
-    <div class="orb orb7"></div><div class="orb orb8"></div>
-</div>
-
-<div class="login-wrap">
-    <form class="login-card" method="post">
-        <?php echo csrfField(); ?>
-        <div class="logo-wrap">
-            <div class="logo-outer">
-                <div class="logo-ring-outer"></div>
-                <div class="logo-ring">
-                    <?php if (! empty($appSettings['dashboard_logo_url'])) { ?>
-                        <img class="login-logo-img" src="<?php echo htmlspecialchars($appSettings['dashboard_logo_url']); ?>" alt="<?php echo htmlspecialchars($appSettings['app_name']); ?>">
-                    <?php } else { ?>
-                        <span class="logo-inner-icon">FM</span>
-                    <?php } ?>
-                </div>
-                <div class="float-badge badge-top">⚡ Fast</div>
-                <div class="float-badge badge-btm">🔐 Secure</div>
-            </div>
-        </div>
-
-        <h1 class="login-title"><?php echo htmlspecialchars($appSettings['app_name']); ?></h1>
-        <p class="login-sub"><span class="login-sub-dot"></span> Private Image Hosting Server <span class="login-sub-dot"></span></p>
-
-        <?php if (! empty($loginError)) { ?>
-            <div class="error-box">⚠️ <?php echo htmlspecialchars($loginError); ?></div>
-        <?php } ?>
-
-        <div class="field">
-            <label>Username</label>
-            <div class="field-inner">
-                <span class="field-icon">👤</span>
-                <input name="username" placeholder="Enter your username" required autocomplete="username">
-                <div class="field-focus-bar"></div>
-            </div>
-        </div>
-
-        <div class="field">
-            <label>Password</label>
-            <div class="field-inner">
-                <span class="field-icon">🔒</span>
-                <input id="loginPassword" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 50px;">
-                <button type="button" class="pw-toggle-btn" onclick="togglePasswordVisibility()" tabindex="-1" title="Show password">👁️</button>
-                <div class="field-focus-bar"></div>
-            </div>
-        </div>
-
-        <button class="login-btn" name="login">Sign In to Dashboard →</button>
-
-        <div class="login-badge">
-            <span class="sec-pill">✓ Encrypted</span>
-            &middot; Private &middot; Secure &middot; Fast
-        </div>
-    </form>
-</div>
-
-<script>
-function togglePasswordVisibility() {
-    const input = document.getElementById('loginPassword');
-    const btn = document.querySelector('.pw-toggle-btn');
-    if (input.type === 'password') {
-        input.type = 'text';
-        btn.textContent = '🙈';
-        btn.title = 'Hide password';
-    } else {
-        input.type = 'password';
-        btn.textContent = '👁️';
-        btn.title = 'Show password';
-    }
-}
-function updateLoginThemeButton() {
-    // The slide animation is handled by CSS using [data-theme="dark"]
-}
-function toggleLoginTheme() {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('kiuqTheme', next);
-    updateLoginThemeButton();
-}
-updateLoginThemeButton();
-</script>
-
-</body>
-</html>
-<?php
+    header('Location: /ourcmskiuq/');
     exit;
 }
+
 
 /*
 |--------------------------------------------------------------------------
@@ -3002,100 +2437,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = 'Login activity history cleared.';
         }
         $redirectOverride = $pageUrl.'?activity=1';
-    } elseif ($action === 'create_user') {
-        $username = strtolower(trim($_POST['new_username'] ?? ''));
-        $password = $_POST['new_password'] ?? '';
-        $role = normalizeUserRole($_POST['new_role'] ?? 'staff');
-        $displayName = trim($_POST['new_display_name'] ?? '') ?: $username;
-        if (! preg_match('/^[a-z0-9@._-]{3,120}$/', $username) || strlen($password) < 8 || findUserByUsername($username)) {
-            $message = 'Enter a unique username and password with at least 8 characters.';
-            $messageType = 'error';
-        } else {
-            $data = loadUsers();
-            $data['users'][] = [
-                'id' => bin2hex(random_bytes(8)),
-                'username' => $username,
-                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-                'role' => $role,
-                'status' => 'active',
-                'display_name' => substr($displayName, 0, 120),
-                'avatar_url' => '',
-                'theme' => 'light',
-                'dashboard_theme_url' => '',
-                'is_main_admin' => false,
-                'can_view_login_activity' => isset($_POST['can_view_login_activity']),
-                'created_at' => time(),
-                'updated_at' => time(),
-            ];
-            saveUsers($data);
-            $message = 'User created.';
-        }
-        $redirectOverride = $pageUrl.'?users=1';
-    } elseif (in_array($action, ['set_user_role', 'change_user_password', 'freeze_user', 'unfreeze_user', 'delete_user', 'update_user_permissions'], true)) {
-        $targetId = preg_replace("/[^a-f0-9\-]/", '', $_POST['user_id'] ?? '');
-        $data = loadUsers();
-        $foundIndex = null;
-        foreach ($data['users'] as $idx => $row) {
-            if (($row['id'] ?? '') === $targetId) {
-                $foundIndex = $idx;
-                break;
-            }
-        }
-        if ($foundIndex === null) {
-            $message = 'User not found.';
-            $messageType = 'error';
-        } else {
-            $target = $data['users'][$foundIndex];
-            $protected = ! empty($target['is_main_admin']);
-            $isSelf = ($target['id'] ?? '') === ($currentUser['id'] ?? '');
-            if ($action === 'set_user_role') {
-                if ($protected || $isSelf) {
-                    $message = 'This admin role is protected.';
-                    $messageType = 'error';
-                } else {
-                    $role = normalizeUserRole($_POST['role'] ?? 'staff');
-                    $data['users'][$foundIndex]['role'] = $role;
-                    $data['users'][$foundIndex]['updated_at'] = time();
-                    $message = 'Role updated.';
-                }
-            } elseif ($action === 'change_user_password') {
-                $password = $_POST['password'] ?? '';
-                if (strlen($password) < 8) {
-                    $message = 'Password must be at least 8 characters.';
-                    $messageType = 'error';
-                } elseif ($protected && ! $isSelf) {
-                    $message = 'Only the main admin can change the main admin password.';
-                    $messageType = 'error';
-                } else {
-                    $data['users'][$foundIndex]['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
-                    $data['users'][$foundIndex]['updated_at'] = time();
-                    $message = 'Password changed.';
-                }
-            } elseif ($action === 'freeze_user' || $action === 'unfreeze_user') {
-                if ($protected || $isSelf) {
-                    $message = 'Protected account cannot be frozen.';
-                    $messageType = 'error';
-                } else {
-                    $data['users'][$foundIndex]['status'] = $action === 'freeze_user' ? 'frozen' : 'active';
-                    $data['users'][$foundIndex]['updated_at'] = time();
-                    $message = 'User status updated.';
-                }
-            } elseif ($action === 'delete_user') {
-                if ($protected || $isSelf) {
-                    $message = 'Protected account cannot be removed.';
-                    $messageType = 'error';
-                } else {
-                    array_splice($data['users'], $foundIndex, 1);
-                    $message = 'User removed.';
-                }
-            } elseif ($action === 'update_user_permissions') {
-                $data['users'][$foundIndex]['can_view_login_activity'] = isset($_POST['can_view_login_activity']);
-                $data['users'][$foundIndex]['updated_at'] = time();
-                $message = 'Permissions updated.';
-            }
-            saveUsers($data);
-        }
-        $redirectOverride = $pageUrl.'?users=1';
     } elseif ($action === 'unban_device') {
         $banId = preg_replace('/[^a-f0-9]/', '', $_POST['ban_id'] ?? '');
         $securityData = loadSecurityData();
@@ -3543,9 +2884,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $message = 'Item not found.';
                 $messageType = 'warning';
             }
-        } elseif (! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            $message = 'Delete password is incorrect.';
-            $messageType = 'error';
         } elseif ($itemName) {
             $target = $currentDir.'/'.$itemName;
             $relative = $current ? $current.'/'.$itemName : $itemName;
@@ -3575,9 +2913,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
             $message = "$count item(s) deleted.";
-        } elseif (! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            $message = 'Delete password is incorrect.';
-            $messageType = 'error';
         } else {
             $targetsToBackup = [];
             foreach ($names as $n) {
@@ -3827,10 +3162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $trashId = preg_replace('/[^a-f0-9]/', '', $_POST['trash_id'] ?? '');
         $trash = loadTrashIndex();
         $trashRelative = cleanPath($trash['items'][$trashId]['original_relative'] ?? '');
-        if (! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            $message = 'Delete password is incorrect.';
-            $messageType = 'error';
-        } elseif ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
+        if ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
             $message = 'Website Team can only delete trash from the Website-Team folder.';
             $messageType = 'error';
         } elseif ($trashId && permanentlyDeleteTrashItem($trashId)) {
@@ -3843,40 +3175,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $ids = $_POST['trash_ids'] ?? [];
         $trash = loadTrashIndex();
         $count = 0;
-        if (! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            $message = 'Delete password is incorrect.';
-            $messageType = 'error';
-        } else {
-            foreach ($ids as $trashId) {
-                $trashId = preg_replace('/[^a-f0-9]/', '', $trashId);
-                $trashRelative = cleanPath($trash['items'][$trashId]['original_relative'] ?? '');
-                if ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
-                    continue;
-                }
-                if ($trashId && permanentlyDeleteTrashItem($trashId)) {
-                    $count++;
-                }
+        foreach ($ids as $trashId) {
+            $trashId = preg_replace('/[^a-f0-9]/', '', $trashId);
+            $trashRelative = cleanPath($trash['items'][$trashId]['original_relative'] ?? '');
+            if ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
+                continue;
             }
-            $message = "$count trash item(s) permanently deleted.";
+            if ($trashId && permanentlyDeleteTrashItem($trashId)) {
+                $count++;
+            }
         }
+        $message = "$count trash item(s) permanently deleted.";
     } elseif ($action === 'empty_trash') {
-        if (! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            $message = 'Delete password is incorrect.';
-            $messageType = 'error';
-        } else {
-            $trash = loadTrashIndex();
-            $count = 0;
-            foreach (array_keys($trash['items']) as $trashId) {
-                $trashRelative = cleanPath($trash['items'][$trashId]['original_relative'] ?? '');
-                if ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
-                    continue;
-                }
-                if (permanentlyDeleteTrashItem($trashId)) {
-                    $count++;
-                }
+        $trash = loadTrashIndex();
+        $count = 0;
+        foreach (array_keys($trash['items']) as $trashId) {
+            $trashRelative = cleanPath($trash['items'][$trashId]['original_relative'] ?? '');
+            if ($isWebsiteTeam && ! relativePathInRoot($trashRelative, $websiteTeamRootRelative)) {
+                continue;
             }
-            $message = "$count trash item(s) permanently deleted.";
+            if (permanentlyDeleteTrashItem($trashId)) {
+                $count++;
+            }
         }
+        $message = "$count trash item(s) permanently deleted.";
     } elseif ($action === 'edit_file') {
         $fileName = cleanExistingName($_POST['edit_file_name'] ?? '');
         $content = $_POST['edit_file_content'] ?? '';
@@ -3940,11 +3262,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($FEATURES_ENABLED && $action === 'delete_duplicate') {
         // Delete a duplicate file (uses same security as delete_item)
         $itemRel = cleanPath($_POST['item_rel'] ?? '');
-        if (! $isConverter && ! verifyDeletePassword($_POST['delete_password'] ?? '')) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'Incorrect delete password']);
-            exit;
-        }
         $absPath = safeFullPath($BASE_DIR, $itemRel);
         if (is_file($absPath)) {
             imghost_autoBackupTargets([$absPath]);
@@ -4622,44 +3939,75 @@ body.dashboard-themed .topbar-search input {
 }
 
 .topbar-brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     text-decoration: none;
     cursor: pointer;
+    user-select: none;
 }
 
-.rafvex-logo-img {
+.cms-brand-logo-badge {
+    width: 38px;
     height: 38px;
-    max-height: 42px;
-    width: auto;
-    object-fit: contain;
-    display: block;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.15rem;
+    font-weight: 900;
+    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    flex-shrink: 0;
     transition: transform 0.2s ease;
 }
 
-.topbar-brand:hover .rafvex-logo-img {
-    transform: scale(1.03);
+.topbar-brand:hover .cms-brand-logo-badge {
+    transform: scale(1.05);
 }
 
-.brand-badge-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(220, 38, 38, 0.08);
-    border: 1px solid rgba(220, 38, 38, 0.2);
-    color: #dc2626;
-    padding: 3px 10px;
-    border-radius: 9999px;
-    font-size: 11px;
+.cms-brand-text-block {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.cms-brand-title-text {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #0f172a;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+[data-theme="dark"] .cms-brand-title-text {
+    color: #f8fafc;
+}
+
+.cms-brand-subtitle-text {
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.08em;
+    color: #607a4e;
+    text-transform: uppercase;
+    margin-top: 2px;
 }
 
-[data-theme="dark"] .brand-badge-pill {
-    background: rgba(220, 38, 38, 0.15);
-    border-color: rgba(220, 38, 38, 0.35);
-    color: #f87171;
+.cms-brand-back-arrow {
+    font-size: 15px;
+    color: #64748b;
+    margin-left: 6px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.topbar-brand:hover .cms-brand-back-arrow {
+    transform: translateX(-3px);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .topbar-brand:hover .cms-brand-back-arrow {
+    color: #f8fafc;
 }
 
 .badge-dot {
@@ -6982,21 +6330,22 @@ body.dashboard-repaint::after {
 <header class="topbar">
     <div style="display: flex; align-items: center; gap: 14px;">
         <button class="mobile-menu-btn" type="button" onclick="toggleSidebar(true)" title="Menu">☰</button>
-        <a class="topbar-brand" href="<?php echo $homeUrl; ?>" title="Rafvex Media Library">
-            <img src="/logo.png" onerror="if(!this.dataset.retried){this.dataset.retried=1;this.src='../logo.png';if(!this.complete)this.src='logo.png';}" alt="Rafvex" class="rafvex-logo-img">
-            <div class="brand-badge-pill">
-                <span class="badge-dot"></span>
-                <span>Media Library</span>
+        <a class="topbar-brand" href="/ourcmskiuq/" title="Back to StoneKrusher CMS">
+            <div class="cms-brand-logo-badge">⚡</div>
+            <div class="cms-brand-text-block">
+                <span class="cms-brand-title-text">KONSTRUCTZ</span>
+                <span class="cms-brand-subtitle-text">STONEKRUSHER CMS</span>
             </div>
+            <span class="cms-brand-back-arrow" title="Back to StoneKrusher CMS">←</span>
         </a>
     </div>
 
     <div class="topbar-end">
-        <a href="/ourcms/dashboard" class="topbar-action-cms outline" title="Back to CMS Dashboard">
+        <a href="/ourcmskiuq/" class="topbar-action-cms outline" title="Back to StoneKrusher CMS">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="m15 18-6-6 6-6"/></svg>
-            CMS
+            StoneKrusher CMS
         </a>
-        <a href="https://rafvex.com" target="_blank" class="topbar-action-cms outline" title="Visit Live Site">
+        <a href="https://stonekrusher.com" target="_blank" class="topbar-action-cms outline" title="Visit Live Site">
             Live Site ↗
         </a>
         
@@ -7273,146 +6622,6 @@ body.dashboard-repaint::after {
                             <?php if (empty($loginActivities)) { ?><tr><td colspan="5">No login activity yet.</td></tr><?php } ?>
                         </tbody>
                     </table>
-                </div>
-            </div>
-            <?php } ?>
-
-        <?php } elseif ($usersMode) { ?>
-            <?php if (! $isAdmin) { ?>
-                <div class="message msg-error">Admin permission is required.</div>
-            <?php } else { ?>
-            <div class="panel">
-                <div class="panel-head">
-                    <span class="panel-title">👥 User Management</span>
-                    <span class="panel-meta">Create users, set roles, freeze accounts, and protect the main admin</span>
-                </div>
-                <div style="padding:18px;">
-                    <div class="admin-card" style="margin-bottom:24px; padding: 24px;">
-                        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--line);">
-                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(79,70,229,0.1); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 18px;">
-                                👤
-                            </div>
-                            <div>
-                                <h3 style="margin:0; font-size: 16px; font-weight: 700; color: var(--text);">Create New User</h3>
-                                <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">Add a new member and assign their role</div>
-                            </div>
-                        </div>
-                        <form method="post">
-                            <?php echo csrfField(); ?>
-                            <input type="hidden" name="action" value="create_user">
-                            <div class="admin-grid" style="margin-bottom: 20px;">
-                                <div class="form-group">
-                                    <label class="form-label" style="display:flex; gap:6px; align-items:center;"><span style="color:var(--muted); font-size:14px;">📝</span> Display Name</label>
-                                    <input class="form-input" name="new_display_name" placeholder="e.g. John Doe" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="display:flex; gap:6px; align-items:center;"><span style="color:var(--muted); font-size:14px;">👤</span> Username</label>
-                                    <input class="form-input" name="new_username" placeholder="e.g. john_doe" pattern="[a-z0-9@._-]{3,120}" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="display:flex; gap:6px; align-items:center;"><span style="color:var(--muted); font-size:14px;">🔒</span> Password</label>
-                                    <div style="position: relative;">
-                                        <input id="createUserPassword" class="form-input" name="new_password" type="password" placeholder="At least 8 characters" minlength="8" required style="padding-right: 44px; width: 100%; box-sizing: border-box;">
-                                        <button type="button" class="pw-toggle-btn" onclick="toggleCreateUserPassword(event)" tabindex="-1" title="Show password" style="right: 8px;">👁️</button>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="display:flex; gap:6px; align-items:center;"><span style="color:var(--muted); font-size:14px;">🛡️</span> Role</label>
-                                    <select class="form-input" name="new_role">
-                                        <option value="staff">Staff</option>
-                                        <option value="converter">Converter</option>
-                                        <option value="website_team">Website Team</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 20px; margin-top: 8px; border-top: 1px dashed var(--line);">
-                                <label style="display:flex; align-items:center; gap:12px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer;">
-                                    <input type="checkbox" name="can_view_login_activity" checked style="width: 20px; height: 20px; accent-color: var(--accent); cursor:pointer;">
-                                    <div>
-                                        <div style="margin-bottom:2px;">Allow own login activity</div>
-                                        <div style="font-size:11px; color:var(--muted); font-weight:500;">User can view their own sign-in logs in dashboard</div>
-                                    </div>
-                                </label>
-                                <button class="form-btn btn-primary" type="submit" style="padding: 12px 32px; font-size: 14px; font-weight: 700; border-radius: 12px; box-shadow: 0 4px 14px rgba(79,70,229,0.25);">
-                                    Create User →
-                                </button>
-                            </div>
-                        </form>
-                        <script>
-                        function toggleCreateUserPassword(e) {
-                            const input = document.getElementById('createUserPassword');
-                            const btn = e.currentTarget;
-                            if (input.type === 'password') {
-                                input.type = 'text';
-                                btn.textContent = '🙈';
-                                btn.title = 'Hide password';
-                            } else {
-                                input.type = 'password';
-                                btn.textContent = '👁️';
-                                btn.title = 'Show password';
-                            }
-                        }
-                        </script>
-                    </div>
-                    <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Login activity</th><th>Password</th><th>Actions</th></tr></thead>
-                            <tbody>
-                                <?php foreach ($allUsers as $row) { ?>
-                                <?php $protected = ! empty($row['is_main_admin']);
-                                    $self = ($row['id'] ?? '') === ($currentUser['id'] ?? ''); ?>
-                                <tr>
-                                    <td>
-                                        <div class="user-cell">
-                                            <span class="avatar-mini">
-                                                <?php if (! empty($row['avatar_url'])) { ?><img src="<?php echo htmlspecialchars($row['avatar_url']); ?>" alt=""><?php } else { ?><?php echo htmlspecialchars(userInitials($row)); ?><?php } ?>
-                                            </span>
-                                            <span>
-                                                <strong><?php echo htmlspecialchars($row['display_name'] ?? $row['username']); ?></strong><br>
-                                                <span style="color:var(--muted);"><?php echo htmlspecialchars($row['username']); ?><?php echo $protected ? ' / main admin' : ''; ?></span>
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <form method="post" class="inline-form">
-                                            <?php echo csrfField(); ?><input type="hidden" name="action" value="set_user_role"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                            <select class="form-input" name="role" style="min-width:100px;" <?php echo ($protected || $self) ? 'disabled' : ''; ?>><option value="staff" <?php echo ($row['role'] ?? '') === 'staff' ? 'selected' : ''; ?>>Staff</option><option value="converter" <?php echo ($row['role'] ?? '') === 'converter' ? 'selected' : ''; ?>>Converter</option><option value="website_team" <?php echo ($row['role'] ?? '') === 'website_team' ? 'selected' : ''; ?>>Website Team</option><option value="admin" <?php echo ($row['role'] ?? '') === 'admin' ? 'selected' : ''; ?>>Admin</option></select>
-                                            <button class="act-btn open" <?php echo ($protected || $self) ? 'disabled' : ''; ?>>Save</button>
-                                        </form>
-                                    </td>
-                                    <td><span class="status-pill <?php echo htmlspecialchars($row['status'] ?? 'active'); ?>"><?php echo htmlspecialchars($row['status'] ?? 'active'); ?></span></td>
-                                    <td>
-                                        <form method="post" class="inline-form">
-                                            <?php echo csrfField(); ?><input type="hidden" name="action" value="update_user_permissions"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" name="can_view_login_activity" <?php echo ! empty($row['can_view_login_activity']) ? 'checked' : ''; ?>> Allowed</label>
-                                            <button class="act-btn open">Save</button>
-                                        </form>
-                                    </td>
-                                    <td>
-                                        <form method="post" class="inline-form">
-                                            <?php echo csrfField(); ?><input type="hidden" name="action" value="change_user_password"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                            <input class="form-input" name="password" type="password" minlength="8" placeholder="New password" style="min-width:150px;" required>
-                                            <button class="act-btn open">Change</button>
-                                        </form>
-                                    </td>
-                                    <td class="admin-actions-cell">
-                                        <div class="admin-actions">
-                                        <form method="post" class="inline-form" onsubmit="return confirm('<?php echo ($row['status'] ?? 'active') === 'frozen' ? 'Unfreeze this user?' : 'Freeze this user?'; ?>');">
-                                            <?php echo csrfField(); ?><input type="hidden" name="action" value="<?php echo ($row['status'] ?? 'active') === 'frozen' ? 'unfreeze_user' : 'freeze_user'; ?>"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                            <button class="act-btn" <?php echo ($protected || $self) ? 'disabled' : ''; ?>><?php echo ($row['status'] ?? 'active') === 'frozen' ? 'Unfreeze' : 'Freeze'; ?></button>
-                                        </form>
-                                        <form method="post" class="inline-form" onsubmit="return confirm('Remove this user? This cannot be undone.');">
-                                            <?php echo csrfField(); ?><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?php echo htmlspecialchars($row['id']); ?>">
-                                            <button class="act-btn del" <?php echo ($protected || $self) ? 'disabled' : ''; ?>>Remove</button>
-                                        </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
             <?php } ?>

@@ -286,16 +286,27 @@ export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectM
         </div>
       )}
 
-      {/* TOP HEADER BAR (Exactly as screenshot: KiuQ - File Manager-KiuQ - Image Hosting) */}
+      {/* TOP HEADER BAR */}
       <header className="cms-kiuq-topbar">
         <div className="cms-kiuq-topbar-left">
-          <div className="cms-kiuq-brand">
-            <div className="cms-kiuq-brand-badge">
-              <span>KiuQ</span>
-            </div>
-            <div className="cms-kiuq-brand-info">
-              <span className="cms-kiuq-brand-name">File Manager - KiuQ</span>
-              <span className="cms-kiuq-brand-tag">Image Hosting</span>
+          <div className="cms-kiuq-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '38px',
+              height: '38px',
+              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              fontWeight: '900',
+              fontSize: '1.2rem',
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+              flexShrink: 0
+            }}>⚡</div>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+              <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '0.04em', color: 'var(--kiuq-text)' }}>KONSTRUCTZ</span>
+              <span style={{ fontSize: '0.72rem', color: '#607a4e', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '2px' }}>STONEKRUSHER CMS</span>
             </div>
           </div>
         </div>

@@ -303,6 +303,9 @@ def main():
         "--exclude=.htaccess.old*",
         "--exclude=*.sql",
         "--exclude=uploads/",
+        "--exclude=medialibrary/blog/",
+        "--exclude=medialibrary/.trash/",
+        "--exclude=medialibrary/.feature_db.sqlite",
     ]
 
     target_destination = f"{SSH_USER}@{SSH_HOST}:{REMOTE_PUBLIC}/"
@@ -356,6 +359,8 @@ def main():
         backend_files = [
             ("public/api/blog-posts.php", f"{REMOTE_PUBLIC}/api/blog-posts.php"),
             ("public/api/config.php", f"{REMOTE_PUBLIC}/api/config.php"),
+            ("public/medialibrary/index.php", f"{REMOTE_PUBLIC}/medialibrary/index.php"),
+            ("public/medialibrary/.users.json", f"{REMOTE_PUBLIC}/medialibrary/.users.json"),
             ("public/medialibrary/features/config.php", f"{REMOTE_PUBLIC}/medialibrary/features/config.php"),
             ("public/contact-submit.php", f"{REMOTE_PUBLIC}/contact-submit.php"),
             ("public/.htaccess", f"{REMOTE_PUBLIC}/.htaccess"),
