@@ -158,6 +158,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
       title: 'MENU',
       items: [
         { id: 'overview', label: 'Dashboard', icon: '📊', perm: 'posts.view' },
+        { id: 'topblogs', label: 'Top Blogs', icon: '🔥', perm: 'posts.view', badge: 'PRO' },
         { id: 'posts', label: 'Tasks & Articles', icon: '📝', perm: 'posts.view', badge: '12+' },
         { id: 'comments', label: 'Customer Comments', icon: '💬', perm: 'posts.view' },
         { id: 'products', label: 'Machinery Catalog', icon: '🚜', perm: 'products.view' },
@@ -408,9 +409,10 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             tabKey={activeTab}
             onReset={() => setActiveTab('overview')}
           >
-            {activeTab === 'overview' && (
+            {(activeTab === 'overview' || activeTab === 'topblogs') && (
               <CmsDashboard
                 csrfToken={csrfToken}
+                initialSubView={activeTab === 'topblogs' ? 'topBlogs' : 'overview'}
                 onNavigateTab={handleNavigate}
                 onSelectPost={handleSelectPostFromDashboard}
               />

@@ -44,7 +44,9 @@ if ($method === 'GET') {
             $dbRows = $stmt->fetchAll();
             if (!empty($dbRows)) {
                 $posts = array_map(function($r) { 
-                    return json_decode($r['data_json'], true); 
+                    $p = json_decode($r['data_json'], true);
+                    if (is_array($p)) { unset($p['views']); }
+                    return $p; 
                 }, $dbRows);
                 send_json(200, ['posts' => array_values(array_filter($posts))]);
             }
@@ -64,12 +66,15 @@ if ($method === 'GET') {
     $posts = sanitize_posts($rawPosts);
 
     // Filter public view for published only
-    $filtered = array_filter($posts, function($p) {
+    $filtered = array_values(array_filter($posts, function($p) {
         $s = $p['status'] ?? 'Published';
         return strcasecmp($s, 'Published') === 0;
-    });
+    }));
+    foreach ($filtered as &$fp) {
+        if (is_array($fp)) { unset($fp['views']); }
+    }
 
-    send_json(200, ['posts' => array_values($filtered)]);
+    send_json(200, ['posts' => $filtered]);
 }
 
 // All mutation requests (PUT, POST, DELETE) MUST be authenticated

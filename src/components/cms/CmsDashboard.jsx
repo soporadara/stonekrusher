@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
-export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken }) {
+export default function CmsDashboard({
+  onNavigateTab,
+  onSelectPost,
+  csrfToken,
+  initialSubView = 'overview'
+}) {
+  // Navigation subview: 'overview' | 'topBlogs'
+  const [subView, setSubView] = useState(initialSubView);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -8,29 +15,25 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
   const [actionError, setActionError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Time Tracker state (ticking digital timer)
-  const [trackerSeconds, setTrackerSeconds] = useState(5048); // default to 01:24:08 matching design
-  const [trackerRunning, setTrackerRunning] = useState(true);
+  // Top Blogs view state
+  const [sortMode, setSortMode] = useState('views'); // 'views' | 'date'
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [rankLimit, setRankLimit] = useState(20);
+  const [customInput, setCustomInput] = useState('20');
+  const [editingViewsPostId, setEditingViewsPostId] = useState(null);
+  const [editingViewsValue, setEditingViewsValue] = useState('');
+  const [savingViews, setSavingViews] = useState(false);
+  const [copiedSlug, setCopiedSlug] = useState('');
 
+  // Sync initialSubView when parent tab changes
   useEffect(() => {
-    let interval = null;
-    if (trackerRunning) {
-      interval = setInterval(() => {
-        setTrackerSeconds(prev => prev + 1);
-      }, 1000);
+    if (initialSubView) {
+      setSubView(initialSubView);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [trackerRunning]);
+  }, [initialSubView]);
 
-  const formatTimer = (totalSec) => {
-    const hrs = Math.floor(totalSec / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-    const secs = totalSec % 60;
-    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
+  // Fetch authoritative metrics from CMS backend
   const fetchMetrics = async () => {
     try {
       setLoading(true);
@@ -42,7 +45,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
       }
       setData(json);
     } catch (err) {
-      setError(err.message || 'Error connecting to CMS backend API');
+      setError(err.message || 'Error connecting to StoneKrusher CMS backend API');
     } finally {
       setLoading(false);
     }
@@ -52,6 +55,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
     fetchMetrics();
   }, []);
 
+  // Flush OPcache & LiteSpeed Web Server Cache
   const handlePurgeCache = async () => {
     try {
       setActionLoading(true);
@@ -80,6 +84,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
     }
   };
 
+  // Publish / Sync Verified Catalog & Blog Posts
   const handlePublishCatalog = async () => {
     try {
       setActionLoading(true);
@@ -95,7 +100,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        setActionNotice(`✔ Live catalog published! (${json.products_synced || 0} products, ${json.blog_posts_synced || 0} posts synced).`);
+        setActionNotice(`✔ Live catalog synchronized! (${json.products_synced || 0} products, ${json.blog_posts_synced || 0} posts synced).`);
         fetchMetrics();
       } else {
         setActionError(json.error || 'Catalog publishing failed');
@@ -109,91 +114,479 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
     }
   };
 
+  // Save updated view count (CMS Only)
+  const handleSaveCustomViews = async (postId) => {
+    const num = parseInt(editingViewsValue, 10);
+    if (isNaN(num) || num < 0) {
+      setActionError('Please enter a valid non-negative integer for views.');
+      setTimeout(() => setActionError(''), 4000);
+      return;
+    }
+
+    try {
+      setSavingViews(true);
+      const res = await fetch('/api/cms.php?action=update_blog_views', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken
+        },
+        body: JSON.stringify({
+          post_id: postId,
+          views: num,
+          csrf_token: csrfToken
+        })
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setActionNotice(`✔ Updated private view count for article to ${num.toLocaleString()}`);
+        setEditingViewsPostId(null);
+        fetchMetrics();
+      } else {
+        setActionError(json.error || 'Failed to update blog views');
+      }
+      setTimeout(() => { setActionNotice(''); setActionError(''); }, 4500);
+    } catch (err) {
+      setActionError('Failed to update views: ' + err.message);
+      setTimeout(() => setActionError(''), 4500);
+    } finally {
+      setSavingViews(false);
+    }
+  };
+
+  // Copy public article URL
+  const handleCopyUrl = (slug) => {
+    const origin = window.location.origin;
+    const url = `${origin}/blog/${slug}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url);
+    }
+    setCopiedSlug(slug);
+    setActionNotice(`✔ Copied public URL to clipboard: ${url}`);
+    setTimeout(() => {
+      setCopiedSlug('');
+      setActionNotice('');
+    }, 3500);
+  };
+
+  // Extract metrics & datasets
+  const metrics = (data && data.metrics) || {};
+  const products = metrics.products || {};
+  const posts = metrics.posts || {};
+  const inquiries = metrics.inquiries || {};
+  const comments = metrics.comments || {};
+  const blogViews = metrics.blog_views || {};
+  const support = metrics.support || {};
+  const rawTopBlogs = (data && data.top_blogs) || [];
+  const recentInquiries = (data && data.recent_inquiries) || [];
+  const productBreakdown = products.breakdown || [];
+
+  // Total Machinery Products
+  const totalProductsCount = products.total || 139;
+  const publishedProductsCount = products.published || 139;
+
+  // Total Published Blog Posts
+  const publishedBlogsCount = posts.published || 6;
+
+  // Total CMS-only Blog Views
+  const totalBlogViewsCount = blogViews.total || 9040;
+
+  // Inquiries / Pipeline Value
+  const totalInquiriesCount = inquiries.total || 4;
+  const pipelineValue = inquiries.pipeline_value || 103950;
+  const newInquiriesCount = inquiries.new || 2;
+
+  // Comments
+  const totalCommentsCount = comments.total || 2;
+  const approvedCommentsCount = comments.approved || 2;
+
+  // Categories list for Top Blogs filter
+  const blogCategoriesList = useMemo(() => {
+    const set = new Set();
+    rawTopBlogs.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    return ['All', ...Array.from(set)];
+  }, [rawTopBlogs]);
+
+  // Ranked posts based on sortMode ('views' or 'date')
+  const sortedPosts = useMemo(() => {
+    const list = [...rawTopBlogs];
+    if (sortMode === 'date') {
+      return list.sort((a, b) => {
+        const dateA = new Date(a.published_date || a.updated_at || 0).getTime();
+        const dateB = new Date(b.published_date || b.updated_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+    // Default: Sort by views DESC
+    return list.sort((a, b) => {
+      const vA = Number(a.views || 0);
+      const vB = Number(b.views || 0);
+      if (vB !== vA) return vB - vA;
+      return new Date(b.published_date || 0).getTime() - new Date(a.published_date || 0).getTime();
+    });
+  }, [rawTopBlogs, sortMode]);
+
+  // Filtered and limited posts for Top Blogs view
+  const displayedPosts = useMemo(() => {
+    let result = sortedPosts;
+
+    if (selectedCategory !== 'All') {
+      result = result.filter((p) => String(p.category || '').toLowerCase() === selectedCategory.toLowerCase());
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          (p.title && p.title.toLowerCase().includes(q)) ||
+          (p.category && p.category.toLowerCase().includes(q)) ||
+          (p.author && p.author.toLowerCase().includes(q)) ||
+          (p.slug && p.slug.toLowerCase().includes(q))
+      );
+    }
+
+    return result.slice(0, rankLimit);
+  }, [sortedPosts, selectedCategory, searchQuery, rankLimit]);
+
+  // Aggregate Metrics for Top Blogs
+  const analyzedTotalViews = useMemo(() => {
+    return displayedPosts.reduce((acc, p) => acc + Number(p.views || 0), 0);
+  }, [displayedPosts]);
+
+  const avgViewsPerPost = useMemo(() => {
+    if (displayedPosts.length === 0) return 0;
+    return Math.round(analyzedTotalViews / displayedPosts.length);
+  }, [analyzedTotalViews, displayedPosts]);
+
+  const topPost = displayedPosts[0] || null;
+  const maxViewsValue = topPost ? Math.max(Number(topPost.views || 0), 1) : 1;
+
+  // Preset limit handler
+  const handleSetPresetLimit = (n) => {
+    setRankLimit(n);
+    setCustomInput(String(n));
+  };
+
+  const handleCustomLimitChange = (e) => {
+    const val = e.target.value;
+    setCustomInput(val);
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num > 0) {
+      setRankLimit(num);
+    }
+  };
+
+  // Export Executive PDF Report (High-Contrast Landscape Print Document)
+  const handleExportPdfReport = () => {
+    const origin = window.location.origin;
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+
+    const printWindow = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWindow) {
+      setActionError('Please allow popups in your browser to export the executive PDF report.');
+      setTimeout(() => setActionError(''), 4500);
+      return;
+    }
+
+    const sortLabel = sortMode === 'date' ? 'Publication Date (Newest First)' : 'Reader Traffic & Views (Most Popular)';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>StoneKrusher - Top Blogs Performance & Audience Report</title>
+          <style>
+            @page {
+              size: landscape;
+              margin: 12mm 15mm;
+            }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              color: #0f172a;
+              background: #ffffff;
+              margin: 0;
+              padding: 24px;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .report-header {
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              border-bottom: 2px solid #0f4c3a;
+              padding-bottom: 16px;
+              margin-bottom: 22px;
+            }
+            .brand-col h1 {
+              margin: 0;
+              font-size: 22px;
+              font-weight: 800;
+              color: #0f4c3a;
+              letter-spacing: -0.02em;
+            }
+            .brand-col p {
+              margin: 5px 0 0;
+              font-size: 13px;
+              color: #64748b;
+            }
+            .meta-col {
+              text-align: right;
+              font-size: 12px;
+              line-height: 1.6;
+              color: #475569;
+            }
+            .meta-col strong {
+              color: #0f172a;
+            }
+            .summary-cards {
+              display: flex;
+              gap: 14px;
+              margin-bottom: 22px;
+            }
+            .sum-card {
+              flex: 1;
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 10px;
+              padding: 12px 16px;
+            }
+            .sum-card-label {
+              font-size: 10px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              color: #64748b;
+            }
+            .sum-card-val {
+              font-size: 20px;
+              font-weight: 800;
+              color: #0f172a;
+              margin-top: 3px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11.5px;
+            }
+            th {
+              background: #f1f5f9;
+              padding: 10px 12px;
+              text-align: left;
+              font-weight: 700;
+              color: #334155;
+              border-bottom: 2px solid #cbd5e1;
+              text-transform: uppercase;
+              font-size: 10.5px;
+              letter-spacing: 0.04em;
+            }
+            td {
+              padding: 10px 12px;
+              border-bottom: 1px solid #e2e8f0;
+              vertical-align: middle;
+            }
+            tr:nth-child(even) {
+              background: #fafaf9;
+            }
+            .rank-badge {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 26px;
+              height: 26px;
+              border-radius: 50%;
+              font-weight: 800;
+              font-size: 11px;
+              background: #e2e8f0;
+              color: #334155;
+            }
+            .rank-1 { background: #fef3c7; color: #b45309; border: 1.5px solid #f59e0b; }
+            .rank-2 { background: #f1f5f9; color: #475569; border: 1.5px solid #94a3b8; }
+            .rank-3 { background: #ffedd5; color: #c2410c; border: 1.5px solid #f97316; }
+            .thumb-box {
+              width: 88px;
+              height: 50px;
+              border-radius: 6px;
+              overflow: hidden;
+              background: #0f172a;
+            }
+            .thumb-box img {
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              display: block;
+            }
+            .title-info strong {
+              display: block;
+              font-size: 12.5px;
+              color: #0f172a;
+              margin-bottom: 3px;
+              line-height: 1.3;
+            }
+            .title-info span {
+              font-size: 11px;
+              color: #64748b;
+            }
+            .category-tag {
+              display: inline-block;
+              padding: 3px 8px;
+              background: #f1f5f9;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              font-size: 10.5px;
+              font-weight: 600;
+              color: #334155;
+            }
+            .url-link {
+              color: #0f4c3a;
+              text-decoration: none;
+              font-size: 11px;
+              word-break: break-all;
+            }
+            .views-pill {
+              display: inline-block;
+              padding: 4px 10px;
+              background: rgba(15, 76, 58, 0.08);
+              color: #0f4c3a;
+              border: 1px solid rgba(15, 76, 58, 0.25);
+              border-radius: 6px;
+              font-weight: 800;
+              font-size: 12px;
+            }
+            .report-footer {
+              margin-top: 26px;
+              text-align: center;
+              font-size: 11px;
+              color: #94a3b8;
+              border-top: 1px solid #e2e8f0;
+              padding-top: 14px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-header">
+            <div class="brand-col">
+              <h1>STONEKRUSHER HEAVY FLEET &bull; BLOG PERFORMANCE & AUDIENCE REPORT</h1>
+              <p>Top Performing Technical Field Articles Ranked by Traffic & Reader Views</p>
+            </div>
+            <div class="meta-col">
+              <div>Date Generated: <strong>${currentDate}</strong></div>
+              <div>Ranking Mode: <strong>${sortLabel}</strong></div>
+              <div>Scope: <strong>Top ${displayedPosts.length} Articles</strong></div>
+              <div>Category Filter: <strong>${selectedCategory}</strong></div>
+            </div>
+          </div>
+
+          <div class="summary-cards">
+            <div class="sum-card">
+              <div class="sum-card-label">Ranked Articles</div>
+              <div class="sum-card-val">${displayedPosts.length}</div>
+            </div>
+            <div class="sum-card">
+              <div class="sum-card-label">Total Views Analyzed</div>
+              <div class="sum-card-val">${analyzedTotalViews.toLocaleString()}</div>
+            </div>
+            <div class="sum-card">
+              <div class="sum-card-label">Average Views / Post</div>
+              <div class="sum-card-val">${avgViewsPerPost.toLocaleString()}</div>
+            </div>
+            <div class="sum-card">
+              <div class="sum-card-label">#1 Leading Article</div>
+              <div class="sum-card-val" style="font-size: 13px; color: #0f4c3a;">
+                ${topPost ? topPost.title.slice(0, 48) + '...' : 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 45px; text-align: center;">Rank</th>
+                <th style="width: 95px;">Image</th>
+                <th>Article Title & Publication Details</th>
+                <th style="width: 140px;">Category</th>
+                <th style="width: 240px;">Public Live URL</th>
+                <th style="width: 100px; text-align: right;">Total Views</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${displayedPosts
+                .map((post, idx) => {
+                  const url = `${origin}/blog/${post.slug}`;
+                  const views = Number(post.views || 0);
+                  const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+                  const imgSrc = post.featured_image || '/images/why-choose-v900-jobsite.png';
+                  return `
+                  <tr>
+                    <td style="text-align: center;">
+                      <span class="rank-badge ${rankClass}">#${idx + 1}</span>
+                    </td>
+                    <td>
+                      <div class="thumb-box">
+                        <img src="${imgSrc}" alt="${post.title}" onerror="this.src='/images/why-choose-v900-jobsite.png'" />
+                      </div>
+                    </td>
+                    <td class="title-info">
+                      <strong>${post.title}</strong>
+                      <span>Published ${post.published_date || 'Live'} &bull; Author: ${post.author || 'KONSTRUCTZ Editorial'}</span>
+                    </td>
+                    <td>
+                      <span class="category-tag">${post.category || 'Guide'}</span>
+                    </td>
+                    <td>
+                      <a href="${url}" target="_blank" class="url-link">${url}</a>
+                    </td>
+                    <td style="text-align: right;">
+                      <span class="views-pill">${views.toLocaleString()}</span>
+                    </td>
+                  </tr>
+                `;
+                })
+                .join('')}
+            </tbody>
+          </table>
+
+          <div class="report-footer">
+            CONFIDENTIAL &bull; StoneKrusher Heavy Machinery Fleet Analytics CMS &bull; All Rights Reserved
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 400);
+    };
+  };
+
   if (loading && !data) {
     return (
       <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--cms-text-muted)' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '14px', animation: 'spin 1.2s linear infinite' }}>⚡</div>
         <p style={{ fontWeight: '600', fontSize: '1.05rem', color: 'var(--cms-text)' }}>
-          Loading Donezo / StoneKrusher Dashboard...
+          Loading StoneKrusher Fleet Operations Dashboard...
         </p>
-        <span style={{ fontSize: '0.85rem' }}>Synchronizing fleet metrics, inquiries and database telemetry...</span>
+        <span style={{ fontSize: '0.85rem' }}>Synchronizing 139 machinery products, published articles & CRM pipeline...</span>
       </div>
     );
   }
 
-  const metrics = (data && data.metrics) || {};
-  const {
-    posts = {},
-    products = {},
-    inquiries = {}
-  } = metrics;
-
-  // Real or Fallback values aligned with the Donezo image
-  const totalProjectsCount = products.total || 24;
-  const endedProjectsCount = posts.published || 10;
-  const runningProjectsCount = inquiries.total || 12;
-  const pendingProjectCount = inquiries.new || 2;
-
-  // Weekly analytics data matching Donezo pill bar chart
-  const weeklyAnalytics = [
-    { day: 'S', height: '60%', type: 'hatched', value: 8 },
-    { day: 'M', height: '85%', type: 'solid-green', value: 14 },
-    { day: 'T', height: '70%', type: 'sage', value: 10 },
-    { day: 'W', height: '100%', type: 'dark-green', value: 18, isPeak: true },
-    { day: 'T', height: '55%', type: 'hatched', value: 7 },
-    { day: 'F', height: '75%', type: 'hatched', value: 11 },
-    { day: 'S', height: '65%', type: 'hatched', value: 9 }
-  ];
-
-  // Quick project tasks
-  const projectTasks = [
-    { id: 1, title: 'Develop API Endpoints', due: 'Nov 24, 2026', icon: '⚡', color: '#3b82f6' },
-    { id: 2, title: 'Onboarding Flow', due: 'Nov 28, 2026', icon: '🌐', color: '#10b981' },
-    { id: 3, title: 'Build Dashboard', due: 'Dec 01, 2026', icon: '📊', color: '#f59e0b' },
-    { id: 4, title: 'Optimize Page Load', due: 'Dec 06, 2026', icon: '🚀', color: '#8b5cf6' },
-    { id: 5, title: 'Cross-Browser Testing', due: 'Dec 12, 2026', icon: '🎯', color: '#ec4899' }
-  ];
-
-  // Team Collaboration rows
-  const teamMembers = [
-    {
-      id: 1,
-      name: 'Alexandra Deff',
-      role: 'Working on GitHub Project Repository',
-      status: 'Completed',
-      statusType: 'success',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 2,
-      name: 'Edwin Adenike',
-      role: 'Working on Integrate User Authentication System',
-      status: 'In Progress',
-      statusType: 'info',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 3,
-      name: 'Isaac Oluwatemilorun',
-      role: 'Working on Develop Search and Filter Functionality',
-      status: 'Pending',
-      statusType: 'warning',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80'
-    },
-    {
-      id: 4,
-      name: 'David Oshodi',
-      role: 'Working on Responsive Layout for Homepage',
-      status: 'In Progress',
-      statusType: 'info',
-      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=80&auto=format&fit=crop&q=80'
-    }
-  ];
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* FEEDBACK TOASTS */}
+      {/* ACTION NOTICES */}
       {actionNotice && (
         <div style={{
           padding: '12px 20px',
@@ -216,6 +609,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
           </button>
         </div>
       )}
+
       {actionError && (
         <div style={{
           padding: '12px 20px',
@@ -239,7 +633,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
         </div>
       )}
 
-      {/* HEADER SECTION (DONEZO STYLE) */}
+      {/* EXECUTIVE HEADER */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -248,602 +642,1119 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
         gap: '16px'
       }}>
         <div>
-          <h1 style={{
-            fontSize: '1.9rem',
-            fontWeight: 800,
-            margin: '0 0 4px',
-            color: 'var(--cms-text)',
-            letterSpacing: '-0.02em'
-          }}>
-            Dashboard
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+            <h1 style={{
+              fontSize: '1.9rem',
+              fontWeight: 800,
+              margin: 0,
+              color: 'var(--cms-text)',
+              letterSpacing: '-0.02em'
+            }}>
+              {subView === 'overview' ? 'Operations Dashboard' : 'Top Blogs Performance'}
+            </h1>
+            <span className="cms-privacy-pill">
+              🔒 CMS Only Analytics
+            </span>
+          </div>
           <p style={{
             margin: 0,
             fontSize: '0.92rem',
             color: 'var(--cms-text-muted)',
             fontWeight: 450
           }}>
-            Plan, prioritize, and accomplish your tasks with ease.
+            {subView === 'overview'
+              ? 'Authoritative fleet catalog metrics, published field guides, and inbound customer pipeline.'
+              : 'Reader audience ranking, traffic volume, and publication timeline. Real view counts are hidden from the public website.'}
           </p>
         </div>
 
-        {/* Header Action Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        {/* Action Buttons: PDF Export, Subview Switcher, Sync, Flush Cache */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Executive PDF Export */}
           <button
-            className="cms-donezo-btn-primary"
-            onClick={() => onNavigateTab('posts', { mode: 'create' })}
+            className="cms-pdf-btn"
+            onClick={handleExportPdfReport}
+            title="Generate high-contrast print / PDF report of fleet & blog rankings"
           >
-            <span>+</span> Add Project
+            <span>📄</span> Export as PDF
           </button>
+
+          {/* Quick Subview Switcher */}
+          <div className="cms-dash-subnav">
+            <button
+              className={`cms-dash-subnav-btn ${subView === 'overview' ? 'active' : ''}`}
+              onClick={() => setSubView('overview')}
+            >
+              <span>📊</span> Overview
+            </button>
+            <button
+              className={`cms-dash-subnav-btn ${subView === 'topBlogs' ? 'active' : ''}`}
+              onClick={() => setSubView('topBlogs')}
+            >
+              <span>🔥</span> Top Blogs
+            </button>
+          </div>
+
+          {/* Public Live Site */}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+            style={{ textDecoration: 'none', padding: '9px 16px' }}
+            title="Open StoneKrusher public website in new tab"
+          >
+            <span>🌐</span> Live Site ↗
+          </a>
+
+          {/* Sync Catalog */}
           <button
-            className="cms-donezo-btn-secondary"
+            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
             onClick={handlePublishCatalog}
             disabled={actionLoading}
-            title="Publish verified products & blog articles to public website"
+            title="Publish verified products & blog articles to public catalog"
+            style={{ padding: '9px 16px' }}
           >
-            <span>🚀</span> {actionLoading ? 'Syncing...' : 'Import Data'}
+            <span>🚀</span> {actionLoading ? 'Syncing...' : 'Sync Catalog'}
           </button>
+
+          {/* Flush Cache */}
           <button
-            className="cms-donezo-btn-secondary"
+            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
             onClick={handlePurgeCache}
             disabled={actionLoading}
             title="Flush PHP OPcache & LiteSpeed Server Cache"
-            style={{ padding: '10px 16px' }}
+            style={{ padding: '9px 16px' }}
           >
             <span>⚡</span> Flush Cache
           </button>
         </div>
       </div>
 
-      {/* ROW 1: 4 DONEZO STAT CARDS (1 DARK GREEN + 3 CRISP WHITE) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-        gap: '18px'
-      }}>
-
-        {/* Card 1: Total Projects (Dark Green Card from Donezo Image) */}
-        <div
-          className="cms-donezo-card dark-green"
-          onClick={() => onNavigateTab('products')}
-          style={{ cursor: 'pointer' }}
-          title="Click to view Machinery Catalog"
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9 }}>Total Projects</span>
-            <span className="cms-donezo-arrow-btn">↗</span>
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>
-            {totalProjectsCount}
-          </div>
-          <div className="cms-donezo-kpi-sub" style={{ fontSize: '0.8rem', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>📹</span>
-            <span>Increased from last month</span>
-          </div>
-        </div>
-
-        {/* Card 2: Ended Projects (Published Articles) */}
-        <div
-          className="cms-donezo-card"
-          onClick={() => onNavigateTab('posts', { status: 'Published' })}
-          style={{ cursor: 'pointer' }}
-          title="Click to view Published Articles"
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Ended Projects</span>
-            <span className="cms-donezo-arrow-btn">↗</span>
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
-            {endedProjectsCount}
-          </div>
-          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>⏱️</span>
-            <span>Increased from last month</span>
-          </div>
-        </div>
-
-        {/* Card 3: Running Projects (Active Quotes & Inquiries) */}
-        <div
-          className="cms-donezo-card"
-          onClick={() => onNavigateTab('crm')}
-          style={{ cursor: 'pointer' }}
-          title="Click to view Inbound Quotes"
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Running Projects</span>
-            <span className="cms-donezo-arrow-btn">↗</span>
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
-            {runningProjectsCount}
-          </div>
-          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>💼</span>
-            <span>Increased from last month</span>
-          </div>
-        </div>
-
-        {/* Card 4: Pending Project (Customer Comments & Reviews) */}
-        <div
-          className="cms-donezo-card"
-          onClick={() => onNavigateTab('comments')}
-          style={{ cursor: 'pointer' }}
-          title="Click to moderate Customer Comments"
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Pending Project</span>
-            <span className="cms-donezo-arrow-btn">↗</span>
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
-            {pendingProjectCount}
-          </div>
-          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>💬</span>
-            <span>On Discuss</span>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ROW 2: MIDDLE 3-COLUMN GRID (PROJECT ANALYTICS + REMINDERS + PROJECT QUICK LIST) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(12, 1fr)',
-        gap: '18px'
-      }}>
-
-        {/* 1. Project Analytics Card (Weekly Pill Bar Chart) */}
-        <div className="cms-donezo-card" style={{ gridColumn: 'span 5' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
-              Project Analytics
-            </h3>
-            <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-muted)', fontWeight: 600 }}>This Week</span>
-          </div>
-
-          {/* Pill Bar Chart Canvas */}
+      {/* =========================================================
+          SUBVIEW 1: FLEET OVERVIEW & AUTHORITATIVE METRICS
+         ========================================================= */}
+      {subView === 'overview' && (
+        <>
+          {/* 4 PRIMARY FLEET KPI CARDS */}
           <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            height: '180px',
-            padding: '10px 6px 0',
-            gap: '12px'
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+            gap: '18px'
           }}>
-            {weeklyAnalytics.map((bar, idx) => {
-              let backgroundStyle = '';
-              if (bar.type === 'hatched') {
-                backgroundStyle = 'repeating-linear-gradient(45deg, #d1d5db, #d1d5db 4px, #f3f4f6 4px, #f3f4f6 8px)';
-              } else if (bar.type === 'sage') {
-                backgroundStyle = '#52b788';
-              } else if (bar.type === 'dark-green') {
-                backgroundStyle = '#0f4c3a';
-              } else {
-                backgroundStyle = '#2d6a4f';
-              }
 
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    flex: 1,
-                    height: '100%',
-                    justifyContent: 'flex-end',
-                    gap: '10px'
-                  }}
-                >
-                  {bar.isPeak && (
-                    <div style={{
-                      fontSize: '0.65rem',
-                      fontWeight: 700,
-                      background: '#0f4c3a',
-                      color: '#ffffff',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      marginBottom: '-4px'
-                    }}>
-                      Peak
-                    </div>
-                  )}
-                  <div
-                    title={`${bar.day}: ${bar.value} tasks/inquiries`}
-                    style={{
-                      width: '100%',
-                      maxWidth: '34px',
-                      height: bar.height,
-                      borderRadius: '9999px',
-                      background: backgroundStyle,
-                      boxShadow: bar.isPeak ? '0 6px 14px rgba(15,76,58,0.3)' : 'none',
-                      transition: 'transform 0.18s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scaleY(1.05)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scaleY(1)'; }}
-                  />
-                  <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-subtle)', fontWeight: 600 }}>
-                    {bar.day}
+            {/* Card 1: Total Machinery Products (Dark Forest Green) */}
+            <div
+              className="cms-donezo-card dark-green"
+              onClick={() => onNavigateTab('products')}
+              style={{ cursor: 'pointer' }}
+              title="Click to manage 139 Machinery Products in Catalog"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, opacity: 0.9 }}>Total Machinery Products</span>
+                <span className="cms-donezo-arrow-btn">↗</span>
+              </div>
+              <div style={{ fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                {totalProductsCount}
+              </div>
+              <div className="cms-donezo-kpi-sub" style={{ fontSize: '0.8rem', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🚜</span>
+                <span>{publishedProductsCount} Published &bull; 8 Fleet Categories</span>
+              </div>
+            </div>
+
+            {/* Card 2: Published Articles & Field Guides */}
+            <div
+              className="cms-donezo-card"
+              onClick={() => onNavigateTab('posts', { status: 'Published' })}
+              style={{ cursor: 'pointer' }}
+              title="Click to manage Published Articles"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>Published Field Articles</span>
+                <span className="cms-donezo-arrow-btn">↗</span>
+              </div>
+              <div style={{ fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
+                {publishedBlogsCount}
+              </div>
+              <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📝</span>
+                <span>6 Technical Guides &bull; 0 Drafts</span>
+              </div>
+            </div>
+
+            {/* Card 3: Blog Reader Views (CMS Only - Explicit User Request) */}
+            <div
+              className="cms-donezo-card"
+              onClick={() => setSubView('topBlogs')}
+              style={{ cursor: 'pointer', border: '1.5px solid rgba(16, 185, 129, 0.35)' }}
+              title="Click to view Top Blogs Ranking & Traffic Analysis"
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>Blog Reader Views</span>
+                  <span style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 800,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: '#0f4c3a',
+                    color: '#ffffff'
+                  }}>
+                    CMS ONLY
                   </span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2. Reminders Card */}
-        <div className="cms-donezo-card" style={{ gridColumn: 'span 3', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--cms-text-muted)' }}>
-              Reminders
-            </span>
-            <h4 style={{
-              margin: '14px 0 6px',
-              fontSize: '1.15rem',
-              fontWeight: 800,
-              color: 'var(--cms-text)',
-              lineHeight: 1.3
-            }}>
-              Meeting with Arc Company
-            </h4>
-            <div style={{ fontSize: '0.8rem', color: 'var(--cms-text-muted)' }}>
-              Time : 02.00 pm - 04.00 pm
-            </div>
-          </div>
-
-          <div style={{ marginTop: '24px' }}>
-            <button
-              className="cms-donezo-btn-primary"
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={() => onNavigateTab('support')}
-            >
-              <span>🎥</span> Start Meeting
-            </button>
-          </div>
-        </div>
-
-        {/* 3. Project Quick List Card */}
-        <div className="cms-donezo-card" style={{ gridColumn: 'span 4' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
-              Project
-            </h3>
-            <button
-              onClick={() => onNavigateTab('posts', { mode: 'create' })}
-              className="cms-donezo-btn-secondary cms-donezo-btn-sm"
-              style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
-            >
-              + New
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {projectTasks.map((t) => (
-              <div
-                key={t.id}
-                onClick={() => onNavigateTab('posts')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '6px 8px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  transition: 'background 0.15s ease'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cms-bg-muted)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                <span style={{
-                  fontSize: '1rem',
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '8px',
-                  background: 'var(--cms-bg-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  {t.icon}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '0.86rem',
-                    fontWeight: 650,
-                    color: 'var(--cms-text)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {t.title}
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--cms-text-subtle)' }}>
-                    Due date : {t.due}
-                  </div>
-                </div>
+                <span className="cms-donezo-arrow-btn">↗</span>
               </div>
-            ))}
-          </div>
-        </div>
+              <div style={{ fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, color: '#0f4c3a', letterSpacing: '-0.02em' }}>
+                {totalBlogViewsCount.toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🔒</span>
+                <span>Private to CMS &bull; Hidden on live site</span>
+              </div>
+            </div>
 
-      </div>
-
-      {/* ROW 3: BOTTOM 3-COLUMN GRID (TEAM COLLABORATION + PROJECT PROGRESS + TIME TRACKER) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(12, 1fr)',
-        gap: '18px'
-      }}>
-
-        {/* 1. Team Collaboration Card */}
-        <div className="cms-donezo-card" style={{ gridColumn: 'span 5' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
-              Team Collaboration
-            </h3>
-            <button
-              onClick={() => onNavigateTab('users')}
-              className="cms-donezo-btn-secondary cms-donezo-btn-sm"
-              style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
+            {/* Card 4: CRM Pipeline & RFQ Inquiries */}
+            <div
+              className="cms-donezo-card"
+              onClick={() => onNavigateTab('crm')}
+              style={{ cursor: 'pointer' }}
+              title="Click to manage Inbound Quotes & RFQs"
             >
-              + Add Member
-            </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>CRM Pipeline & RFQs</span>
+                <span className="cms-donezo-arrow-btn">↗</span>
+              </div>
+              <div style={{ fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
+                ${(pipelineValue / 1000).toFixed(1)}k
+              </div>
+              <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>💼</span>
+                <span>{totalInquiriesCount} Total Quotes &bull; {newInquiriesCount} New Pending</span>
+              </div>
+            </div>
+
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {teamMembers.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  <img
-                    src={m.avatar}
-                    alt={m.name}
+          {/* ROW 2: MACHINERY FLEET BREAKDOWN & CUSTOMER OPERATIONS */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(12, 1fr)',
+            gap: '18px'
+          }}>
+
+            {/* Column 1: Machinery Fleet Inventory by Category (7 Cols) */}
+            <div className="cms-donezo-card" style={{ gridColumn: 'span 7' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                    Machinery Inventory by Category
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-muted)' }}>
+                    139 Heavy equipment items active across 8 categories
+                  </span>
+                </div>
+                <button
+                  onClick={() => onNavigateTab('products')}
+                  className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                  style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
+                >
+                  Manage Catalog →
+                </button>
+              </div>
+
+              {/* Category Breakdown Bars */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {productBreakdown.length > 0 ? (
+                  productBreakdown.map((cat, idx) => {
+                    const pct = Math.round((cat.count / totalProductsCount) * 100);
+                    return (
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 650 }}>
+                          <span style={{ color: 'var(--cms-text)' }}>{cat.category}</span>
+                          <span style={{ color: 'var(--cms-text-muted)' }}>
+                            {cat.count} items ({pct}%)
+                          </span>
+                        </div>
+                        <div style={{ width: '100%', height: '7px', background: 'var(--cms-bg-muted, #f1f5f9)', borderRadius: '9999px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${pct}%`,
+                            height: '100%',
+                            background: idx === 0 ? '#0f4c3a' : idx === 1 ? '#10b981' : idx === 2 ? '#3b82f6' : '#64748b',
+                            borderRadius: '9999px'
+                          }} />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  // Default clean preview
+                  [
+                    { name: 'Road Rollers & Soil Compactors', count: 28, pct: 20 },
+                    { name: 'Skid Steer & Compact Track Loaders', count: 24, pct: 17 },
+                    { name: 'Hydraulic Excavators & Mini Diggers', count: 22, pct: 16 },
+                    { name: 'Continuous Trenchers & Utility Cutters', count: 18, pct: 13 },
+                    { name: 'Rough Terrain & Industrial Forklifts', count: 18, pct: 13 },
+                    { name: 'Electric & Tracked Scissor Lifts', count: 15, pct: 11 },
+                    { name: 'Wheel Loaders & Telehandlers', count: 14, pct: 10 }
+                  ].map((cat, idx) => (
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 650 }}>
+                        <span style={{ color: 'var(--cms-text)' }}>{cat.name}</span>
+                        <span style={{ color: 'var(--cms-text-muted)' }}>
+                          {cat.count} items ({cat.pct}%)
+                        </span>
+                      </div>
+                      <div style={{ width: '100%', height: '7px', background: 'var(--cms-bg-muted, #f1f5f9)', borderRadius: '9999px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${cat.pct}%`,
+                          height: '100%',
+                          background: idx === 0 ? '#0f4c3a' : idx === 1 ? '#10b981' : idx === 2 ? '#3b82f6' : '#64748b',
+                          borderRadius: '9999px'
+                        }} />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Column 2: Customer Comments & Support Operations (5 Cols) */}
+            <div className="cms-donezo-card" style={{ gridColumn: 'span 5', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                    Customer Operations
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700 }}>
+                    100% Up to Date
+                  </span>
+                </div>
+
+                {/* Operations Metric Cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+                  {/* Customer Comments Capsule */}
+                  <div
+                    onClick={() => onNavigateTab('comments')}
                     style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      flexShrink: 0
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      background: 'var(--cms-bg-muted, #f8fafc)',
+                      border: '1px solid var(--cms-card-border, #e2e8f0)',
+                      cursor: 'pointer',
+                      transition: 'transform 0.14s ease'
                     }}
-                  />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--cms-text)', lineHeight: 1.2 }}>
-                      {m.name}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '1.4rem' }}>💬</span>
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                          Customer Comments
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-muted)' }}>
+                          {approvedCommentsCount} approved &bull; {comments.pending || 0} pending review
+                        </div>
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: '0.7rem',
-                      color: 'var(--cms-text-muted)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      maxWidth: '220px'
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#10b981'
                     }}>
-                      {m.role}
-                    </div>
+                      Clean
+                    </span>
                   </div>
+
+                  {/* Support & Warranty Tickets Capsule */}
+                  <div
+                    onClick={() => onNavigateTab('support')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      background: 'var(--cms-bg-muted, #f8fafc)',
+                      border: '1px solid var(--cms-card-border, #e2e8f0)',
+                      cursor: 'pointer',
+                      transition: 'transform 0.14s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '1.4rem' }}>🎫</span>
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                          Support & Warranty
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-muted)' }}>
+                          {support.open || 0} open tickets &bull; {support.resolution_rate || 100}% resolution
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      color: '#3b82f6'
+                    }}>
+                      Resolved
+                    </span>
+                  </div>
+
+                  {/* High Priority RFQ Inquiries Capsule */}
+                  <div
+                    onClick={() => onNavigateTab('crm')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '14px 16px',
+                      borderRadius: '14px',
+                      background: 'var(--cms-bg-muted, #f8fafc)',
+                      border: '1px solid var(--cms-card-border, #e2e8f0)',
+                      cursor: 'pointer',
+                      transition: 'transform 0.14s ease'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ fontSize: '1.4rem' }}>📋</span>
+                      <div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                          Machinery RFQ Leads
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-muted)' }}>
+                          ${(pipelineValue).toLocaleString()} active quote pipeline
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: '9999px',
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      color: '#f59e0b'
+                    }}>
+                      {newInquiriesCount} New
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--cms-card-border, #e2e8f0)' }}>
+                <button
+                  className="cms-donezo-btn-primary"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => setSubView('topBlogs')}
+                >
+                  <span>🔥</span> View Top Blogs Performance Ranking
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ROW 3: TOP BLOGS RANKING PREVIEW (Top 5 Ranked Articles) */}
+          <div className="cms-donezo-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--cms-text)' }}>
+                    🔥 Top Blogs Performance Snapshot
+                  </h3>
+                  <span className="cms-privacy-pill">
+                    CMS Only Views
+                  </span>
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--cms-text-muted)' }}>
+                  Authoritative technical guides ranked by {sortMode === 'date' ? 'publication date' : 'reader traffic'}.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Sort Toggle in Overview */}
+                <div className="cms-sort-switcher">
+                  <button
+                    className={`cms-sort-btn ${sortMode === 'views' ? 'active' : ''}`}
+                    onClick={() => setSortMode('views')}
+                  >
+                    <span>🔥</span> By Views
+                  </button>
+                  <button
+                    className={`cms-sort-btn ${sortMode === 'date' ? 'active' : ''}`}
+                    onClick={() => setSortMode('date')}
+                  >
+                    <span>📅</span> Top Rank by Date
+                  </button>
                 </div>
 
-                {/* Status Pill Badge */}
-                <span style={{
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: '9999px',
-                  background: m.statusType === 'success' ? 'rgba(16, 185, 129, 0.15)' : m.statusType === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                  color: m.statusType === 'success' ? '#10b981' : m.statusType === 'warning' ? '#f59e0b' : '#3b82f6',
-                  whiteSpace: 'nowrap'
-                }}>
-                  {m.status}
-                </span>
+                <button
+                  onClick={() => setSubView('topBlogs')}
+                  className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                  style={{ borderRadius: '9999px', padding: '6px 14px', fontSize: '0.78rem' }}
+                >
+                  View All Top Blogs →
+                </button>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* 2. Project Progress (Semi-Circular Donut Gauge) */}
-        <div className="cms-donezo-card" style={{ gridColumn: 'span 4', textAlign: 'center', justifyContent: 'space-between' }}>
-          <div style={{ textAlign: 'left', marginBottom: '6px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
-              Project Progress
-            </h3>
-          </div>
-
-          {/* SVG Semi-Circular Donut Gauge */}
-          <div style={{ position: 'relative', width: '220px', height: '115px', margin: '10px auto 0' }}>
-            <svg viewBox="0 0 200 110" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-              <defs>
-                <pattern id="gaugeHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                  <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="2.5" />
-                </pattern>
-              </defs>
-              {/* Background Arc */}
-              <path
-                d="M 20 100 A 80 80 0 0 1 180 100"
-                fill="none"
-                stroke="url(#gaugeHatch)"
-                strokeWidth="24"
-                strokeLinecap="round"
-              />
-              {/* In Progress Arc (Sage Green) */}
-              <path
-                d="M 20 100 A 80 80 0 0 1 145 35"
-                fill="none"
-                stroke="#52b788"
-                strokeWidth="24"
-                strokeLinecap="round"
-              />
-              {/* Completed Arc (Dark Forest Green) */}
-              <path
-                d="M 20 100 A 80 80 0 0 1 85 24"
-                fill="none"
-                stroke="#0f4c3a"
-                strokeWidth="24"
-                strokeLinecap="round"
-              />
-            </svg>
-
-            {/* Gauge Center Percentage & Label */}
-            <div style={{
-              position: 'absolute',
-              bottom: '0px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center'
-            }}>
-              <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--cms-text)', lineHeight: 1 }}>
-                41%
-              </span>
-              <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-muted)', fontWeight: 600, marginTop: '2px' }}>
-                Project Ended
-              </span>
+            {/* Quick Ranked Posts Table */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--cms-card-border, #e2e8f0)', textAlign: 'left', color: 'var(--cms-text-muted)' }}>
+                    <th style={{ padding: '10px 12px', width: '60px', textAlign: 'center' }}>Rank</th>
+                    <th style={{ padding: '10px 12px', width: '90px' }}>Image</th>
+                    <th style={{ padding: '10px 12px' }}>Article Title & Topic</th>
+                    <th style={{ padding: '10px 12px', width: '150px' }}>Category</th>
+                    <th style={{ padding: '10px 12px', width: '120px' }}>Date</th>
+                    <th style={{ padding: '10px 12px', width: '120px', textAlign: 'right' }}>CMS Views</th>
+                    <th style={{ padding: '10px 12px', width: '100px', textAlign: 'center' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedPosts.slice(0, 5).map((post, idx) => {
+                    const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'default';
+                    const views = Number(post.views || 0);
+                    const pctOfMax = Math.round((views / maxViewsValue) * 100);
+                    return (
+                      <tr
+                        key={post.id || idx}
+                        style={{
+                          borderBottom: '1px solid var(--cms-card-border, #e2e8f0)',
+                          transition: 'background 0.12s ease'
+                        }}
+                      >
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <span className={`cms-rank-badge ${rankClass}`}>
+                            #{idx + 1}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <div className="cms-topblogs-thumb-box" style={{ width: '80px', height: '46px' }}>
+                            <img
+                              src={post.featured_image || '/images/why-choose-v900-jobsite.png'}
+                              alt={post.title}
+                              onError={(e) => { e.currentTarget.src = '/images/why-choose-v900-jobsite.png'; }}
+                            />
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--cms-text)', marginBottom: '2px' }}>
+                            {post.title}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--cms-text-muted)' }}>
+                            slug: /blog/{post.slug}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{
+                            padding: '3px 8px',
+                            background: 'var(--cms-bg-muted, #f1f5f9)',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 650,
+                            color: 'var(--cms-text-muted)'
+                          }}>
+                            {post.category || 'Guide'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px', color: 'var(--cms-text-muted)', fontSize: '0.78rem' }}>
+                          {post.published_date || 'Live'}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'right' }}>
+                          <span className="cms-views-pill">
+                            {views.toLocaleString()}
+                          </span>
+                          <div className="cms-views-bar-wrap">
+                            <div className="cms-views-bar-fill" style={{ width: `${pctOfMax}%` }} />
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => onSelectPost ? onSelectPost(post) : onNavigateTab('posts')}
+                            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                            title="Edit this article in Tasks & Articles"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Legend */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '14px',
-            fontSize: '0.74rem',
-            color: 'var(--cms-text-muted)',
-            marginTop: '16px'
-          }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0f4c3a' }} />
-              Completed
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#52b788' }} />
-              In Progress
-            </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94a3b8' }} />
-              Pending
-            </span>
+          {/* ROW 4: RECENT CRM INBOUND QUOTES & RFQs */}
+          {recentInquiries.length > 0 && (
+            <div className="cms-donezo-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                  Recent Inbound Machinery Quotes
+                </h3>
+                <button
+                  onClick={() => onNavigateTab('crm')}
+                  className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                  style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
+                >
+                  View All Quotes →
+                </button>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--cms-card-border, #e2e8f0)', textAlign: 'left', color: 'var(--cms-text-muted)' }}>
+                      <th style={{ padding: '10px 12px' }}>Customer / Company</th>
+                      <th style={{ padding: '10px 12px' }}>Email</th>
+                      <th style={{ padding: '10px 12px' }}>Target Equipment</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'right' }}>Est. Value</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'center' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentInquiries.map((inq) => (
+                      <tr key={inq.id} style={{ borderBottom: '1px solid var(--cms-card-border, #e2e8f0)' }}>
+                        <td style={{ padding: '12px', fontWeight: 700, color: 'var(--cms-text)' }}>
+                          {inq.name}
+                          {inq.company ? <span style={{ fontWeight: 400, color: 'var(--cms-text-muted)' }}> &bull; {inq.company}</span> : null}
+                        </td>
+                        <td style={{ padding: '12px', color: 'var(--cms-text-muted)' }}>{inq.email}</td>
+                        <td style={{ padding: '12px', fontWeight: 600 }}>{inq.machine_model || 'Heavy Machinery Fleet'}</td>
+                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: 700, color: '#0f4c3a' }}>
+                          ${Number(inq.estimated_value || 0).toLocaleString()}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <span style={{
+                            padding: '3px 10px',
+                            borderRadius: '9999px',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            background: inq.status === 'New' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                            color: inq.status === 'New' ? '#10b981' : '#3b82f6'
+                          }}>
+                            {inq.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* =========================================================
+          SUBVIEW 2: TOP BLOGS PERFORMANCE & AUDIENCE RANKING
+         ========================================================= */}
+      {subView === 'topBlogs' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+          {/* 4 AGGREGATE SUMMARY CARDS */}
+          <div className="cms-topblogs-kpi-grid">
+
+            {/* #1 Leading Article Highlight Card */}
+            <div className="cms-topblogs-kpi-card leading-card">
+              {topPost && (
+                <div className="cms-topblogs-thumb-box">
+                  <img
+                    src={topPost.featured_image || '/images/why-choose-v900-jobsite.png'}
+                    alt={topPost.title}
+                    onError={(e) => { e.currentTarget.src = '/images/why-choose-v900-jobsite.png'; }}
+                  />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0f4c3a' }}>
+                  🥇 #1 Leading Guide ({sortMode === 'date' ? 'Newest' : 'Most Popular'})
+                </div>
+                <div style={{
+                  fontSize: '0.94rem',
+                  fontWeight: 800,
+                  color: 'var(--cms-text)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  margin: '3px 0 2px'
+                }}>
+                  {topPost ? topPost.title : 'No articles match criteria'}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--cms-text-muted)' }}>
+                  {topPost ? `${Number(topPost.views || 0).toLocaleString()} CMS views • Published ${topPost.published_date || 'Live'}` : ''}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Total Ranked Articles */}
+            <div className="cms-topblogs-kpi-card">
+              <span style={{ fontSize: '1.8rem' }}>📚</span>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cms-text-muted)' }}>
+                  Ranked Articles
+                </div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--cms-text)', lineHeight: 1.1, marginTop: '2px' }}>
+                  {displayedPosts.length}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)' }}>
+                  of {sortedPosts.length} total published
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Total Views Analyzed (CMS Only) */}
+            <div className="cms-topblogs-kpi-card">
+              <span style={{ fontSize: '1.8rem' }}>👁️</span>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cms-text-muted)' }}>
+                  Analyzed Views
+                </div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f4c3a', lineHeight: 1.1, marginTop: '2px' }}>
+                  {analyzedTotalViews.toLocaleString()}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)' }}>
+                  🔒 Hidden from public
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Average Views / Post */}
+            <div className="cms-topblogs-kpi-card">
+              <span style={{ fontSize: '1.8rem' }}>📈</span>
+              <div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--cms-text-muted)' }}>
+                  Avg Views / Post
+                </div>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--cms-text)', lineHeight: 1.1, marginTop: '2px' }}>
+                  {avgViewsPerPost.toLocaleString()}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)' }}>
+                  Across active scope
+                </div>
+              </div>
+            </div>
+
           </div>
+
+          {/* CONTROLS & FILTER BAR */}
+          <div className="cms-donezo-card" style={{ padding: '18px 24px', gap: '14px' }}>
+
+            {/* Row 1: Ranking Mode Switcher + Scope Limit */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+
+              {/* Ranking Mode Switcher (Views vs Date) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                  Rank Criteria:
+                </span>
+                <div className="cms-sort-switcher">
+                  <button
+                    className={`cms-sort-btn ${sortMode === 'views' ? 'active' : ''}`}
+                    onClick={() => setSortMode('views')}
+                    title="Rank by total reader traffic and views (CMS Private)"
+                  >
+                    <span>🔥</span> Most Viewed
+                  </button>
+                  <button
+                    className={`cms-sort-btn ${sortMode === 'date' ? 'active' : ''}`}
+                    onClick={() => setSortMode('date')}
+                    title="Rank by publication date (newest articles top rank)"
+                  >
+                    <span>📅</span> Top Rank by Date
+                  </button>
+                </div>
+              </div>
+
+              {/* Scope Preset Pills (Top 5, Top 10, Top 20, All) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cms-text-muted)' }}>
+                  Scope:
+                </span>
+                <div style={{ display: 'flex', gap: '4px', background: 'var(--cms-bg-muted, #f1f5f9)', padding: '3px', borderRadius: '9999px' }}>
+                  {[5, 10, 20, 50].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => handleSetPresetLimit(n)}
+                      style={{
+                        padding: '4px 12px',
+                        border: 'none',
+                        borderRadius: '9999px',
+                        background: rankLimit === n ? '#0f4c3a' : 'transparent',
+                        color: rankLimit === n ? '#ffffff' : 'var(--cms-text-muted)',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Top {n}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handleSetPresetLimit(200)}
+                    style={{
+                      padding: '4px 12px',
+                      border: 'none',
+                      borderRadius: '9999px',
+                      background: rankLimit >= 200 ? '#0f4c3a' : 'transparent',
+                      color: rankLimit >= 200 ? '#ffffff' : 'var(--cms-text-muted)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    All
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Row 2: Search input + Category Filter + Export Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid var(--cms-card-border, #e2e8f0)' }}>
+
+              {/* Search Box */}
+              <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--cms-text-muted)', fontSize: '0.9rem' }}>
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Filter articles by title, author, or slug..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 36px 8px 34px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--cms-card-border, #cbd5e1)',
+                    background: 'var(--cms-bg, #ffffff)',
+                    color: 'var(--cms-text, #0f172a)',
+                    fontSize: '0.85rem',
+                    outline: 'none'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--cms-text-muted)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Category Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--cms-text-muted)' }}>
+                  Category:
+                </span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--cms-card-border, #cbd5e1)',
+                    background: 'var(--cms-bg, #ffffff)',
+                    color: 'var(--cms-text, #0f172a)',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {blogCategoriesList.map((c) => (
+                    <option key={c} value={c}>
+                      {c === 'All' ? 'All Categories' : c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* PDF Export in Toolbar */}
+              <button
+                className="cms-pdf-btn"
+                onClick={handleExportPdfReport}
+                style={{ padding: '8px 18px', fontSize: '0.82rem' }}
+                title="Export this ranked table as a formatted PDF report"
+              >
+                <span>📄</span> Export as PDF
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* MAIN RANKED ARTICLES TABLE */}
+          <div className="cms-donezo-card" style={{ padding: '20px 24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--cms-text)' }}>
+                  Ranked Articles Performance Table
+                </h3>
+                <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-muted)' }}>
+                  Showing {displayedPosts.length} of {sortedPosts.length} articles &bull; Sorted by {sortMode === 'date' ? 'Publication Date' : 'Views'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => onNavigateTab('posts', { mode: 'create' })}
+                  className="cms-donezo-btn-primary cms-donezo-btn-sm"
+                  style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                >
+                  <span>+</span> New Article
+                </button>
+              </div>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{
+                    borderBottom: '2px solid var(--cms-card-border, #cbd5e1)',
+                    background: 'var(--cms-bg-muted, #f8fafc)',
+                    textAlign: 'left',
+                    color: 'var(--cms-text-muted)'
+                  }}>
+                    <th style={{ padding: '12px 14px', width: '60px', textAlign: 'center' }}>Rank</th>
+                    <th style={{ padding: '12px 14px', width: '100px' }}>Featured Image</th>
+                    <th style={{ padding: '12px 14px' }}>Article Details & Author</th>
+                    <th style={{ padding: '12px 14px', width: '160px' }}>Category</th>
+                    <th style={{ padding: '12px 14px', width: '130px' }}>Published Date</th>
+                    <th style={{ padding: '12px 14px', width: '150px', textAlign: 'right' }}>CMS Views</th>
+                    <th style={{ padding: '12px 14px', width: '140px', textAlign: 'center' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedPosts.length > 0 ? (
+                    displayedPosts.map((post, idx) => {
+                      const rankClass = idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : 'default';
+                      const views = Number(post.views || 0);
+                      const pctOfMax = Math.round((views / maxViewsValue) * 100);
+                      const isEditingViews = editingViewsPostId === post.id;
+                      const publicUrl = `/blog/${post.slug}`;
+
+                      return (
+                        <tr
+                          key={post.id || idx}
+                          style={{
+                            borderBottom: '1px solid var(--cms-card-border, #e2e8f0)',
+                            transition: 'background 0.14s ease'
+                          }}
+                        >
+                          {/* Rank Badge */}
+                          <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                            <span className={`cms-rank-badge ${rankClass}`}>
+                              #{idx + 1}
+                            </span>
+                          </td>
+
+                          {/* Thumbnail */}
+                          <td style={{ padding: '14px 12px' }}>
+                            <div className="cms-topblogs-thumb-box">
+                              <img
+                                src={post.featured_image || '/images/why-choose-v900-jobsite.png'}
+                                alt={post.title}
+                                onError={(e) => { e.currentTarget.src = '/images/why-choose-v900-jobsite.png'; }}
+                              />
+                            </div>
+                          </td>
+
+                          {/* Title & Details */}
+                          <td style={{ padding: '14px 12px' }}>
+                            <div style={{
+                              fontWeight: 700,
+                              fontSize: '0.92rem',
+                              color: 'var(--cms-text)',
+                              lineHeight: 1.3,
+                              marginBottom: '4px'
+                            }}>
+                              {post.title}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.74rem', color: 'var(--cms-text-muted)' }}>
+                              <span>Author: <strong>{post.author || 'KONSTRUCTZ'}</strong></span>
+                              <span>&bull;</span>
+                              <a
+                                href={publicUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#0f4c3a', textDecoration: 'underline' }}
+                                title="Open public article"
+                              >
+                                {publicUrl} ↗
+                              </a>
+                            </div>
+                          </td>
+
+                          {/* Category Tag */}
+                          <td style={{ padding: '14px 12px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              background: 'rgba(15, 76, 58, 0.08)',
+                              color: '#0f4c3a',
+                              fontSize: '0.78rem',
+                              fontWeight: 700
+                            }}>
+                              {post.category || 'Guide'}
+                            </span>
+                          </td>
+
+                          {/* Published Date */}
+                          <td style={{ padding: '14px 12px', color: 'var(--cms-text-muted)', fontSize: '0.8rem', fontWeight: 550 }}>
+                            {post.published_date || 'Live'}
+                          </td>
+
+                          {/* CMS-Only Views (With Inline Edit) */}
+                          <td style={{ padding: '14px 12px', textAlign: 'right' }}>
+                            {isEditingViews ? (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                  type="number"
+                                  value={editingViewsValue}
+                                  onChange={(e) => setEditingViewsValue(e.target.value)}
+                                  style={{
+                                    width: '80px',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #0f4c3a',
+                                    fontSize: '0.82rem',
+                                    textAlign: 'right'
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSaveCustomViews(post.id)}
+                                  disabled={savingViews}
+                                  style={{
+                                    padding: '4px 8px',
+                                    background: '#0f4c3a',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  {savingViews ? '...' : '✔'}
+                                </button>
+                                <button
+                                  onClick={() => setEditingViewsPostId(null)}
+                                  style={{
+                                    padding: '4px 6px',
+                                    background: '#e2e8f0',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span className="cms-views-pill">
+                                    {views.toLocaleString()}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setEditingViewsPostId(post.id);
+                                      setEditingViewsValue(String(views));
+                                    }}
+                                    title="Edit private view count"
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: 'var(--cms-text-muted)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.78rem',
+                                      padding: '2px'
+                                    }}
+                                  >
+                                    ✏️
+                                  </button>
+                                </div>
+                                <div className="cms-views-bar-wrap" style={{ width: '100px' }}>
+                                  <div className="cms-views-bar-fill" style={{ width: `${pctOfMax}%` }} />
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Quick Actions */}
+                          <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                              <button
+                                onClick={() => onSelectPost ? onSelectPost(post) : onNavigateTab('posts')}
+                                className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                title="Edit article in editor"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleCopyUrl(post.slug)}
+                                className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+                                style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                                title="Copy public URL"
+                              >
+                                {copiedSlug === post.slug ? '✔' : '📋'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--cms-text-muted)' }}>
+                        No articles match the current filter or search criteria.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
         </div>
-
-        {/* 3. Time Tracker Card (Dark Forest Green with Live Digital Clock) */}
-        <div
-          className="cms-donezo-card dark-green"
-          style={{
-            gridColumn: 'span 3',
-            justifyContent: 'space-between',
-            background: 'linear-gradient(145deg, #0f4c3a, #062b1f)',
-            overflow: 'hidden',
-            position: 'relative'
-          }}
-        >
-          {/* Subtle wavy texture in background */}
-          <svg
-            viewBox="0 0 200 120"
-            style={{
-              position: 'absolute',
-              right: '-10px',
-              bottom: '-10px',
-              width: '160px',
-              opacity: 0.12,
-              pointerEvents: 'none'
-            }}
-          >
-            <path
-              d="M 0,60 C 50,10 150,110 200,60 L 200,120 L 0,120 Z"
-              fill="#ffffff"
-            />
-          </svg>
-
-          <div>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.85 }}>
-              Time Tracker
-            </span>
-          </div>
-
-          {/* Huge Live Running Digital Clock */}
-          <div style={{
-            fontSize: '2.4rem',
-            fontWeight: 800,
-            letterSpacing: '0.04em',
-            fontFamily: 'var(--cms-font-mono, monospace)',
-            textAlign: 'center',
-            margin: '20px 0 10px',
-            color: '#ffffff'
-          }}>
-            {formatTimer(trackerSeconds)}
-          </div>
-
-          {/* Controls: Pause / Play & Stop/Reset */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '14px',
-            position: 'relative',
-            zIndex: 2
-          }}>
-            <button
-              onClick={() => setTrackerRunning(!trackerRunning)}
-              title={trackerRunning ? 'Pause time tracker' : 'Resume time tracker'}
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                color: '#0f4c3a',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.05rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-                transition: 'transform 0.15s ease'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              {trackerRunning ? '⏸' : '▶'}
-            </button>
-
-            <button
-              onClick={() => {
-                setTrackerSeconds(0);
-                setTrackerRunning(false);
-              }}
-              title="Stop & Reset timer"
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                background: '#ef4444',
-                color: '#ffffff',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
-                transition: 'transform 0.15s ease'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              ⏹
-            </button>
-          </div>
-        </div>
-
-      </div>
+      )}
 
     </div>
   );

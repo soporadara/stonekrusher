@@ -209,6 +209,34 @@ switch ($action) {
 
         $resolutionRate = $ticketsCount > 0 ? round(($ticketsResolved / $ticketsCount) * 100) : 0;
 
+        // Comments counts (Total, Approved, Pending)
+        $commentsCount = 0;
+        $commentsApproved = 0;
+        $commentsPending = 0;
+        try {
+            $commentsCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments")->fetchColumn();
+            $commentsApproved = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments WHERE status = 'approved'")->fetchColumn();
+            $commentsPending = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments WHERE status = 'pending'")->fetchColumn();
+        } catch (Exception $e) {}
+
+        // Total Blog Views (CMS Only metric)
+        $totalBlogViews = 0;
+        try {
+            $totalBlogViews = (int)$pdo->query("SELECT COALESCE(SUM(views), 0) FROM blog_posts WHERE status = 'Published'")->fetchColumn();
+        } catch (Exception $e) {}
+
+        // Product Categories breakdown
+        $productBreakdown = [];
+        try {
+            $productBreakdown = $pdo->query("SELECT category, COUNT(*) as count FROM products WHERE category IS NOT NULL AND category != '' GROUP BY category ORDER BY count DESC LIMIT 10")->fetchAll();
+        } catch (Exception $e) {}
+
+        // Top Blogs (All published posts ranked by views DESC - private to CMS)
+        $topBlogs = [];
+        try {
+            $topBlogs = $pdo->query("SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, views, updated_at FROM blog_posts WHERE status = 'Published' ORDER BY views DESC, updated_at DESC")->fetchAll();
+        } catch (Exception $e) {}
+
         // Security counts
         $activeBlocksCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_security_blocks WHERE expires_at IS NULL OR expires_at > {$now}")->fetchColumn();
         $failedLogins24h = (int)$pdo->query("SELECT COUNT(*) FROM cms_login_attempts WHERE success = 0 AND created_at > " . ($now - 86400))->fetchColumn();
@@ -297,11 +325,20 @@ switch ($action) {
                 'products' => [
                     'total' => $productCount,
                     'published' => $productPublishedCount,
-                    'categories' => $productCategoriesCount
+                    'categories' => $productCategoriesCount,
+                    'breakdown' => $productBreakdown
                 ],
                 'categories' => [
                     'blog' => $blogCategoryCount,
                     'catalog' => $productCategoriesCount
+                ],
+                'comments' => [
+                    'total' => $commentsCount,
+                    'approved' => $commentsApproved,
+                    'pending' => $commentsPending
+                ],
+                'blog_views' => [
+                    'total' => $totalBlogViews
                 ],
                 'media' => [
                     'total' => $mediaCount,
@@ -341,6 +378,7 @@ switch ($action) {
                 'analytics' => $analyticsIntegrations,
                 'activity_chart' => $activity7d
             ],
+            'top_blogs' => $topBlogs,
             'recent_posts' => $recentPosts,
             'recent_activity' => $recentActivity,
             'recent_inquiries' => $recentInquiries,
@@ -349,8 +387,82 @@ switch ($action) {
         exit;
 
     // =========================================================
-    // 2. BLOG MANAGEMENT
+    // 2. BLOG MANAGEMENT & TOP BLOGS (CMS ONLY)
     // =========================================================
+    case 'top_blogs':
+        Security::requirePermission($currentUser, 'posts.view');
+
+        $sort = $_GET['sort'] ?? 'views'; // 'views' or 'date'
+        $category = $_GET['category'] ?? '';
+        $search = trim($_GET['search'] ?? '');
+        $limit = max(1, min(200, (int)($_GET['limit'] ?? 50)));
+
+        $where = ["status = 'Published'"];
+        $params = [];
+
+        if (!empty($category) && $category !== 'All') {
+            $where[] = "LOWER(category) = LOWER(?)";
+            $params[] = $category;
+        }
+
+        if (!empty($search)) {
+            $where[] = "(title LIKE ? OR category LIKE ? OR author LIKE ? OR excerpt LIKE ?)";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+            $params[] = "%{$search}%";
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $orderBy = ($sort === 'date') 
+            ? 'published_date DESC, updated_at DESC' 
+            : 'views DESC, updated_at DESC';
+
+        $stmt = $pdo->prepare("SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, views, updated_at FROM blog_posts WHERE {$whereSql} ORDER BY {$orderBy} LIMIT {$limit}");
+        $stmt->execute($params);
+        $rankedPosts = $stmt->fetchAll();
+
+        // Calculate totals
+        $totalViews = 0;
+        foreach ($rankedPosts as $p) {
+            $totalViews += (int)($p['views'] ?? 0);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'posts' => $rankedPosts,
+            'total_views' => $totalViews,
+            'count' => count($rankedPosts),
+            'sort' => $sort,
+            'category' => $category ?: 'All'
+        ]);
+        exit;
+
+    case 'update_blog_views':
+        Security::requirePermission($currentUser, 'posts.edit');
+        Security::validateCsrf($currentUser);
+
+        $postId = $input['post_id'] ?? ($input['id'] ?? null);
+        $views = isset($input['views']) ? max(0, (int)$input['views']) : null;
+
+        if (!$postId || $views === null) {
+            echo json_encode(['success' => false, 'error' => 'Post ID and valid non-negative views required']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE blog_posts SET views = ? WHERE id = ?");
+        $stmt->execute([$views, $postId]);
+
+        Security::logAudit($currentUser['id'], 'post.update_views', "Updated views for post ID {$postId} to {$views}");
+
+        echo json_encode([
+            'success' => true,
+            'id' => $postId,
+            'views' => $views,
+            'message' => 'Blog view count updated successfully'
+        ]);
+        exit;
+
     case 'posts_list':
         Security::requirePermission($currentUser, 'posts.view');
 
@@ -390,7 +502,7 @@ switch ($action) {
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
-        $sql = "SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, updated_at, created_by 
+        $sql = "SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, views, updated_at, created_by 
                 FROM blog_posts {$whereSql} 
                 ORDER BY updated_at DESC LIMIT {$limit} OFFSET {$offset}";
         $stmt = $pdo->prepare($sql);
