@@ -10,7 +10,7 @@ if (!headers_sent()) {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('X-Content-Type-Options: nosniff');
     header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Session-Token, X-CSRF-Token, X-Google-Token');
 }
 
@@ -176,11 +176,50 @@ if ($method === 'GET') {
 }
 
 // -------------------------------------------------------------------------
-// POST: Submit a New Comment (Authenticated or Guest)
+// POST / DELETE: Submit or Remove a Comment
 // -------------------------------------------------------------------------
-if ($method === 'POST') {
+if ($method === 'POST' || $method === 'DELETE') {
     $rawBody = file_get_contents('php://input');
     $payload = json_decode($rawBody, true) ?: $_POST;
+    if ($method === 'DELETE' && empty($payload)) {
+        $payload = $_GET;
+    }
+
+    // 0. Handle Comment Deletion
+    if ($method === 'DELETE' || (($payload['action'] ?? '') === 'delete')) {
+        $commentId = trim((string)($payload['id'] ?? ($payload['commentId'] ?? ($_GET['id'] ?? ''))));
+        if ($commentId === '') {
+            send_json(400, ['success' => false, 'error' => 'Missing comment ID.']);
+        }
+
+        if (!$pdo) {
+            send_json(200, ['success' => true, 'message' => 'Comment removed.']);
+        }
+
+        $cmsUser = class_exists('Security') ? Security::getCurrentUser() : null;
+        $clientIp = get_client_ip();
+        $authorEmail = trim((string)($payload['email'] ?? ($payload['authorEmail'] ?? '')));
+
+        try {
+            if ($cmsUser) {
+                // Admin / staff can delete any comment
+                $stmt = $pdo->prepare("DELETE FROM blog_comments WHERE id = ?");
+                $stmt->execute([$commentId]);
+            } else {
+                // Guests / authors can delete only their own comment matching IP or email
+                if ($authorEmail !== '') {
+                    $stmt = $pdo->prepare("DELETE FROM blog_comments WHERE id = ? AND (ip_address = ? OR author_email = ? OR public_email = ?)");
+                    $stmt->execute([$commentId, $clientIp, $authorEmail, $authorEmail]);
+                } else {
+                    $stmt = $pdo->prepare("DELETE FROM blog_comments WHERE id = ? AND ip_address = ?");
+                    $stmt->execute([$commentId, $clientIp]);
+                }
+            }
+            send_json(200, ['success' => true, 'message' => 'Comment removed successfully.']);
+        } catch (Exception $e) {
+            send_json(500, ['success' => false, 'error' => 'Database error deleting comment: ' . $e->getMessage()]);
+        }
+    }
 
     // 1. Anti-Spam: Honeypot field check
     $honeypot = trim((string)($payload['website_hp'] ?? ($payload['hp_field'] ?? '')));

@@ -3258,7 +3258,13 @@ export default function App() {
       if (savedComments) {
         const parsed = JSON.parse(savedComments);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map(c => ({
+          // Immediately purge any orphaned/test comment for road-roller-vs-skid-steer-operating-weight
+          const cleaned = parsed.filter(c => c && c.blogSlug !== 'road-roller-vs-skid-steer-operating-weight' && c.postId !== 'road-roller-vs-skid-steer-operating-weight');
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(BLOG_COMMENTS_STORAGE_KEY, JSON.stringify(cleaned));
+            writePersistentContent(BLOG_COMMENTS_STORAGE_KEY, cleaned).catch(() => {});
+          }
+          return cleaned.map(c => ({
             ...c,
             avatar: c.avatar || getUserProfileAvatar(c.authorEmail || c.email, c.authorName || c.author)
           }));
@@ -3418,13 +3424,15 @@ export default function App() {
       .then(data => {
         if (isCancelled || !data?.success || !Array.isArray(data.comments)) return;
         setComments(prevComments => {
-          const apiCommentIds = new Set(data.comments.map(c => c.id || c.commentId));
+          // Authoritative sync: the API is the single source of truth for the active blog post.
+          // Drop all local comments for the active post and insert the server's comments.
           const otherPostsComments = prevComments.filter(c =>
-            (c.blogSlug === selectedBlogPost.slug || c.postId === selectedBlogPost.slug)
-              ? !apiCommentIds.has(c.id || c.commentId)
-              : true
+            c.blogSlug !== selectedBlogPost.slug && c.postId !== selectedBlogPost.slug
           );
-          return [...data.comments, ...otherPostsComments];
+          const nextComments = [...data.comments, ...otherPostsComments];
+          saveJsonBackup(BLOG_COMMENTS_STORAGE_KEY, nextComments);
+          writePersistentContent(BLOG_COMMENTS_STORAGE_KEY, nextComments).catch(() => {});
+          return nextComments;
         });
       })
       .catch(() => {});
@@ -4049,9 +4057,23 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const handleDeleteComment = (commentId) => {
-    const nextComments = comments.filter(c => c.id !== commentId);
+  const handleDeleteComment = async (commentId) => {
+    const nextComments = comments.filter(c => c.id !== commentId && c.commentId !== commentId);
     saveComments(nextComments);
+
+    try {
+      await fetch('/api/comments.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          id: commentId,
+          email: authVisitor?.email || commentForm?.authorEmail || ''
+        })
+      });
+    } catch (err) {
+      console.warn('Could not sync comment deletion with server:', err);
+    }
   };
 
   const handleToggleCommentStatus = (commentId) => {
@@ -9935,7 +9957,38 @@ export default function App() {
                                         </span>
                                       )}
                                     </div>
-                                    <span className="comment-timestamp">{commentDate}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span className="comment-timestamp">{commentDate}</span>
+                                      {(authVisitor?.isStaff || (authVisitor?.email && (authVisitor.email === comment.authorEmail || authVisitor.email === comment.publicEmail)) || (commentForm.authorEmail && commentForm.authorEmail === (comment.authorEmail || comment.publicEmail))) && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (window.confirm('Delete this comment?')) {
+                                              handleDeleteComment(comment.id || comment.commentId);
+                                            }
+                                          }}
+                                          title="Delete this comment"
+                                          style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            fontSize: '11px',
+                                            padding: '2px 5px',
+                                            borderRadius: '4px',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '3px'
+                                          }}
+                                        >
+                                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                          </svg>
+                                          <span>Delete</span>
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
                                   <p className="comment-body-text">{comment.content || comment.text}</p>
                                 </div>

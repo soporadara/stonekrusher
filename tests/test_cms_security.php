@@ -533,7 +533,18 @@ $fetchComments->execute([$testSlug]);
 $allApproved = $fetchComments->fetchAll(PDO::FETCH_ASSOC);
 assert_test("Post comments query successfully returns approved comments", count($allApproved) >= 2);
 
-// Cleanup test comments
+// 4. Comment Deletion & Zero Comments Post Verification
+$delStmt = $pdo->prepare("DELETE FROM blog_comments WHERE id = ?");
+$delStmt->execute([$guestId]);
+$delStmt->execute([$authId]);
+assert_test("Test comments successfully deleted by ID", true);
+
+$fetchAfterDel = $pdo->prepare("SELECT * FROM blog_comments WHERE post_slug = ? AND moderation_status = 'Approved'");
+$fetchAfterDel->execute([$testSlug]);
+$remainingComments = $fetchAfterDel->fetchAll(PDO::FETCH_ASSOC);
+assert_test("Post has exactly 0 comments after deletion", count($remainingComments) === 0);
+
+// Cleanup test comments safeguard
 $pdo->exec("DELETE FROM blog_comments WHERE id IN ('{$guestId}', '{$authId}')");
 
 
