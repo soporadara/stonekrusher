@@ -26,6 +26,11 @@ export default function CmsDashboard({
   const [savingViews, setSavingViews] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState('');
 
+  // Date Range Filter state ('YYYY-MM-DD')
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [activeDatePreset, setActiveDatePreset] = useState('all');
+
   // Sync initialSubView when parent tab changes
   useEffect(() => {
     if (initialSubView) {
@@ -200,6 +205,58 @@ export default function CmsDashboard({
   const totalCommentsCount = comments.total || 2;
   const approvedCommentsCount = comments.approved || 2;
 
+  // Helper to format Date to YYYY-MM-DD
+  const formatDateToYMD = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper to extract article date as YYYY-MM-DD
+  const getArticleDateStr = (p) => {
+    if (p.published_date) {
+      const match = String(p.published_date).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return match[0];
+      const parsed = new Date(p.published_date);
+      if (!isNaN(parsed.getTime())) return formatDateToYMD(parsed);
+    }
+    if (p.updated_at) {
+      const ts = typeof p.updated_at === 'number' && p.updated_at < 1e11 ? p.updated_at * 1000 : Number(p.updated_at);
+      const parsed = new Date(ts);
+      if (!isNaN(parsed.getTime())) return formatDateToYMD(parsed);
+    }
+    return '';
+  };
+
+  // Quick Date Range Presets
+  const applyDatePreset = (presetKey) => {
+    setActiveDatePreset(presetKey);
+    const now = new Date();
+    const todayStr = formatDateToYMD(now);
+
+    if (presetKey === 'all') {
+      setDateFrom('');
+      setDateTo('');
+    } else if (presetKey === 'month') {
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      setDateFrom(formatDateToYMD(firstDayOfMonth));
+      setDateTo(todayStr);
+    } else if (presetKey === '30d') {
+      const past30 = new Date(now.getTime() - 30 * 86400000);
+      setDateFrom(formatDateToYMD(past30));
+      setDateTo(todayStr);
+    } else if (presetKey === '90d') {
+      const past90 = new Date(now.getTime() - 90 * 86400000);
+      setDateFrom(formatDateToYMD(past90));
+      setDateTo(todayStr);
+    } else if (presetKey === 'year') {
+      const firstOfYear = new Date(now.getFullYear(), 0, 1);
+      setDateFrom(formatDateToYMD(firstOfYear));
+      setDateTo(todayStr);
+    }
+  };
+
   // Categories list for Top Blogs filter
   const blogCategoriesList = useMemo(() => {
     const set = new Set();
@@ -214,9 +271,12 @@ export default function CmsDashboard({
     const list = [...rawTopBlogs];
     if (sortMode === 'date') {
       return list.sort((a, b) => {
-        const dateA = new Date(a.published_date || a.updated_at || 0).getTime();
-        const dateB = new Date(b.published_date || b.updated_at || 0).getTime();
-        return dateB - dateA;
+        const dateAStr = getArticleDateStr(a);
+        const dateBStr = getArticleDateStr(b);
+        if (dateBStr && dateAStr && dateBStr !== dateAStr) {
+          return dateBStr > dateAStr ? 1 : -1;
+        }
+        return (b.updated_at || 0) - (a.updated_at || 0);
       });
     }
     // Default: Sort by views DESC
@@ -224,7 +284,9 @@ export default function CmsDashboard({
       const vA = Number(a.views || 0);
       const vB = Number(b.views || 0);
       if (vB !== vA) return vB - vA;
-      return new Date(b.published_date || 0).getTime() - new Date(a.published_date || 0).getTime();
+      const dateAStr = getArticleDateStr(a);
+      const dateBStr = getArticleDateStr(b);
+      return dateBStr > dateAStr ? 1 : dateBStr < dateAStr ? -1 : 0;
     });
   }, [rawTopBlogs, sortMode]);
 
@@ -232,10 +294,27 @@ export default function CmsDashboard({
   const displayedPosts = useMemo(() => {
     let result = sortedPosts;
 
+    // Filter by Date Range (From Date to To Date)
+    if (dateFrom) {
+      result = result.filter((p) => {
+        const d = getArticleDateStr(p);
+        return d && d >= dateFrom;
+      });
+    }
+
+    if (dateTo) {
+      result = result.filter((p) => {
+        const d = getArticleDateStr(p);
+        return d && d <= dateTo;
+      });
+    }
+
+    // Filter by Category
     if (selectedCategory !== 'All') {
       result = result.filter((p) => String(p.category || '').toLowerCase() === selectedCategory.toLowerCase());
     }
 
+    // Filter by Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -248,7 +327,7 @@ export default function CmsDashboard({
     }
 
     return result.slice(0, rankLimit);
-  }, [sortedPosts, selectedCategory, searchQuery, rankLimit]);
+  }, [sortedPosts, dateFrom, dateTo, selectedCategory, searchQuery, rankLimit]);
 
   // Aggregate Metrics for Top Blogs
   const analyzedTotalViews = useMemo(() => {
@@ -295,6 +374,9 @@ export default function CmsDashboard({
     }
 
     const sortLabel = sortMode === 'date' ? 'Publication Date (Newest First)' : 'Reader Traffic & Views (Most Popular)';
+    const dateScopeLabel = (dateFrom || dateTo)
+      ? `${dateFrom || 'Any'} to ${dateTo || 'Present'}`
+      : 'All Time (No date restrictions)';
 
     const html = `
       <!DOCTYPE html>
@@ -385,6 +467,7 @@ export default function CmsDashboard({
               text-transform: uppercase;
               font-size: 10.5px;
               letter-spacing: 0.04em;
+              white-space: nowrap;
             }
             td {
               padding: 10px 12px;
@@ -478,6 +561,7 @@ export default function CmsDashboard({
             <div class="meta-col">
               <div>Date Generated: <strong>${currentDate}</strong></div>
               <div>Ranking Mode: <strong>${sortLabel}</strong></div>
+              <div>Date Scope: <strong>${dateScopeLabel}</strong></div>
               <div>Scope: <strong>Top ${displayedPosts.length} Articles</strong></div>
               <div>Category Filter: <strong>${selectedCategory}</strong></div>
             </div>
@@ -509,9 +593,10 @@ export default function CmsDashboard({
               <tr>
                 <th style="width: 45px; text-align: center;">Rank</th>
                 <th style="width: 95px;">Image</th>
-                <th>Article Title & Publication Details</th>
-                <th style="width: 140px;">Category</th>
-                <th style="width: 240px;">Public Live URL</th>
+                <th>Article Title & Author</th>
+                <th style="width: 130px;">Category</th>
+                <th style="width: 120px;">Published Date</th>
+                <th style="width: 220px;">Public Live URL</th>
                 <th style="width: 100px; text-align: right;">Total Views</th>
               </tr>
             </thead>
@@ -521,7 +606,8 @@ export default function CmsDashboard({
                   const url = `${origin}/blog/${post.slug}`;
                   const views = Number(post.views || 0);
                   const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
-                  const imgSrc = post.featured_image || '/images/why-choose-v900-jobsite.png';
+                  const imgSrc = post.featured_image || 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png';
+                  const pubDate = getArticleDateStr(post) || post.published_date || 'Live';
                   return `
                   <tr>
                     <td style="text-align: center;">
@@ -529,15 +615,18 @@ export default function CmsDashboard({
                     </td>
                     <td>
                       <div class="thumb-box">
-                        <img src="${imgSrc}" alt="${post.title}" onerror="this.src='/images/why-choose-v900-jobsite.png'" />
+                        <img src="${imgSrc}" alt="${post.title}" onerror="this.src='https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png'" />
                       </div>
                     </td>
                     <td class="title-info">
                       <strong>${post.title}</strong>
-                      <span>Published ${post.published_date || 'Live'} &bull; Author: ${post.author || 'KONSTRUCTZ Editorial'}</span>
+                      <span>Author: ${post.author || 'KONSTRUCTZ Editorial'}</span>
                     </td>
                     <td>
                       <span class="category-tag">${post.category || 'Guide'}</span>
+                    </td>
+                    <td style="font-weight: 600; color: #475569;">
+                      ${pubDate}
                     </td>
                     <td>
                       <a href="${url}" target="_blank" class="url-link">${url}</a>
@@ -838,14 +927,10 @@ export default function CmsDashboard({
           </div>
 
           {/* ROW 2: MACHINERY FLEET BREAKDOWN & CUSTOMER OPERATIONS */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(12, 1fr)',
-            gap: '18px'
-          }}>
+          <div className="cms-overview-grid">
 
-            {/* Column 1: Machinery Fleet Inventory by Category (7 Cols) */}
-            <div className="cms-donezo-card" style={{ gridColumn: 'span 7' }}>
+            {/* Column 1: Machinery Fleet Inventory by Category (7 Cols on desktop, full width on tablet/mobile) */}
+            <div className="cms-donezo-card cms-overview-col-main">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
@@ -920,8 +1005,8 @@ export default function CmsDashboard({
               </div>
             </div>
 
-            {/* Column 2: Customer Comments & Support Operations (5 Cols) */}
-            <div className="cms-donezo-card" style={{ gridColumn: 'span 5', justifyContent: 'space-between' }}>
+            {/* Column 2: Customer Comments & Support Operations (5 Cols on desktop, full width on tablet/mobile) */}
+            <div className="cms-donezo-card cms-overview-col-side">
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
@@ -1280,9 +1365,9 @@ export default function CmsDashboard({
               {topPost && (
                 <div className="cms-topblogs-thumb-box">
                   <img
-                    src={topPost.featured_image || '/images/why-choose-v900-jobsite.png'}
+                    src={topPost.featured_image || 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png'}
                     alt={topPost.title}
-                    onError={(e) => { e.currentTarget.src = '/images/why-choose-v900-jobsite.png'; }}
+                    onError={(e) => { e.currentTarget.src = 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png'; }}
                   />
                 </div>
               )}
@@ -1430,7 +1515,96 @@ export default function CmsDashboard({
 
             </div>
 
-            {/* Row 2: Search input + Category Filter + Export Button */}
+            {/* Row 2: Date Range Filter Bar (From Date to To Date + Quick Presets) */}
+            <div className={`cms-date-filter-bar ${sortMode === 'date' ? 'highlighted' : ''}`}>
+              <div className="cms-date-inputs-cluster">
+                <span className="cms-filter-label" style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+                  📅 Date Range:
+                </span>
+                <div className="cms-date-field-wrap">
+                  <label>From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => {
+                      setDateFrom(e.target.value);
+                      setActiveDatePreset('custom');
+                    }}
+                    className="cms-date-picker-input"
+                    title="Filter from publication date"
+                  />
+                </div>
+                <span style={{ color: 'var(--cms-text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>→</span>
+                <div className="cms-date-field-wrap">
+                  <label>To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => {
+                      setDateTo(e.target.value);
+                      setActiveDatePreset('custom');
+                    }}
+                    className="cms-date-picker-input"
+                    title="Filter to publication date"
+                  />
+                </div>
+                {(dateFrom || dateTo) && (
+                  <button
+                    className="cms-date-clear-pill"
+                    onClick={() => {
+                      setDateFrom('');
+                      setDateTo('');
+                      setActiveDatePreset('all');
+                    }}
+                    title="Clear date range and show all articles"
+                  >
+                    ✕ Reset Dates
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Presets */}
+              <div className="cms-date-presets-row">
+                {[
+                  { id: 'all', label: 'All Time' },
+                  { id: 'month', label: 'This Month' },
+                  { id: '30d', label: 'Last 30 Days' },
+                  { id: '90d', label: 'Last 90 Days' },
+                  { id: 'year', label: 'This Year' }
+                ].map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => applyDatePreset(preset.id)}
+                    className={`cms-date-preset-btn ${activeDatePreset === preset.id ? 'active' : ''}`}
+                    title={`Filter by ${preset.label}`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Active Date Filter Indicator */}
+            {(dateFrom || dateTo) && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.78rem',
+                color: '#0f4c3a',
+                background: 'rgba(15, 76, 58, 0.08)',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(15, 76, 58, 0.2)'
+              }}>
+                <span>🎯</span>
+                <span>
+                  Filtering articles published from <strong>{dateFrom || 'Earliest'}</strong> to <strong>{dateTo || 'Present'}</strong> ({displayedPosts.length} matching {displayedPosts.length === 1 ? 'article' : 'articles'})
+                </span>
+              </div>
+            )}
+
+            {/* Row 3: Search input + Category Filter + Export Button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid var(--cms-card-border, #e2e8f0)' }}>
 
               {/* Search Box */}
@@ -1539,8 +1713,11 @@ export default function CmsDashboard({
               </div>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
+            <div className="cms-table-scroll-wrap">
+              <div className="cms-table-mobile-hint">
+                <span>📱 Swipe horizontally to view all ranking columns</span>
+              </div>
+              <table className="cms-rank-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
                 <thead>
                   <tr style={{
                     borderBottom: '2px solid var(--cms-card-border, #cbd5e1)',
@@ -1548,13 +1725,13 @@ export default function CmsDashboard({
                     textAlign: 'left',
                     color: 'var(--cms-text-muted)'
                   }}>
-                    <th style={{ padding: '12px 14px', width: '60px', textAlign: 'center' }}>Rank</th>
-                    <th style={{ padding: '12px 14px', width: '100px' }}>Featured Image</th>
-                    <th style={{ padding: '12px 14px' }}>Article Details & Author</th>
-                    <th style={{ padding: '12px 14px', width: '160px' }}>Category</th>
-                    <th style={{ padding: '12px 14px', width: '130px' }}>Published Date</th>
-                    <th style={{ padding: '12px 14px', width: '150px', textAlign: 'right' }}>CMS Views</th>
-                    <th style={{ padding: '12px 14px', width: '140px', textAlign: 'center' }}>Actions</th>
+                    <th className="cms-col-rank" style={{ padding: '12px 14px', width: '72px', minWidth: '72px', whiteSpace: 'nowrap', textAlign: 'center' }}>Rank</th>
+                    <th className="cms-col-thumb" style={{ padding: '12px 14px', width: '104px', minWidth: '104px', whiteSpace: 'nowrap' }}>Featured Image</th>
+                    <th className="cms-col-details" style={{ padding: '12px 14px', minWidth: '260px', whiteSpace: 'nowrap' }}>Article Details & Author</th>
+                    <th className="cms-col-category" style={{ padding: '12px 14px', width: '140px', minWidth: '130px', whiteSpace: 'nowrap' }}>Category</th>
+                    <th className="cms-col-date" style={{ padding: '12px 14px', width: '140px', minWidth: '130px', whiteSpace: 'nowrap' }}>Published Date</th>
+                    <th className="cms-col-views" style={{ padding: '12px 14px', width: '150px', minWidth: '140px', whiteSpace: 'nowrap', textAlign: 'right' }}>CMS Views</th>
+                    <th className="cms-col-actions" style={{ padding: '12px 14px', width: '130px', minWidth: '120px', whiteSpace: 'nowrap', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1565,6 +1742,7 @@ export default function CmsDashboard({
                       const pctOfMax = Math.round((views / maxViewsValue) * 100);
                       const isEditingViews = editingViewsPostId === post.id;
                       const publicUrl = `/blog/${post.slug}`;
+                      const formattedPubDate = getArticleDateStr(post) || post.published_date || 'Live';
 
                       return (
                         <tr
@@ -1575,25 +1753,25 @@ export default function CmsDashboard({
                           }}
                         >
                           {/* Rank Badge */}
-                          <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                          <td className="cms-col-rank" style={{ padding: '14px 12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                             <span className={`cms-rank-badge ${rankClass}`}>
                               #{idx + 1}
                             </span>
                           </td>
 
                           {/* Thumbnail */}
-                          <td style={{ padding: '14px 12px' }}>
+                          <td className="cms-col-thumb" style={{ padding: '14px 12px' }}>
                             <div className="cms-topblogs-thumb-box">
                               <img
-                                src={post.featured_image || '/images/why-choose-v900-jobsite.png'}
+                                src={post.featured_image || 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png'}
                                 alt={post.title}
-                                onError={(e) => { e.currentTarget.src = '/images/why-choose-v900-jobsite.png'; }}
+                                onError={(e) => { e.currentTarget.src = 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png'; }}
                               />
                             </div>
                           </td>
 
                           {/* Title & Details */}
-                          <td style={{ padding: '14px 12px' }}>
+                          <td className="cms-col-details" style={{ padding: '14px 12px' }}>
                             <div style={{
                               fontWeight: 700,
                               fontSize: '0.92rem',
@@ -1619,7 +1797,7 @@ export default function CmsDashboard({
                           </td>
 
                           {/* Category Tag */}
-                          <td style={{ padding: '14px 12px' }}>
+                          <td className="cms-col-category" style={{ padding: '14px 12px', whiteSpace: 'nowrap' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 10px',
@@ -1634,12 +1812,23 @@ export default function CmsDashboard({
                           </td>
 
                           {/* Published Date */}
-                          <td style={{ padding: '14px 12px', color: 'var(--cms-text-muted)', fontSize: '0.8rem', fontWeight: 550 }}>
-                            {post.published_date || 'Live'}
+                          <td className="cms-col-date" style={{ padding: '14px 12px', color: 'var(--cms-text-muted)', fontSize: '0.8rem', fontWeight: 550, whiteSpace: 'nowrap' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              background: 'var(--cms-bg-muted, #f1f5f9)',
+                              border: '1px solid var(--cms-card-border, #e2e8f0)',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              color: 'var(--cms-text)'
+                            }}>
+                              {formattedPubDate}
+                            </span>
                           </td>
 
                           {/* CMS-Only Views (With Inline Edit) */}
-                          <td style={{ padding: '14px 12px', textAlign: 'right' }}>
+                          <td className="cms-col-views" style={{ padding: '14px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                             {isEditingViews ? (
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                                 <input
@@ -1717,7 +1906,7 @@ export default function CmsDashboard({
                           </td>
 
                           {/* Quick Actions */}
-                          <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                          <td className="cms-col-actions" style={{ padding: '14px 12px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                               <button
                                 onClick={() => onSelectPost ? onSelectPost(post) : onNavigateTab('posts')}

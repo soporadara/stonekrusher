@@ -17,6 +17,7 @@ import CmsSystemStatus from './CmsSystemStatus';
 import CmsProfileModal from './CmsProfileModal';
 import CmsTabErrorBoundary from './CmsTabErrorBoundary';
 import CmsCommentManager from './CmsCommentManager';
+import konstructzLogo from '../../assets/konstructz_logo.png';
 
 export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -207,13 +208,23 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             data-tooltip="Expand Sidebar"
             style={{ cursor: 'pointer' }}
           >
-            <div className="cms-brand-logo">
-              <span style={{ fontSize: '1.25rem' }}>⚙️</span>
+            <div className="cms-brand-logo" style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#0f4c3a',
+              flexShrink: 0
+            }}>
+              <img src={konstructzLogo} alt="StoneKrusher / KONSTRUCTZ" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
             </div>
             {!sidebarCollapsed && (
               <div className="cms-brand-text">
-                <span className="cms-brand-title">Donezo / Krusher</span>
-                <span className="cms-brand-subtitle">StoneKrusher Ops</span>
+                <span className="cms-brand-title">StoneKrusher</span>
+                <span className="cms-brand-subtitle">KONSTRUCTZ FLEET OPS</span>
               </div>
             )}
           </div>
@@ -392,7 +403,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               </div>
               <div className="cms-donezo-user-info">
                 <span className="cms-donezo-user-name">
-                  {currentUser.full_name || currentUser.username || 'Totok Michael'}
+                  {currentUser.full_name || currentUser.username || 'StoneKrusher Admin'}
                 </span>
                 <span className="cms-donezo-user-email">
                   {currentUser.email || `${(currentUser.username || 'admin').toLowerCase()}@stonekrusher.com`}
