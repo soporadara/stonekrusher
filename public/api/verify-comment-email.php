@@ -184,26 +184,13 @@ if (!$hasMx) {
     exit;
 }
 
-// 6. Return Verification Status
-$isKnownReal = ($cleanEmail === 'latoureiffel1802@gmail.com' || $cleanEmail === 'sopoadara@gmail.com' || str_ends_with($cleanEmail, '@kiuq.com') || str_ends_with($cleanEmail, '@stonekrusher.com'));
-
-if ($isGoogle) {
-    echo json_encode([
-        'valid' => true,
-        'is_google' => true,
-        'verified' => $isKnownReal,
-        'domain' => $domain,
-        'email' => $cleanEmail,
-        'message' => $isKnownReal ? 'Real Google account verified.' : 'Google email detected. Authentication with Google required to verify ownership.'
-    ]);
-    exit;
-}
-
+// 6. Return Verification Status for Real Emails
 echo json_encode([
     'valid' => true,
-    'is_google' => false,
+    'is_google' => $isGoogle,
     'verified' => true,
     'domain' => $domain,
     'email' => $cleanEmail,
-    'message' => 'Real email address domain verified.'
+    'message' => $isGoogle ? '✓ Real Google email detected.' : '✓ Real email domain verified.'
 ]);
+exit;

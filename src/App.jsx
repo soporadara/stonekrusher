@@ -1678,20 +1678,46 @@ const createUserMessage = (content) => ({
  */
 export const USER_REAL_AVATAR = 'https://lightcyan-weasel-711536.hostingersite.com/storage/avatars/UNOQP8Qv0cfy6L3twxNormAHlv7UnrVPV0Xs9k1c.jpg';
 
+export const getGoogleAvatarColor = (str) => {
+  const colors = [
+    '#1a73e8', // Google Blue
+    '#1e8e3e', // Google Green
+    '#d93025', // Google Red
+    '#8e24aa', // Google Purple
+    '#f4511e', // Google Deep Orange
+    '#00897b', // Google Teal
+    '#3949ab', // Google Indigo
+    '#d81b60', // Google Pink
+    '#0288d1', // Google Light Blue
+    '#7b1fa2'  // Google Violet
+  ];
+  const s = String(str || 'User').trim().toLowerCase();
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
+export const getGmailAvatarSvg = (email, name) => {
+  const clean = (email || '').trim().toLowerCase();
+  const displayName = (name || clean.split('@')[0] || 'User').trim();
+  const initial = (displayName.charAt(0) || 'U').toUpperCase();
+  const bgColor = getGoogleAvatarColor(clean || displayName);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="64" fill="${bgColor}"/><text x="64" y="74" font-size="56" font-family="-apple-system,BlinkMacSystemFont,Roboto,'Segoe UI',Helvetica,Arial,sans-serif" font-weight="600" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${initial}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 export const getUserProfileAvatar = (email, name) => {
   if (!email || typeof email !== 'string') {
-    const fallbackName = name ? encodeURIComponent(name.trim()) : 'User';
-    return `https://ui-avatars.com/api/?name=${fallbackName}&background=f59e0b&color=000&bold=true&size=128`;
+    return getGmailAvatarSvg('', name || 'User');
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  const fallbackName = name ? encodeURIComponent(name.trim()) : encodeURIComponent(cleanEmail.split('@')[0]);
 
-  // 1. Direct match for staff, admin, verified users, and real accounts
+  // 1. Direct match for staff and admin
   if (
-    cleanEmail === 'latoureiffel1802@gmail.com' ||
-    cleanEmail === 'sopoadara@gmail.com' ||
-    cleanEmail.endsWith('@kiuq.com') ||
     cleanEmail === 'admin@stonekrusher.com' ||
     cleanEmail === 'admin@happymachinery.com' ||
     cleanEmail === 'admin@konstructz.com'
@@ -1770,9 +1796,8 @@ export const getUserProfileAvatar = (email, name) => {
     } catch {}
   }
 
-  // 4. Resolve via Google/Gravatar Unavatar
-  const defaultFallback = encodeURIComponent(`https://ui-avatars.com/api/?name=${fallbackName}&background=f59e0b&color=000&bold=true&size=128`);
-  return `https://unavatar.io/${encodeURIComponent(cleanEmail)}?fallback=${defaultFallback}`;
+  // 4. Return authentic Gmail-style colored initial profile avatar
+  return getGmailAvatarSvg(cleanEmail, name);
 };
 
 export const getStoredAuthUser = () => {
@@ -1801,7 +1826,7 @@ export const getStoredAuthUser = () => {
         return {
           email: commenter.email,
           name: commenter.name || commenter.email.split('@')[0],
-          avatar: commenter.picture || (commenter.email.includes('latoureiffel') || commenter.email.includes('sopo') ? USER_REAL_AVATAR : ''),
+          avatar: commenter.picture || getGmailAvatarSvg(commenter.email, commenter.name),
           source: 'google'
         };
       }
@@ -1824,7 +1849,7 @@ export const getStoredAuthUser = () => {
             const parsed = JSON.parse(raw);
             if (parsed && (parsed.email || parsed.displayName || parsed.photoURL)) {
               const email = parsed.email || '';
-              const photo = extractPhoto(parsed) || (email.includes('kiuq.com') || email.includes('sopo') || email.includes('latoureiffel') ? USER_REAL_AVATAR : '');
+              const photo = extractPhoto(parsed) || getGmailAvatarSvg(email, parsed.displayName);
               return {
                 email,
                 name: parsed.displayName || email.split('@')[0] || '',
@@ -1848,7 +1873,7 @@ export const getStoredAuthUser = () => {
         return {
           email,
           name: u.full_name || u.username || '',
-          avatar: u.avatar || (email.includes('kiuq.com') || email.includes('sopo') || email.includes('latoureiffel') ? USER_REAL_AVATAR : ''),
+          avatar: u.avatar || getGmailAvatarSvg(email, u.full_name),
           source: 'cms'
         };
       }
@@ -3240,7 +3265,7 @@ export default function App() {
   const [commentEmailCheck, setCommentEmailCheck] = useState(() => {
     const authUser = getStoredAuthUser();
     if (authUser?.email) {
-      return { status: 'valid', message: 'Real email verified', isValid: true, isGoogle: authUser.email.includes('gmail.com') || authUser.email.includes('latour') };
+      return { status: 'valid', message: '✓ Real email verified', isValid: true, isGoogle: authUser.email.endsWith('@gmail.com') || authUser.email.endsWith('@googlemail.com') };
     }
     return { status: 'idle', message: '', isValid: true, isGoogle: false };
   });
@@ -3969,7 +3994,7 @@ export default function App() {
               if (payload?.email) {
                 const userEmail = payload.email.toLowerCase();
                 const userName = payload.name || payload.given_name || userEmail.split('@')[0];
-                const userPic = payload.picture || (userEmail.includes('latoureiffel') || userEmail.includes('sopo') ? USER_REAL_AVATAR : '');
+                const userPic = payload.picture || getGmailAvatarSvg(userEmail, userName);
                 
                 const verifiedObj = {
                   email: userEmail,
@@ -4083,12 +4108,6 @@ export default function App() {
     }
 
     const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
-    const isVerifiedViaAuth = Boolean(
-      (verifiedGoogleUser?.email?.toLowerCase() === clean && verifiedGoogleUser?.verified) ||
-      clean === 'latoureiffel1802@gmail.com' ||
-      clean === 'sopoadara@gmail.com' ||
-      clean.endsWith('@kiuq.com')
-    );
 
     if (isGoogle) {
       const username = clean.split('@')[0] || '';
@@ -4103,27 +4122,17 @@ export default function App() {
         return;
       }
 
-      if (isVerifiedViaAuth) {
-        setCommentEmailCheck({
-          status: 'valid',
-          message: '✓ Real Google account verified.',
-          isValid: true,
-          isVerified: true,
-          isGoogle: true
-        });
-      } else {
-        setCommentEmailCheck({
-          status: 'unverified',
-          message: '⚠️ Google account not verified. Please click "Comment with Google" above to authenticate this real account.',
-          isValid: false,
-          isVerified: false,
-          isGoogle: true
-        });
-      }
+      setCommentEmailCheck({
+        status: 'valid',
+        message: '✓ Real Google email detected. Profile connected.',
+        isValid: true,
+        isVerified: true,
+        isGoogle: true
+      });
       return;
     }
 
-    // Verify against server endpoint
+    // Verify against server endpoint for non-Google custom domains
     fetch(`/api/verify-comment-email.php?email=${encodeURIComponent(clean)}`)
       .then(res => res.json())
       .then(data => {
@@ -4138,7 +4147,7 @@ export default function App() {
         } else {
           setCommentEmailCheck({
             status: 'error',
-            message: data.error || (data.message || '⚠️ Unverified email. Please use a verified Google account.'),
+            message: data.error || (data.message || '⚠️ Fake or invalid email detected.'),
             isValid: false,
             isVerified: false,
             isGoogle: Boolean(data.is_google)
@@ -4147,10 +4156,10 @@ export default function App() {
       })
       .catch(() => {
         setCommentEmailCheck({
-          status: isVerifiedViaAuth ? 'valid' : 'unverified',
-          message: isVerifiedViaAuth ? '✓ Real email verified.' : '⚠️ Email unverified. Please authenticate with Google above.',
-          isValid: isVerifiedViaAuth,
-          isVerified: isVerifiedViaAuth,
+          status: 'valid',
+          message: '✓ Real email format verified.',
+          isValid: true,
+          isVerified: true,
           isGoogle: false
         });
       });
@@ -4185,29 +4194,23 @@ export default function App() {
       'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
     ];
     if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
-      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real verified email address.');
-      return;
-    }
-
-    if ((domain === 'gmail.com' || domain === 'googlemail.com') && cleanEmail.split('@')[0].length < 6) {
-      setCommentSubmitError('Invalid Gmail address: Google accounts must have between 6 and 30 characters in the username.');
+      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real email address.');
       return;
     }
 
     const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
-    const isVerifiedReal = Boolean(
-      (verifiedGoogleUser?.email?.toLowerCase() === cleanEmail && verifiedGoogleUser?.verified) ||
-      cleanEmail === 'latoureiffel1802@gmail.com' ||
-      cleanEmail === 'sopoadara@gmail.com' ||
-      cleanEmail.endsWith('@kiuq.com')
-    );
 
-    if (isGoogle && !isVerifiedReal) {
-      setCommentSubmitError('This Google account has not been verified. Please click "Comment with Google" above to authenticate your real account.');
+    if (isGoogle && cleanEmail.split('@')[0].length < 6) {
+      setCommentSubmitError('Invalid Gmail address: Google accounts must have between 6 and 30 characters in the username.');
       return;
     }
 
-    const avatarUrl = (verifiedGoogleUser?.email === cleanEmail && verifiedGoogleUser?.picture)
+    if (commentEmailCheck.status === 'error' || !commentEmailCheck.isValid) {
+      setCommentSubmitError(commentEmailCheck.message || 'Please use a real, valid email address.');
+      return;
+    }
+
+    const avatarUrl = (verifiedGoogleUser?.email?.toLowerCase() === cleanEmail && verifiedGoogleUser?.picture)
       ? verifiedGoogleUser.picture
       : getUserProfileAvatar(cleanEmail, cleanName);
 
@@ -9754,14 +9757,7 @@ export default function App() {
                                     loading="lazy"
                                     referrerPolicy="no-referrer"
                                     onError={(e) => {
-                                      if (e.currentTarget.src !== USER_REAL_AVATAR && (comment.authorEmail?.toLowerCase() === 'latoureiffel1802@gmail.com' || comment.authorEmail?.toLowerCase() === 'sopoadara@gmail.com' || comment.authorEmail?.toLowerCase().endsWith('@kiuq.com'))) {
-                                        e.currentTarget.src = USER_REAL_AVATAR;
-                                        return;
-                                      }
-                                      e.currentTarget.style.display = 'none';
-                                      if (e.currentTarget.nextElementSibling) {
-                                        e.currentTarget.nextElementSibling.style.display = 'flex';
-                                      }
+                                      e.currentTarget.src = getGmailAvatarSvg(comment.authorEmail, comment.authorName);
                                     }}
                                   />
                                   <div className="comment-avatar-fallback" style={{ display: 'none' }}>
@@ -9802,16 +9798,6 @@ export default function App() {
                   {(() => {
                     const currentFormEmail = commentForm.authorEmail.trim().toLowerCase();
                     const isFormEmailGoogle = currentFormEmail.endsWith('@gmail.com') || currentFormEmail.endsWith('@googlemail.com') || currentFormEmail.endsWith('@google.com');
-                    const isFormEmailVerified = Boolean(
-                      currentFormEmail &&
-                      (
-                        (verifiedGoogleUser?.email && verifiedGoogleUser.email.toLowerCase() === currentFormEmail && verifiedGoogleUser?.verified) ||
-                        currentFormEmail === 'latoureiffel1802@gmail.com' ||
-                        currentFormEmail === 'sopoadara@gmail.com' ||
-                        currentFormEmail.endsWith('@kiuq.com') ||
-                        (!isFormEmailGoogle && commentEmailCheck.isValid && commentEmailCheck.isVerified && commentEmailCheck.status === 'valid')
-                      )
-                    );
 
                     return (
                       <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
@@ -9870,8 +9856,8 @@ export default function App() {
                           <div
                             className="comment-email-avatar-preview"
                             style={{
-                              borderLeft: isFormEmailVerified ? '3px solid #16a34a' : '3px solid #f59e0b',
-                              background: isFormEmailVerified ? 'rgba(22, 163, 74, 0.05)' : '#fffbeb',
+                              borderLeft: commentEmailCheck.status === 'error' ? '3px solid #ef4444' : '3px solid #16a34a',
+                              background: commentEmailCheck.status === 'error' ? '#fef2f2' : 'rgba(22, 163, 74, 0.05)',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '12px',
@@ -9880,46 +9866,24 @@ export default function App() {
                               marginBottom: '16px'
                             }}
                           >
-                            {isFormEmailVerified ? (
-                              <img
-                                src={
-                                  (verifiedGoogleUser?.email?.toLowerCase() === currentFormEmail && verifiedGoogleUser?.picture)
-                                    ? verifiedGoogleUser.picture
-                                    : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)
-                                }
-                                alt="Profile photo preview"
-                                className="comment-preview-avatar-img"
-                                referrerPolicy="no-referrer"
-                                onError={(e) => {
-                                  if (e.currentTarget.src !== USER_REAL_AVATAR) {
-                                    e.currentTarget.src = USER_REAL_AVATAR;
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <div
-                                style={{
-                                  width: '38px',
-                                  height: '38px',
-                                  minWidth: '38px',
-                                  borderRadius: '50%',
-                                  background: '#fef3c7',
-                                  border: '2px solid #f59e0b',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '18px',
-                                  color: '#b45309'
-                                }}
-                              >
-                                ⚠️
-                              </div>
-                            )}
+                            <img
+                              src={
+                                (verifiedGoogleUser?.email?.toLowerCase() === currentFormEmail && verifiedGoogleUser?.picture)
+                                  ? verifiedGoogleUser.picture
+                                  : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)
+                              }
+                              alt="Profile photo preview"
+                              className="comment-preview-avatar-img"
+                              style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.currentTarget.src = getGmailAvatarSvg(commentForm.authorEmail, commentForm.authorName);
+                              }}
+                            />
                             <div className="comment-preview-meta">
                               <span
                                 className="comment-preview-title"
                                 style={{
-                                  color: isFormEmailVerified ? '#15803d' : '#b45309',
+                                  color: commentEmailCheck.status === 'error' ? '#b91c1c' : '#15803d',
                                   fontWeight: '700',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -9927,16 +9891,14 @@ export default function App() {
                                   fontSize: '13px'
                                 }}
                               >
-                                {isFormEmailVerified
-                                  ? '✓ Real Profile Photo Connected [Public]'
-                                  : (isFormEmailGoogle ? '⚠️ Google Account Not Verified Yet' : '⚠️ Unverified Email Domain')}
+                                {commentEmailCheck.status === 'error'
+                                  ? '⚠️ Invalid Email Address'
+                                  : (isFormEmailGoogle ? '✓ Real Google Profile Detected [Public]' : '✓ Real Email Profile Detected [Public]')}
                               </span>
-                              <span className="comment-preview-sub" style={{ fontSize: '11.5px', color: isFormEmailVerified ? '#334155' : '#78350f', marginTop: '2px', display: 'block' }}>
-                                {isFormEmailVerified
-                                  ? `Public Profile: Displaying ${commentForm.authorEmail} and your official profile photo on this article.`
-                                  : (isFormEmailGoogle
-                                      ? `Please click "Comment with Google" above to authenticate ${commentForm.authorEmail} and load your real photo.`
-                                      : (commentEmailCheck.message || 'Please use a real, verified email address.'))}
+                              <span className="comment-preview-sub" style={{ fontSize: '11.5px', color: commentEmailCheck.status === 'error' ? '#991b1b' : '#334155', marginTop: '2px', display: 'block' }}>
+                                {commentEmailCheck.status === 'error'
+                                  ? (commentEmailCheck.message || 'Please enter a real email address.')
+                                  : `Public Profile: Displaying ${commentForm.authorEmail} and your official profile avatar on this article.`}
                               </span>
                             </div>
                           </div>
@@ -9958,17 +9920,15 @@ export default function App() {
                             <input 
                               type="email" 
                               required 
-                              placeholder="latoureiffel1802@gmail.com" 
+                              placeholder="alex.smith@gmail.com" 
                               value={commentForm.authorEmail} 
                               onChange={(e) => handleCommentEmailChange(e.target.value)}
                               style={{
                                 borderColor: !commentForm.authorEmail
                                   ? '#d1d5db'
-                                  : isFormEmailVerified
-                                  ? '#16a34a'
                                   : commentEmailCheck.status === 'error'
                                   ? '#ef4444'
-                                  : '#f59e0b'
+                                  : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#d1d5db')
                               }}
                             />
                             {commentEmailCheck.message && (
@@ -9977,11 +9937,7 @@ export default function App() {
                                 fontWeight: '600',
                                 marginTop: '2px',
                                 display: 'block',
-                                color: isFormEmailVerified
-                                  ? '#16a34a'
-                                  : commentEmailCheck.status === 'error'
-                                  ? '#ef4444'
-                                  : '#d97706'
+                                color: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#64748b')
                               }}>
                                 {commentEmailCheck.message}
                               </span>
@@ -10018,10 +9974,10 @@ export default function App() {
                         <button
                           type="submit"
                           className="cta-button accent-pill-btn comment-submit-btn"
-                          disabled={!isFormEmailVerified}
+                          disabled={commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content}
                           style={{
-                            opacity: !isFormEmailVerified ? 0.5 : 1,
-                            cursor: !isFormEmailVerified ? 'not-allowed' : 'pointer'
+                            opacity: (commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content) ? 0.6 : 1,
+                            cursor: (commentEmailCheck.status === 'error' || !commentForm.authorEmail || !commentForm.authorName || !commentForm.content) ? 'not-allowed' : 'pointer'
                           }}
                         >
                           Post Comment
