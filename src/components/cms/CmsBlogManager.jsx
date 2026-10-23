@@ -44,6 +44,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   const [actionType, setActionType] = useState('draft'); // 'draft' | 'published' | 'scheduled'
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [toastNotice, setToastNotice] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editorTab, setEditorTab] = useState('visual'); // 'visual' | 'source' | 'preview'
   const [showMediaPicker, setShowMediaPicker] = useState(false);
@@ -1164,6 +1165,19 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                             <button
                               type="button"
                               className="cms-btn cms-btn-secondary cms-btn-sm"
+                              onClick={() => {
+                                const fullUrl = `${window.location.origin}/blog/${p.slug}/`;
+                                navigator.clipboard.writeText(fullUrl);
+                                setToastNotice('Article URL copied to clipboard!');
+                                setTimeout(() => setToastNotice(''), 3000);
+                              }}
+                              title="Copy public article link"
+                            >
+                              📋 Copy
+                            </button>
+                            <button
+                              type="button"
+                              className="cms-btn cms-btn-secondary cms-btn-sm"
                               onClick={() => handleEditPost(p.id)}
                             >
                               Edit
@@ -1186,6 +1200,28 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             </tbody>
           </table>
         </div>
+
+        {/* Floating Toast Notice */}
+        {toastNotice && (
+          <div style={{
+            position: 'fixed',
+            bottom: '28px',
+            right: '28px',
+            background: 'var(--cms-primary, #0f4c3a)',
+            color: '#ffffff',
+            padding: '12px 22px',
+            borderRadius: '9999px',
+            fontWeight: 700,
+            fontSize: '0.88rem',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <span>✔</span> {toastNotice}
+          </div>
+        )}
 
         {/* Pagination Bar */}
         <div className="cms-pagination">

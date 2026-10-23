@@ -120,7 +120,9 @@ if ($pdo) {
 // -------------------------------------------------------------------------
 if ($method === 'GET') {
     $slug = trim((string)($_GET['slug'] ?? ($_GET['post_slug'] ?? '')));
-    if ($slug === '') {
+    $cmsUser = class_exists('Security') ? Security::getCurrentUser() : null;
+
+    if ($slug === '' && !$cmsUser) {
         send_json(400, ['success' => false, 'error' => 'Missing blog post slug.']);
     }
 
@@ -129,15 +131,25 @@ if ($method === 'GET') {
     }
 
     try {
-        $stmt = $pdo->prepare("
-            SELECT id, post_slug, uid, display_name, author_email, public_email,
-                   email_verified, is_guest, photo_url, content, moderation_status, created_at
-            FROM blog_comments
-            WHERE post_slug = ? AND moderation_status = 'Approved'
-            ORDER BY created_at DESC
-        ");
-        $stmt->execute([$slug]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($slug !== '') {
+            $stmt = $pdo->prepare("
+                SELECT id, post_slug, uid, display_name, author_email, public_email,
+                       email_verified, is_guest, photo_url, content, moderation_status, created_at
+                FROM blog_comments
+                WHERE post_slug = ? AND moderation_status = 'Approved'
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$slug]);
+        } else {
+            // Admin query: fetch all comments across all articles
+            $stmt = $pdo->query("
+                SELECT id, post_slug, uid, display_name, author_email, public_email,
+                       email_verified, is_guest, photo_url, content, moderation_status, created_at
+                FROM blog_comments
+                ORDER BY created_at DESC
+            ");
+        }
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
         $comments = [];
         foreach ($rows as $row) {
@@ -218,6 +230,29 @@ if ($method === 'POST' || $method === 'DELETE') {
             send_json(200, ['success' => true, 'message' => 'Comment removed successfully.']);
         } catch (Exception $e) {
             send_json(500, ['success' => false, 'error' => 'Database error deleting comment: ' . $e->getMessage()]);
+        }
+    }
+
+    // 0b. Handle Comment Status Update (Admin moderation: Approved, Pending, Spam)
+    if (($payload['action'] ?? '') === 'update_status' || ($payload['action'] ?? '') === 'moderate') {
+        $cmsUser = class_exists('Security') ? Security::getCurrentUser() : null;
+        if (!$cmsUser) {
+            send_json(403, ['success' => false, 'error' => 'Authentication required for comment moderation.']);
+        }
+        $commentId = trim((string)($payload['id'] ?? ($payload['commentId'] ?? '')));
+        $newStatus = trim((string)($payload['status'] ?? ($payload['moderation_status'] ?? 'Approved')));
+        if (!in_array($newStatus, ['Approved', 'Pending', 'Spam'], true)) {
+            $newStatus = 'Approved';
+        }
+        if ($commentId === '') {
+            send_json(400, ['success' => false, 'error' => 'Missing comment ID.']);
+        }
+        try {
+            $stmt = $pdo->prepare("UPDATE blog_comments SET moderation_status = ?, updated_at = ? WHERE id = ?");
+            $stmt->execute([$newStatus, time(), $commentId]);
+            send_json(200, ['success' => true, 'message' => "Comment marked as {$newStatus}."]);
+        } catch (Exception $e) {
+            send_json(500, ['success' => false, 'error' => 'Failed to update comment status: ' . $e->getMessage()]);
         }
     }
 

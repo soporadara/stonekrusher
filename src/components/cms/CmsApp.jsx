@@ -16,6 +16,7 @@ import CmsSettings from './CmsSettings';
 import CmsSystemStatus from './CmsSystemStatus';
 import CmsProfileModal from './CmsProfileModal';
 import CmsTabErrorBoundary from './CmsTabErrorBoundary';
+import CmsCommentManager from './CmsCommentManager';
 
 export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -25,9 +26,9 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   // Layout & Theme State
   const [activeTab, setActiveTab] = useState(initialTab);
   const [tabOptions, setTabOptions] = useState({});
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('stonekrusher_cms_sidebar_collapsed') === 'true');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'light');
   const [editingPostId, setEditingPostId] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
@@ -139,54 +140,47 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     return perms.includes(requiredPerm);
   };
 
-  // Structured Professional Navigation Groups
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('stonekrusher_cms_sidebar_collapsed', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  // Structured Professional Navigation Groups (Donezo Style: MENU & GENERAL)
   const navGroups = [
     {
-      title: 'Overview',
+      title: 'MENU',
       items: [
-        { id: 'overview', label: 'Dashboard', icon: '📊', perm: 'posts.view' }
+        { id: 'overview', label: 'Dashboard', icon: '📊', perm: 'posts.view' },
+        { id: 'posts', label: 'Tasks & Articles', icon: '📝', perm: 'posts.view', badge: '12+' },
+        { id: 'comments', label: 'Customer Comments', icon: '💬', perm: 'posts.view' },
+        { id: 'products', label: 'Machinery Catalog', icon: '🚜', perm: 'products.view' },
+        { id: 'categories', label: 'Categories & Topics', icon: '🏷️', perm: 'categories.manage' },
+        { id: 'media', label: 'Media Library', icon: '🖼️', perm: 'media.view' },
+        { id: 'crm', label: 'CRM Leads & RFQ', icon: '📋', perm: 'posts.view' },
+        { id: 'support', label: 'Support Tickets', icon: '🎫', perm: 'posts.view' },
+        { id: 'seo', label: 'Analytics & SEO', icon: '🌐', perm: 'settings.manage' }
       ]
     },
     {
-      title: 'Content',
+      title: 'GENERAL',
       items: [
-        { id: 'posts', label: 'Blog Posts', icon: '📝', perm: 'posts.view' },
-        { id: 'categories', label: 'Categories & Topics', icon: '🏷️', perm: 'categories.manage' }
-      ]
-    },
-    {
-      title: 'Catalog',
-      items: [
-        { id: 'products', label: 'Products', icon: '🚜', perm: 'products.view' },
-        { id: 'media', label: 'Media Library', icon: '🖼️', perm: 'media.view' }
-      ]
-    },
-    {
-      title: 'Customer Operations',
-      items: [
-        { id: 'crm', label: 'CRM Leads & Inquiries', icon: '📋', perm: 'posts.view' },
-        { id: 'support', label: 'Support Tickets', icon: '🎫', perm: 'posts.view' }
-      ]
-    },
-    {
-      title: 'Marketing & SEO',
-      items: [
-        { id: 'seo', label: 'SEO Management', icon: '🌐', perm: 'settings.manage' }
-      ]
-    },
-    {
-      title: 'Administration',
-      items: [
-        { id: 'users', label: 'Users & Roles', icon: '👥', perm: 'users.view' },
+        { id: 'users', label: 'Team & Roles', icon: '👥', perm: 'users.view' },
         { id: 'security', label: 'Security Center', icon: '🛡️', perm: 'security.view' },
-        { id: 'settings', label: 'Website Settings', icon: '⚙️', perm: 'settings.manage' },
+        { id: 'settings', label: 'Settings', icon: '⚙️', perm: 'settings.manage' },
         { id: 'system', label: 'System & DB Status', icon: '🗄️', perm: 'settings.manage' }
       ]
     }
   ];
 
   // Current active navigation item metadata
-  let activeGroupTitle = 'Overview';
+  let activeGroupTitle = 'MENU';
   let activeItemLabel = 'Dashboard';
   for (const group of navGroups) {
     const found = group.items.find(i => i.id === activeTab);
@@ -200,27 +194,39 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   return (
     <div className={`cms-root cms-theme-${theme}`}>
 
-      {/* SIDEBAR NAVIGATION */}
+      {/* SIDEBAR NAVIGATION (DONEZO COLLAPSIBLE WITH HOVER TOOLTIP) */}
       <aside className={`cms-sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileDrawerOpen ? 'mobile-open' : ''}`}>
+        
+        {/* Brand Header */}
         <div className="cms-sidebar-header">
-          <div className="cms-brand">
-            <div className="cms-brand-logo">⚡</div>
+          <div
+            className="cms-brand"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? 'Click to expand sidebar' : undefined}
+            data-tooltip="Expand Sidebar"
+            style={{ cursor: 'pointer' }}
+          >
+            <div className="cms-brand-logo">
+              <span style={{ fontSize: '1.25rem' }}>⚙️</span>
+            </div>
             {!sidebarCollapsed && (
               <div className="cms-brand-text">
-                <span className="cms-brand-title">KONSTRUCTZ</span>
-                <span className="cms-brand-subtitle">StoneKrusher CMS</span>
+                <span className="cms-brand-title">Donezo / Krusher</span>
+                <span className="cms-brand-subtitle">StoneKrusher Ops</span>
               </div>
             )}
           </div>
           <button
             className="cms-sidebar-toggle"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={toggleSidebar}
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label="Toggle sidebar collapse"
           >
             {sidebarCollapsed ? '→' : '←'}
           </button>
         </div>
 
+        {/* Navigation Items with Floating Tooltip on Hover */}
         <nav className="cms-sidebar-nav">
           {navGroups.map((group, gIdx) => {
             const visibleItems = group.items.filter(item => canAccess(item.perm));
@@ -236,10 +242,14 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
                     key={item.id}
                     className={`cms-nav-item ${activeTab === item.id ? 'active' : ''}`}
                     onClick={() => handleNavigate(item.id)}
-                    title={sidebarCollapsed ? `${group.title} › ${item.label}` : undefined}
+                    data-tooltip={item.label}
+                    title={sidebarCollapsed ? item.label : undefined}
                   >
                     <span className="cms-nav-icon">{item.icon}</span>
                     {!sidebarCollapsed && <span>{item.label}</span>}
+                    {!sidebarCollapsed && item.badge && (
+                      <span className="cms-nav-badge">{item.badge}</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -247,10 +257,37 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
           })}
         </nav>
 
-        <div className="cms-sidebar-footer">
-          <button className="cms-back-site-btn" onClick={onBackToSite}>
-            <span>🌐</span>
-            {!sidebarCollapsed && <span>Back to Public Site</span>}
+        {/* Sidebar Footer with Donezo Promo Card */}
+        <div className="cms-sidebar-footer" style={{ border: 'none', padding: sidebarCollapsed ? '10px 8px' : '12px 14px' }}>
+          {!sidebarCollapsed ? (
+            <div className="cms-donezo-sidebar-card">
+              <div className="cms-donezo-sidebar-card-badge">LIVE FLEET</div>
+              <div className="cms-donezo-sidebar-card-title">StoneKrusher Ops</div>
+              <div className="cms-donezo-sidebar-card-subtitle">Live sync & catalog fleet active</div>
+              <button className="cms-donezo-sidebar-card-btn" onClick={onBackToSite}>
+                Open Public Site ↗
+              </button>
+            </div>
+          ) : (
+            <button
+              className="cms-nav-item cms-donezo-collapsed-btn"
+              onClick={onBackToSite}
+              data-tooltip="Open Public Website"
+              title="Open Public Website"
+            >
+              <span className="cms-nav-icon">🌐</span>
+            </button>
+          )}
+
+          <button
+            className="cms-nav-item"
+            onClick={handleLogout}
+            data-tooltip="Logout of Session"
+            title={sidebarCollapsed ? 'Logout' : undefined}
+            style={{ color: '#ef4444' }}
+          >
+            <span className="cms-nav-icon">🚪</span>
+            {!sidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -271,7 +308,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
       {/* MAIN VIEWPORT */}
       <div className={`cms-main-wrapper ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
 
-        {/* TOPBAR */}
+        {/* TOPBAR (DONEZO STYLE: SEARCH PILL, NOTIFICATION ICONS & USER CAPSULE) */}
         <header className="cms-topbar">
           <div className="cms-topbar-left">
             <button
@@ -282,66 +319,85 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               ☰
             </button>
 
-            <div className="cms-breadcrumbs">
-              <span>StoneKrusher CMS</span>
-              <span>/</span>
-              <span>{activeGroupTitle}</span>
-              <span>/</span>
-              <span className="crumb-active">{activeItemLabel}</span>
+            <button
+              className="cms-sidebar-toggle"
+              onClick={toggleSidebar}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              style={{ marginRight: '6px' }}
+            >
+              {sidebarCollapsed ? '⏩' : '⏪'}
+            </button>
+
+            {/* Donezo Pill Search Input */}
+            <div className="cms-donezo-search-bar">
+              <span className="cms-donezo-search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search task, post, product..."
+                className="cms-donezo-search-input"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target.value.trim()) {
+                    handleNavigate('posts');
+                  }
+                }}
+              />
+              <span className="cms-donezo-search-badge">⌘K</span>
             </div>
           </div>
 
           <div className="cms-topbar-right">
+            {/* Customer Comments Icon */}
+            <button
+              className="cms-donezo-icon-btn"
+              onClick={() => handleNavigate('comments')}
+              title="Customer Comments & Feedback"
+              data-tooltip="Customer Comments"
+            >
+              <span>💬</span>
+              <span className="cms-donezo-icon-dot" />
+            </button>
+
+            {/* Notification Bell */}
+            <button
+              className="cms-donezo-icon-btn"
+              onClick={() => handleNavigate('crm')}
+              title="Inbound Quotes & Leads"
+              data-tooltip="Inbound Quotes"
+            >
+              <span>🔔</span>
+              <span className="cms-donezo-icon-dot" />
+            </button>
+
             {/* Theme Toggle */}
             <button
-              className="cms-theme-toggle"
+              className="cms-donezo-icon-btn"
               onClick={toggleTheme}
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
             >
-              {theme === 'dark' ? '☀️' : '🌙'}
+              <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
             </button>
 
-            {/* User Profile Menu */}
+            {/* Donezo User Capsule */}
             <div
-              className="cms-user-menu"
+              className="cms-donezo-user-capsule"
               onClick={() => setShowProfileModal(true)}
-              title="Click to view Profile, Password & Google Account linking"
+              title="View Admin Profile & Security"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowProfileModal(true); }}
             >
-              <div className="cms-user-avatar">
-                {(currentUser.full_name || currentUser.username || 'A')[0].toUpperCase()}
+              <div className="cms-donezo-user-avatar">
+                {(currentUser.full_name || currentUser.username || 'T')[0].toUpperCase()}
               </div>
-              <div className="cms-user-info">
-                <span className="cms-user-name">
-                  {currentUser.full_name || currentUser.username}
-                  {currentUser.is_google_linked && (
-                    <span style={{ marginLeft: '6px', fontSize: '0.65rem', padding: '1px 6px', borderRadius: '999px', background: 'var(--cms-success-bg)', color: 'var(--cms-success)', fontWeight: '600' }}>
-                      Google
-                    </span>
-                  )}
+              <div className="cms-donezo-user-info">
+                <span className="cms-donezo-user-name">
+                  {currentUser.full_name || currentUser.username || 'Totok Michael'}
                 </span>
-                <span className="cms-user-role">{currentUser.role_display || currentUser.role}</span>
+                <span className="cms-donezo-user-email">
+                  {currentUser.email || `${(currentUser.username || 'admin').toLowerCase()}@stonekrusher.com`}
+                </span>
               </div>
             </div>
-
-            <button
-              className="cms-btn cms-btn-secondary cms-btn-sm"
-              onClick={() => setShowProfileModal(true)}
-              title="My Profile & Security"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-            >
-              <span>⚙️</span> Profile
-            </button>
-
-            <button
-              className="cms-btn cms-btn-secondary cms-btn-sm"
-              onClick={handleLogout}
-              title="End session"
-            >
-              Logout
-            </button>
           </div>
         </header>
 
@@ -358,6 +414,10 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
                 onNavigateTab={handleNavigate}
                 onSelectPost={handleSelectPostFromDashboard}
               />
+            )}
+
+            {activeTab === 'comments' && (
+              <CmsCommentManager csrfToken={csrfToken} />
             )}
 
             {activeTab === 'posts' && (

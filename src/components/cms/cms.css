@@ -7,11 +7,13 @@
   --cms-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --cms-font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
   
-  /* Primary StoneKrusher Brand Green Palette (Replaces red with green) */
-  --cms-primary: #607a4e;
-  --cms-primary-hover: #72915d;
-  --cms-primary-light: rgba(96, 122, 78, 0.16);
-  --cms-primary-border: rgba(96, 122, 78, 0.38);
+  /* Primary Donezo / StoneKrusher Forest Green Palette */
+  --cms-primary: #0f4c3a;
+  --cms-primary-hover: #135d46;
+  --cms-primary-light: rgba(15, 76, 58, 0.12);
+  --cms-primary-border: rgba(15, 76, 58, 0.28);
+  --cms-accent: #15803d;
+  --cms-accent-hover: #166534;
   
   /* Status Colors */
   --cms-success: #10b981;
@@ -27,52 +29,54 @@
 
   /* Radius & Transitions */
   --cms-radius-sm: 6px;
-  --cms-radius-md: 10px;
-  --cms-radius-lg: 16px;
+  --cms-radius-md: 12px;
+  --cms-radius-lg: 20px;
   --cms-radius-full: 9999px;
   --cms-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* DARK THEME (DEFAULT) */
+/* DARK THEME */
 .cms-theme-dark {
-  --cms-bg: #0b0f17;
-  --cms-bg-subtle: #111827;
-  --cms-card-bg: #161f30;
-  --cms-card-border: #243048;
-  --cms-card-hover: #1c273c;
-  --cms-header-bg: rgba(17, 24, 39, 0.85);
-  --cms-sidebar-bg: #0d131f;
-  --cms-sidebar-border: #1e293b;
+  --cms-bg: #0b1118;
+  --cms-bg-subtle: #111923;
+  --cms-bg-muted: #15202d;
+  --cms-card-bg: #131c27;
+  --cms-card-border: #1e2c3e;
+  --cms-card-hover: #192535;
+  --cms-header-bg: rgba(19, 28, 39, 0.92);
+  --cms-sidebar-bg: #0e1520;
+  --cms-sidebar-border: #1e2c3e;
   --cms-text: #f3f4f6;
   --cms-text-muted: #94a3b8;
   --cms-text-subtle: #64748b;
-  --cms-input-bg: #0f172a;
-  --cms-input-border: #334155;
-  --cms-input-focus: #72915d;
-  --cms-table-header: #131c2e;
-  --cms-table-row-hover: rgba(96, 122, 78, 0.06);
+  --cms-input-bg: #0d141e;
+  --cms-input-border: #2c3e55;
+  --cms-input-focus: #15803d;
+  --cms-table-header: #101824;
+  --cms-table-row-hover: rgba(21, 128, 61, 0.08);
   --cms-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
 }
 
-/* LIGHT THEME */
+/* LIGHT THEME (DONEZO CRISP CANVAS) */
 .cms-theme-light {
-  --cms-bg: #f8fafc;
-  --cms-bg-subtle: #f1f5f9;
+  --cms-bg: #f4f6f8;
+  --cms-bg-subtle: #eaedf0;
+  --cms-bg-muted: #f0f3f6;
   --cms-card-bg: #ffffff;
-  --cms-card-border: #e2e8f0;
-  --cms-card-hover: #f8fafc;
-  --cms-header-bg: rgba(255, 255, 255, 0.85);
+  --cms-card-border: rgba(0, 0, 0, 0.06);
+  --cms-card-hover: #fafbfc;
+  --cms-header-bg: rgba(255, 255, 255, 0.95);
   --cms-sidebar-bg: #ffffff;
-  --cms-sidebar-border: #e2e8f0;
-  --cms-text: #0f172a;
-  --cms-text-muted: #475569;
+  --cms-sidebar-border: #eaedf0;
+  --cms-text: #111827;
+  --cms-text-muted: #64748b;
   --cms-text-subtle: #94a3b8;
   --cms-input-bg: #ffffff;
-  --cms-input-border: #cbd5e1;
-  --cms-input-focus: #607a4e;
+  --cms-input-border: #d1d5db;
+  --cms-input-focus: #0f4c3a;
   --cms-table-header: #f8fafc;
-  --cms-table-row-hover: rgba(96, 122, 78, 0.05);
-  --cms-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --cms-table-row-hover: rgba(15, 76, 58, 0.04);
+  --cms-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 /* BASE WRAPPER */
@@ -98,20 +102,35 @@
   bottom: 0;
   left: 0;
   z-index: 50;
-  transition: width 0.3s ease, transform 0.3s ease;
+  transition: width 0.26s cubic-bezier(0.4, 0, 0.2, 1), transform 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
 }
 
 .cms-sidebar.collapsed {
-  width: 76px;
+  width: 76px !important;
+  overflow: visible !important;
 }
 
 .cms-sidebar-header {
-  height: 70px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
   border-bottom: 1px solid var(--cms-sidebar-border);
+}
+
+.cms-sidebar.collapsed .cms-sidebar-header {
+  padding: 0 14px;
+  justify-content: center;
+}
+
+.cms-sidebar.collapsed .cms-brand-text {
+  display: none !important;
+}
+
+.cms-sidebar.collapsed .cms-sidebar-toggle {
+  display: none !important;
 }
 
 .cms-brand {
@@ -123,18 +142,24 @@
 }
 
 .cms-brand-logo {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  border-radius: var(--cms-radius-md);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0f4c3a, #15803d);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000000;
+  color: #ffffff;
   font-weight: 900;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 76, 58, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.cms-brand-logo:hover {
+  transform: scale(1.05);
 }
 
 .cms-brand-text {
@@ -145,13 +170,13 @@
 
 .cms-brand-title {
   font-weight: 800;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
   color: var(--cms-text);
 }
 
 .cms-brand-subtitle {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--cms-primary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -163,11 +188,12 @@
   border: none;
   color: var(--cms-text-muted);
   cursor: pointer;
-  padding: 6px;
+  padding: 6px 10px;
   border-radius: var(--cms-radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.05rem;
   transition: var(--cms-transition);
 }
 
@@ -178,38 +204,48 @@
 
 .cms-sidebar-nav {
   flex: 1;
-  padding: 16px 10px;
+  padding: 16px 12px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+.cms-sidebar.collapsed .cms-sidebar-nav {
+  overflow: visible !important;
+  padding: 16px 10px !important;
+}
+
+.cms-sidebar.collapsed .cms-nav-group-label {
+  display: none !important;
+}
+
 .cms-nav-group-label {
   font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--cms-text-subtle);
-  font-weight: 700;
-  padding: 12px 12px 4px;
+  font-weight: 800;
+  padding: 14px 12px 6px;
 }
 
 .cms-nav-item {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 10px 14px;
   color: var(--cms-text-muted);
-  border-radius: var(--cms-radius-md);
+  border-radius: 12px;
   text-decoration: none;
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 550;
   cursor: pointer;
   border: none;
   background: transparent;
   width: 100%;
   text-align: left;
-  transition: var(--cms-transition);
+  transition: all 0.16s ease;
   position: relative;
   white-space: nowrap;
 }
@@ -229,20 +265,90 @@
   content: '';
   position: absolute;
   left: 0;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
   background-color: var(--cms-primary);
-  border-radius: 0 var(--cms-radius-sm) var(--cms-radius-sm) 0;
+  border-radius: 0 4px 4px 0;
 }
 
 .cms-nav-icon {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  width: 24px;
   flex-shrink: 0;
+}
+
+.cms-sidebar.collapsed .cms-nav-item {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+  width: 100% !important;
+}
+
+.cms-sidebar.collapsed .cms-nav-item span:not(.cms-nav-icon) {
+  display: none !important;
+}
+
+.cms-sidebar.collapsed .cms-nav-badge {
+  display: none !important;
+}
+
+/* ==============================================================================
+   COLLAPSED SIDEBAR FLOATING HOVER TOOLTIP WITH POINTER ARROW
+   ============================================================================== */
+.cms-sidebar.collapsed .cms-nav-item[data-tooltip]::after,
+.cms-sidebar.collapsed .cms-donezo-collapsed-btn[data-tooltip]::after,
+.cms-sidebar.collapsed .cms-brand[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-8px);
+  background: #0f4c3a;
+  color: #ffffff;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.16s ease;
+  z-index: 99999;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.01em;
+}
+
+.cms-sidebar.collapsed .cms-nav-item[data-tooltip]::before,
+.cms-sidebar.collapsed .cms-donezo-collapsed-btn[data-tooltip]::before,
+.cms-sidebar.collapsed .cms-brand[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 7px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-8px);
+  border-width: 6px 7px 6px 0;
+  border-style: solid;
+  border-color: transparent #0f4c3a transparent transparent;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease, transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.16s ease;
+  z-index: 99999;
+}
+
+.cms-sidebar.collapsed .cms-nav-item[data-tooltip]:hover::after,
+.cms-sidebar.collapsed .cms-nav-item[data-tooltip]:hover::before,
+.cms-sidebar.collapsed .cms-donezo-collapsed-btn[data-tooltip]:hover::after,
+.cms-sidebar.collapsed .cms-donezo-collapsed-btn[data-tooltip]:hover::before,
+.cms-sidebar.collapsed .cms-brand[data-tooltip]:hover::after,
+.cms-sidebar.collapsed .cms-brand[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(0);
 }
 
 .cms-nav-badge {
@@ -416,6 +522,306 @@
   color: var(--cms-primary);
   font-weight: 600;
   text-transform: capitalize;
+}
+
+/* ==============================================================================
+   DONEZO DESIGN SYSTEM COMPONENTS (MATCHING ATTACHED DRIBBBLE UI)
+   ============================================================================== */
+
+/* Topbar Search Pill */
+.cms-donezo-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cms-card-bg);
+  border: 1px solid var(--cms-card-border);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  width: 280px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cms-donezo-search-bar:focus-within {
+  width: 340px;
+  border-color: var(--cms-primary);
+  box-shadow: 0 0 0 3px rgba(15, 76, 58, 0.12);
+}
+
+.cms-donezo-search-icon {
+  font-size: 0.95rem;
+  opacity: 0.6;
+}
+
+.cms-donezo-search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.86rem;
+  color: var(--cms-text);
+  width: 100%;
+}
+
+.cms-donezo-search-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--cms-bg-muted, rgba(0,0,0,0.06));
+  color: var(--cms-text-subtle);
+  border: 1px solid var(--cms-card-border);
+}
+
+/* Donezo Topbar Icons */
+.cms-donezo-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--cms-card-border);
+  background: var(--cms-card-bg);
+  color: var(--cms-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cms-donezo-icon-btn:hover {
+  background: var(--cms-card-hover);
+  border-color: var(--cms-primary);
+  transform: translateY(-1px);
+}
+
+.cms-donezo-icon-dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 2px var(--cms-card-bg);
+}
+
+/* Donezo User Capsule */
+.cms-donezo-user-capsule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 4px 5px;
+  border-radius: 9999px;
+  border: 1px solid var(--cms-card-border);
+  background: var(--cms-card-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cms-donezo-user-capsule:hover {
+  border-color: var(--cms-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.cms-donezo-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f4c3a, #15803d);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow: hidden;
+}
+
+.cms-donezo-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-donezo-user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--cms-text);
+  line-height: 1.2;
+}
+
+.cms-donezo-user-email {
+  font-size: 0.7rem;
+  color: var(--cms-text-muted);
+  line-height: 1.2;
+}
+
+/* Sidebar Promo Card (Donezo bottom card) */
+.cms-donezo-sidebar-card {
+  margin: 12px 10px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0f4c3a, #093326);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(15, 76, 58, 0.25);
+}
+
+.cms-donezo-sidebar-card::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  bottom: -20px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cms-donezo-sidebar-card-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  margin-bottom: 8px;
+}
+
+.cms-donezo-sidebar-card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.cms-donezo-sidebar-card-subtitle {
+  font-size: 0.72rem;
+  opacity: 0.82;
+  margin-bottom: 12px;
+}
+
+.cms-donezo-sidebar-card-btn {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f4c3a;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cms-donezo-sidebar-card-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cms-sidebar.collapsed .cms-donezo-sidebar-card {
+  display: none !important;
+}
+
+/* Donezo 20px Rounded Cards */
+.cms-donezo-card {
+  background: var(--cms-card-bg);
+  border: 1px solid var(--cms-card-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cms-donezo-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+}
+
+.cms-donezo-card.dark-green {
+  background: #0f4c3a;
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 10px 30px rgba(15, 76, 58, 0.35);
+}
+
+.cms-donezo-card.dark-green .cms-donezo-kpi-sub {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.cms-donezo-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--cms-card-border);
+  background: var(--cms-bg-muted, rgba(0,0,0,0.03));
+  color: var(--cms-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cms-donezo-card.dark-green .cms-donezo-arrow-btn {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.cms-donezo-arrow-btn:hover {
+  transform: scale(1.08);
+}
+
+.cms-donezo-btn-primary {
+  background: #0f4c3a;
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(15, 76, 58, 0.25);
+}
+
+.cms-donezo-btn-primary:hover {
+  background: #135d46;
+  transform: translateY(-1px);
+}
+
+.cms-donezo-btn-secondary {
+  background: var(--cms-card-bg);
+  color: var(--cms-text);
+  border: 1px solid var(--cms-card-border);
+  border-radius: 9999px;
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.cms-donezo-btn-secondary:hover {
+  background: var(--cms-card-hover);
+  border-color: var(--cms-primary);
+}
+
+.cms-donezo-btn-sm {
+  padding: 6px 16px;
+  font-size: 0.8rem;
 }
 
 /* CONTENT CANVAS */

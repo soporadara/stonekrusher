@@ -10,6 +10,7 @@ export default function CmsProductManager({ csrfToken }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryList, setCategoryList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [toastNotice, setToastNotice] = useState('');
 
   // Editor Modal State
   const [showModal, setShowModal] = useState(false);
@@ -290,6 +291,18 @@ export default function CmsProductManager({ csrfToken }) {
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button
                           className="cms-btn cms-btn-secondary cms-btn-sm"
+                          onClick={() => {
+                            const fullUrl = `${window.location.origin}/#catalog`;
+                            navigator.clipboard.writeText(fullUrl);
+                            setToastNotice(`Product "${p.name}" link copied!`);
+                            setTimeout(() => setToastNotice(''), 3000);
+                          }}
+                          title="Copy product link"
+                        >
+                          📋 Copy
+                        </button>
+                        <button
+                          className="cms-btn cms-btn-secondary cms-btn-sm"
                           onClick={() => handleOpenEdit(p.id)}
                         >
                           Edit
@@ -465,6 +478,27 @@ export default function CmsProductManager({ csrfToken }) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {/* Floating Toast Notice */}
+      {toastNotice && (
+        <div style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          background: 'var(--cms-primary, #0f4c3a)',
+          color: '#ffffff',
+          padding: '12px 22px',
+          borderRadius: '9999px',
+          fontWeight: 700,
+          fontSize: '0.88rem',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>✔</span> {toastNotice}
         </div>
       )}
     </div>

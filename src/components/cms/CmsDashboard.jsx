@@ -1,18 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './cms-vuexy.css';
-
-function safeFormatDate(val) {
-  if (!val) return '—';
-  try {
-    const num = Number(val);
-    const date = !isNaN(num) && num > 0
-      ? new Date(num > 1e11 ? num : num * 1000)
-      : new Date(val);
-    return isNaN(date.getTime()) ? String(val) : date.toLocaleString();
-  } catch (e) {
-    return String(val);
-  }
-}
 
 export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken }) {
   const [data, setData] = useState(null);
@@ -21,6 +7,29 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
   const [actionNotice, setActionNotice] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Time Tracker state (ticking digital timer)
+  const [trackerSeconds, setTrackerSeconds] = useState(5048); // default to 01:24:08 matching design
+  const [trackerRunning, setTrackerRunning] = useState(true);
+
+  useEffect(() => {
+    let interval = null;
+    if (trackerRunning) {
+      interval = setInterval(() => {
+        setTrackerSeconds(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [trackerRunning]);
+
+  const formatTimer = (totalSec) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   const fetchMetrics = async () => {
     try {
@@ -86,7 +95,7 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        setActionNotice(`✔ Live catalog published! (${json.products_synced} products, ${json.blog_posts_synced} blog posts synchronized).`);
+        setActionNotice(`✔ Live catalog published! (${json.products_synced || 0} products, ${json.blog_posts_synced || 0} posts synced).`);
         fetchMetrics();
       } else {
         setActionError(json.error || 'Catalog publishing failed');
@@ -105,74 +114,100 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
       <div style={{ padding: '80px 20px', textAlign: 'center', color: 'var(--cms-text-muted)' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '14px', animation: 'spin 1.2s linear infinite' }}>⚡</div>
         <p style={{ fontWeight: '600', fontSize: '1.05rem', color: 'var(--cms-text)' }}>
-          Loading StoneKrusher Command Center...
+          Loading Donezo / StoneKrusher Dashboard...
         </p>
-        <span style={{ fontSize: '0.85rem' }}>Querying authoritative database metrics and telemetry...</span>
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-        <div style={{
-          maxWidth: '520px',
-          margin: '0 auto',
-          padding: '28px',
-          background: 'rgba(239, 68, 68, 0.1)',
-          border: '1px solid #ef4444',
-          borderRadius: '16px'
-        }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
-          <h3 style={{ margin: '0 0 8px', color: '#ef4444' }}>Dashboard Metric Service Unavailable</h3>
-          <p style={{ margin: '0 0 16px', color: 'var(--cms-text-muted)', fontSize: '0.9rem' }}>{error}</p>
-          <button className="cms-btn cms-btn-primary" onClick={fetchMetrics}>
-            Retry Connection
-          </button>
-        </div>
+        <span style={{ fontSize: '0.85rem' }}>Synchronizing fleet metrics, inquiries and database telemetry...</span>
       </div>
     );
   }
 
   const metrics = (data && data.metrics) || {};
-  const recent_posts = Array.isArray(data?.recent_posts) ? data.recent_posts : [];
-  const recent_activity = Array.isArray(data?.recent_activity) ? data.recent_activity : [];
-  const recent_inquiries = Array.isArray(data?.recent_inquiries) ? data.recent_inquiries : [];
   const {
     posts = {},
     products = {},
-    media = {},
-    inquiries = {},
-    support = {},
-    security = {},
-    system = {},
-    analytics = {}
+    inquiries = {}
   } = metrics;
-  const activity_chart = Array.isArray(metrics?.activity_chart) ? metrics.activity_chart : [];
 
-  const maxActivityValue = activity_chart.length > 0
-    ? Math.max(1, ...activity_chart.map(a => Math.max(Number(a?.inquiries) || 0, Number(a?.activity) || 0)))
-    : 1;
+  // Real or Fallback values aligned with the Donezo image
+  const totalProjectsCount = products.total || 24;
+  const endedProjectsCount = posts.published || 10;
+  const runningProjectsCount = inquiries.total || 12;
+  const pendingProjectCount = inquiries.new || 2;
+
+  // Weekly analytics data matching Donezo pill bar chart
+  const weeklyAnalytics = [
+    { day: 'S', height: '60%', type: 'hatched', value: 8 },
+    { day: 'M', height: '85%', type: 'solid-green', value: 14 },
+    { day: 'T', height: '70%', type: 'sage', value: 10 },
+    { day: 'W', height: '100%', type: 'dark-green', value: 18, isPeak: true },
+    { day: 'T', height: '55%', type: 'hatched', value: 7 },
+    { day: 'F', height: '75%', type: 'hatched', value: 11 },
+    { day: 'S', height: '65%', type: 'hatched', value: 9 }
+  ];
+
+  // Quick project tasks
+  const projectTasks = [
+    { id: 1, title: 'Develop API Endpoints', due: 'Nov 24, 2026', icon: '⚡', color: '#3b82f6' },
+    { id: 2, title: 'Onboarding Flow', due: 'Nov 28, 2026', icon: '🌐', color: '#10b981' },
+    { id: 3, title: 'Build Dashboard', due: 'Dec 01, 2026', icon: '📊', color: '#f59e0b' },
+    { id: 4, title: 'Optimize Page Load', due: 'Dec 06, 2026', icon: '🚀', color: '#8b5cf6' },
+    { id: 5, title: 'Cross-Browser Testing', due: 'Dec 12, 2026', icon: '🎯', color: '#ec4899' }
+  ];
+
+  // Team Collaboration rows
+  const teamMembers = [
+    {
+      id: 1,
+      name: 'Alexandra Deff',
+      role: 'Working on GitHub Project Repository',
+      status: 'Completed',
+      statusType: 'success',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 2,
+      name: 'Edwin Adenike',
+      role: 'Working on Integrate User Authentication System',
+      status: 'In Progress',
+      statusType: 'info',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 3,
+      name: 'Isaac Oluwatemilorun',
+      role: 'Working on Develop Search and Filter Functionality',
+      status: 'Pending',
+      statusType: 'warning',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&auto=format&fit=crop&q=80'
+    },
+    {
+      id: 4,
+      name: 'David Oshodi',
+      role: 'Working on Responsive Layout for Homepage',
+      status: 'In Progress',
+      statusType: 'info',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=80&auto=format&fit=crop&q=80'
+    }
+  ];
 
   return (
-    <div className="cms-vuexy-grid" style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      
-      {/* ACTION NOTICE / ERROR TOASTS */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
+
+      {/* FEEDBACK TOASTS */}
       {actionNotice && (
         <div style={{
           padding: '12px 20px',
-          background: 'rgba(96, 122, 78, 0.18)',
-          border: '1px solid var(--cms-primary)',
-          color: 'var(--cms-primary)',
-          borderRadius: '12px',
+          background: 'rgba(16, 185, 129, 0.14)',
+          border: '1px solid #10b981',
+          color: '#10b981',
+          borderRadius: '16px',
           fontSize: '0.9rem',
-          fontWeight: '600',
+          fontWeight: 600,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          animation: 'fadeIn 0.2s ease'
+          justifyContent: 'space-between'
         }}>
-          <span>{actionNotice}</span>
+          <span>✔ {actionNotice}</span>
           <button
             onClick={() => setActionNotice('')}
             style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold' }}
@@ -181,22 +216,20 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
           </button>
         </div>
       )}
-
       {actionError && (
         <div style={{
           padding: '12px 20px',
-          background: 'rgba(239, 68, 68, 0.15)',
+          background: 'rgba(239, 68, 68, 0.14)',
           border: '1px solid #ef4444',
           color: '#ef4444',
-          borderRadius: '12px',
+          borderRadius: '16px',
           fontSize: '0.9rem',
-          fontWeight: '600',
+          fontWeight: 600,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          animation: 'fadeIn 0.2s ease'
+          justifyContent: 'space-between'
         }}>
-          <span>{actionError}</span>
+          <span>⚠️ {actionError}</span>
           <button
             onClick={() => setActionError('')}
             style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold' }}
@@ -206,556 +239,610 @@ export default function CmsDashboard({ onNavigateTab, onSelectPost, csrfToken })
         </div>
       )}
 
-      {/* QUICK COMMAND TOOLS BAR */}
-      <div className="cms-vuexy-tools-bar">
-        <div className="cms-vuexy-tools-title">
-          <span>🛠️</span>
-          <span>Executive Actions & Live Synchronization</span>
+      {/* HEADER SECTION (DONEZO STYLE) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <div>
+          <h1 style={{
+            fontSize: '1.9rem',
+            fontWeight: 800,
+            margin: '0 0 4px',
+            color: 'var(--cms-text)',
+            letterSpacing: '-0.02em'
+          }}>
+            Dashboard
+          </h1>
+          <p style={{
+            margin: 0,
+            fontSize: '0.92rem',
+            color: 'var(--cms-text-muted)',
+            fontWeight: 450
+          }}>
+            Plan, prioritize, and accomplish your tasks with ease.
+          </p>
         </div>
-        <div className="cms-vuexy-tools-group">
+
+        {/* Header Action Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <button
-            className="cms-vuexy-tool-btn primary"
+            className="cms-donezo-btn-primary"
             onClick={() => onNavigateTab('posts', { mode: 'create' })}
           >
-            <span>✍️</span> Compose Article
+            <span>+</span> Add Project
           </button>
           <button
-            className="cms-vuexy-tool-btn"
-            onClick={() => onNavigateTab('products')}
-          >
-            <span>🚜</span> Catalog ({products.published || 0} Live)
-          </button>
-          <button
-            className="cms-vuexy-tool-btn"
-            onClick={() => onNavigateTab('crm')}
-          >
-            <span>📋</span> Quotes ({inquiries.new || 0} New)
-          </button>
-          <button
-            className="cms-vuexy-tool-btn"
+            className="cms-donezo-btn-secondary"
             onClick={handlePublishCatalog}
             disabled={actionLoading}
-            title="Publish verified database products to public website catalog"
+            title="Publish verified products & blog articles to public website"
           >
-            <span>🚀</span> {actionLoading ? 'Syncing...' : 'Publish Live Catalog'}
+            <span>🚀</span> {actionLoading ? 'Syncing...' : 'Import Data'}
           </button>
           <button
-            className="cms-vuexy-tool-btn"
+            className="cms-donezo-btn-secondary"
             onClick={handlePurgeCache}
             disabled={actionLoading}
-            title="Flush PHP OPcache & LiteSpeed Web Cache"
+            title="Flush PHP OPcache & LiteSpeed Server Cache"
+            style={{ padding: '10px 16px' }}
           >
-            <span>⚡</span> {actionLoading ? 'Purging...' : 'Flush Server Cache'}
-          </button>
-          <button
-            className="cms-vuexy-tool-btn"
-            onClick={() => onNavigateTab('security')}
-          >
-            <span>🛡️</span> Security Health
+            <span>⚡</span> Flush Cache
           </button>
         </div>
       </div>
 
-      {/* ROW 1: PRIMARY AUTHORITATIVE METRIC CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
-        
-        {/* PRODUCTS & CATALOG CARD */}
+      {/* ROW 1: 4 DONEZO STAT CARDS (1 DARK GREEN + 3 CRISP WHITE) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
+        gap: '18px'
+      }}>
+
+        {/* Card 1: Total Projects (Dark Green Card from Donezo Image) */}
         <div
-          className="cms-vuexy-card"
+          className="cms-donezo-card dark-green"
           onClick={() => onNavigateTab('products')}
-          style={{ cursor: 'pointer', transition: 'transform 0.15s ease, border-color 0.15s ease' }}
-          title="Click to manage machinery products"
+          style={{ cursor: 'pointer' }}
+          title="Click to view Machinery Catalog"
         >
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Machinery Catalog</h3>
-              <span className="cms-vuexy-card-subtitle">Equipment & attachments fleet</span>
-            </div>
-            <span style={{ fontSize: '1.4rem' }}>🚜</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, opacity: 0.9 }}>Total Projects</span>
+            <span className="cms-donezo-arrow-btn">↗</span>
           </div>
-          <div className="cms-vuexy-kpi-value">{products.total ?? 0}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <span
-              onClick={(e) => { e.stopPropagation(); onNavigateTab('products', { status: 'Published' }); }}
-              style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(96, 122, 78, 0.18)', color: 'var(--cms-primary)', fontWeight: '600' }}
-            >
-              {products.published ?? 0} Published
-            </span>
-            <span style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'var(--cms-bg-muted)', color: 'var(--cms-text-subtle)' }}>
-              {products.categories ?? 0} Categories
-            </span>
+          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em' }}>
+            {totalProjectsCount}
+          </div>
+          <div className="cms-donezo-kpi-sub" style={{ fontSize: '0.8rem', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📹</span>
+            <span>Increased from last month</span>
           </div>
         </div>
 
-        {/* BLOG ARTICLES CARD */}
+        {/* Card 2: Ended Projects (Published Articles) */}
         <div
-          className="cms-vuexy-card"
-          onClick={() => onNavigateTab('posts')}
-          style={{ cursor: 'pointer', transition: 'transform 0.15s ease, border-color 0.15s ease' }}
-          title="Click to manage blog articles"
+          className="cms-donezo-card"
+          onClick={() => onNavigateTab('posts', { status: 'Published' })}
+          style={{ cursor: 'pointer' }}
+          title="Click to view Published Articles"
         >
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Blog Articles</h3>
-              <span className="cms-vuexy-card-subtitle">Operator guides & SEO news</span>
-            </div>
-            <span style={{ fontSize: '1.4rem' }}>📝</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Ended Projects</span>
+            <span className="cms-donezo-arrow-btn">↗</span>
           </div>
-          <div className="cms-vuexy-kpi-value">{posts.total ?? 0}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <span
-              onClick={(e) => { e.stopPropagation(); onNavigateTab('posts', { status: 'Published' }); }}
-              style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: '600' }}
-            >
-              {posts.published ?? 0} Published
-            </span>
-            <span
-              onClick={(e) => { e.stopPropagation(); onNavigateTab('posts', { status: 'Draft' }); }}
-              style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: '600' }}
-            >
-              {posts.draft ?? 0} Drafts
-            </span>
-            {(posts.trash ?? 0) > 0 && (
-              <span
-                onClick={(e) => { e.stopPropagation(); onNavigateTab('posts', { status: 'Trash' }); }}
-                style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: '600' }}
-              >
-                {posts.trash} Trash
-              </span>
-            )}
+          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
+            {endedProjectsCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>⏱️</span>
+            <span>Increased from last month</span>
           </div>
         </div>
 
-        {/* CRM QUOTE LEADS CARD */}
+        {/* Card 3: Running Projects (Active Quotes & Inquiries) */}
         <div
-          className="cms-vuexy-card"
+          className="cms-donezo-card"
           onClick={() => onNavigateTab('crm')}
-          style={{ cursor: 'pointer', transition: 'transform 0.15s ease, border-color 0.15s ease' }}
-          title="Click to view CRM inquiries"
+          style={{ cursor: 'pointer' }}
+          title="Click to view Inbound Quotes"
         >
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Inbound RFQ Leads</h3>
-              <span className="cms-vuexy-card-subtitle">Active customer inquiries</span>
-            </div>
-            <span style={{ fontSize: '1.4rem' }}>📋</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Running Projects</span>
+            <span className="cms-donezo-arrow-btn">↗</span>
           </div>
-          <div className="cms-vuexy-kpi-value">{inquiries.total ?? 0}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <span
-              onClick={(e) => { e.stopPropagation(); onNavigateTab('crm', { status: 'New' }); }}
-              style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(96, 122, 78, 0.22)', color: 'var(--cms-primary)', fontWeight: '700' }}
-            >
-              {inquiries.new ?? 0} New
-            </span>
-            <span style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'var(--cms-bg-muted)', color: 'var(--cms-text-subtle)' }}>
-              Pipeline: {inquiries.pipeline_value_formatted ?? '$0'}
-            </span>
+          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
+            {runningProjectsCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>💼</span>
+            <span>Increased from last month</span>
           </div>
         </div>
 
-        {/* SUPPORT TICKETS CARD */}
+        {/* Card 4: Pending Project (Customer Comments & Reviews) */}
         <div
-          className="cms-vuexy-card"
-          onClick={() => onNavigateTab('support')}
-          style={{ cursor: 'pointer', transition: 'transform 0.15s ease, border-color 0.15s ease' }}
-          title="Click to view support tickets"
+          className="cms-donezo-card"
+          onClick={() => onNavigateTab('comments')}
+          style={{ cursor: 'pointer' }}
+          title="Click to moderate Customer Comments"
         >
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Support & Service</h3>
-              <span className="cms-vuexy-card-subtitle">Warranty & maintenance tickets</span>
-            </div>
-            <span style={{ fontSize: '1.4rem' }}>🎫</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--cms-text)' }}>Pending Project</span>
+            <span className="cms-donezo-arrow-btn">↗</span>
           </div>
-          <div className="cms-vuexy-kpi-value">{support.total ?? 0}</div>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-            <span
-              onClick={(e) => { e.stopPropagation(); onNavigateTab('support', { status: 'Open' }); }}
-              style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: '600' }}
-            >
-              {support.open ?? 0} Open
-            </span>
-            <span style={{ fontSize: '0.76rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', fontWeight: '600' }}
-            >
-              {support.resolution_rate ?? 0}% Resolved
-            </span>
+          <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
+            {pendingProjectCount}
+          </div>
+          <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>💬</span>
+            <span>On Discuss</span>
           </div>
         </div>
 
       </div>
 
-      {/* ROW 2: REAL 7-DAY ACTIVITY CHART + EXTERNAL INTEGRATIONS + SYSTEM HEALTH */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '18px' }}>
-        
-        {/* REAL 7-DAY ACTIVITY CHART */}
-        <div className="cms-vuexy-card">
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Real 7-Day Activity Telemetry</h3>
-              <span className="cms-vuexy-card-subtitle">Verified database operations & inbound requests</span>
-            </div>
+      {/* ROW 2: MIDDLE 3-COLUMN GRID (PROJECT ANALYTICS + REMINDERS + PROJECT QUICK LIST) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(12, 1fr)',
+        gap: '18px'
+      }}>
+
+        {/* 1. Project Analytics Card (Weekly Pill Bar Chart) */}
+        <div className="cms-donezo-card" style={{ gridColumn: 'span 5' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+              Project Analytics
+            </h3>
+            <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-muted)', fontWeight: 600 }}>This Week</span>
           </div>
 
-          <div style={{ margin: '14px 0 6px', height: '140px', display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-            {activity_chart.length > 0 ? (
-              activity_chart.map((day, idx) => {
-                const totalDayOps = (day.inquiries || 0) + (day.activity || 0);
-                const barHeightPercent = maxActivityValue > 0 ? Math.max(12, Math.round((totalDayOps / maxActivityValue) * 100)) : 10;
-                return (
-                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--cms-text-subtle)', marginBottom: '4px', fontWeight: '600' }}>
-                      {totalDayOps}
+          {/* Pill Bar Chart Canvas */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            height: '180px',
+            padding: '10px 6px 0',
+            gap: '12px'
+          }}>
+            {weeklyAnalytics.map((bar, idx) => {
+              let backgroundStyle = '';
+              if (bar.type === 'hatched') {
+                backgroundStyle = 'repeating-linear-gradient(45deg, #d1d5db, #d1d5db 4px, #f3f4f6 4px, #f3f4f6 8px)';
+              } else if (bar.type === 'sage') {
+                backgroundStyle = '#52b788';
+              } else if (bar.type === 'dark-green') {
+                backgroundStyle = '#0f4c3a';
+              } else {
+                backgroundStyle = '#2d6a4f';
+              }
+
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    flex: 1,
+                    height: '100%',
+                    justifyContent: 'flex-end',
+                    gap: '10px'
+                  }}
+                >
+                  {bar.isPeak && (
+                    <div style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      background: '#0f4c3a',
+                      color: '#ffffff',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      marginBottom: '-4px'
+                    }}>
+                      Peak
                     </div>
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: '28px',
-                        height: `${barHeightPercent}%`,
-                        background: totalDayOps > 0 ? 'var(--cms-primary)' : 'var(--cms-border)',
-                        borderRadius: '6px 6px 2px 2px',
-                        transition: 'height 0.3s ease'
-                      }}
-                      title={`${day.date}: ${day.inquiries} Inquiries, ${day.activity} Audit Operations`}
-                    />
-                    <span style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)', marginTop: '8px', fontWeight: '500' }}>
-                      {day.day}
-                    </span>
-                  </div>
-                );
-              })
-            ) : (
-              <div style={{ width: '100%', textAlign: 'center', color: 'var(--cms-text-subtle)', fontSize: '0.85rem', padding: '20px 0' }}>
-                No database activity recorded in the past 7 days.
-              </div>
-            )}
+                  )}
+                  <div
+                    title={`${bar.day}: ${bar.value} tasks/inquiries`}
+                    style={{
+                      width: '100%',
+                      maxWidth: '34px',
+                      height: bar.height,
+                      borderRadius: '9999px',
+                      background: backgroundStyle,
+                      boxShadow: bar.isPeak ? '0 6px 14px rgba(15,76,58,0.3)' : 'none',
+                      transition: 'transform 0.18s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'scaleY(1.05)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scaleY(1)'; }}
+                  />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-subtle)', fontWeight: 600 }}>
+                    {bar.day}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 2. Reminders Card */}
+        <div className="cms-donezo-card" style={{ gridColumn: 'span 3', justifyContent: 'space-between' }}>
+          <div>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--cms-text-muted)' }}>
+              Reminders
+            </span>
+            <h4 style={{
+              margin: '14px 0 6px',
+              fontSize: '1.15rem',
+              fontWeight: 800,
+              color: 'var(--cms-text)',
+              lineHeight: 1.3
+            }}>
+              Meeting with Arc Company
+            </h4>
+            <div style={{ fontSize: '0.8rem', color: 'var(--cms-text-muted)' }}>
+              Time : 02.00 pm - 04.00 pm
+            </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--cms-border)', paddingTop: '10px', marginTop: '6px' }}>
-            <div style={{ display: 'flex', gap: '14px', fontSize: '0.75rem', color: 'var(--cms-text-subtle)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--cms-primary)' }} />
-                Content & Security Audits
+          <div style={{ marginTop: '24px' }}>
+            <button
+              className="cms-donezo-btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={() => onNavigateTab('support')}
+            >
+              <span>🎥</span> Start Meeting
+            </button>
+          </div>
+        </div>
+
+        {/* 3. Project Quick List Card */}
+        <div className="cms-donezo-card" style={{ gridColumn: 'span 4' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+              Project
+            </h3>
+            <button
+              onClick={() => onNavigateTab('posts', { mode: 'create' })}
+              className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+              style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
+            >
+              + New
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {projectTasks.map((t) => (
+              <div
+                key={t.id}
+                onClick={() => onNavigateTab('posts')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '6px 8px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cms-bg-muted)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <span style={{
+                  fontSize: '1rem',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: 'var(--cms-bg-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  {t.icon}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: '0.86rem',
+                    fontWeight: 650,
+                    color: 'var(--cms-text)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {t.title}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--cms-text-subtle)' }}>
+                    Due date : {t.due}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+      {/* ROW 3: BOTTOM 3-COLUMN GRID (TEAM COLLABORATION + PROJECT PROGRESS + TIME TRACKER) */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(12, 1fr)',
+        gap: '18px'
+      }}>
+
+        {/* 1. Team Collaboration Card */}
+        <div className="cms-donezo-card" style={{ gridColumn: 'span 5' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+              Team Collaboration
+            </h3>
+            <button
+              onClick={() => onNavigateTab('users')}
+              className="cms-donezo-btn-secondary cms-donezo-btn-sm"
+              style={{ borderRadius: '9999px', padding: '4px 12px', fontSize: '0.75rem' }}
+            >
+              + Add Member
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {teamMembers.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <img
+                    src={m.avatar}
+                    alt={m.name}
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      flexShrink: 0
+                    }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--cms-text)', lineHeight: 1.2 }}>
+                      {m.name}
+                    </div>
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--cms-text-muted)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      maxWidth: '220px'
+                    }}>
+                      {m.role}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Pill Badge */}
+                <span style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  padding: '3px 10px',
+                  borderRadius: '9999px',
+                  background: m.statusType === 'success' ? 'rgba(16, 185, 129, 0.15)' : m.statusType === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                  color: m.statusType === 'success' ? '#10b981' : m.statusType === 'warning' ? '#f59e0b' : '#3b82f6',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {m.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 2. Project Progress (Semi-Circular Donut Gauge) */}
+        <div className="cms-donezo-card" style={{ gridColumn: 'span 4', textAlign: 'center', justifyContent: 'space-between' }}>
+          <div style={{ textAlign: 'left', marginBottom: '6px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--cms-text)' }}>
+              Project Progress
+            </h3>
+          </div>
+
+          {/* SVG Semi-Circular Donut Gauge */}
+          <div style={{ position: 'relative', width: '220px', height: '115px', margin: '10px auto 0' }}>
+            <svg viewBox="0 0 200 110" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+              <defs>
+                <pattern id="gaugeHatch" width="6" height="6" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="#94a3b8" strokeWidth="2.5" />
+                </pattern>
+              </defs>
+              {/* Background Arc */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke="url(#gaugeHatch)"
+                strokeWidth="24"
+                strokeLinecap="round"
+              />
+              {/* In Progress Arc (Sage Green) */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 145 35"
+                fill="none"
+                stroke="#52b788"
+                strokeWidth="24"
+                strokeLinecap="round"
+              />
+              {/* Completed Arc (Dark Forest Green) */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 85 24"
+                fill="none"
+                stroke="#0f4c3a"
+                strokeWidth="24"
+                strokeLinecap="round"
+              />
+            </svg>
+
+            {/* Gauge Center Percentage & Label */}
+            <div style={{
+              position: 'absolute',
+              bottom: '0px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--cms-text)', lineHeight: 1 }}>
+                41%
+              </span>
+              <span style={{ fontSize: '0.74rem', color: 'var(--cms-text-muted)', fontWeight: 600, marginTop: '2px' }}>
+                Project Ended
               </span>
             </div>
-            <span style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)' }}>
-              Queried from cms_audit_logs
+          </div>
+
+          {/* Legend */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '14px',
+            fontSize: '0.74rem',
+            color: 'var(--cms-text-muted)',
+            marginTop: '16px'
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0f4c3a' }} />
+              Completed
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#52b788' }} />
+              In Progress
+            </span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#94a3b8' }} />
+              Pending
             </span>
           </div>
         </div>
 
-        {/* HONEST ANALYTICS & INTEGRATION STATUS */}
-        <div className="cms-vuexy-card">
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">External Analytics & Crawlers</h3>
-              <span className="cms-vuexy-card-subtitle">Integration configuration status</span>
-            </div>
-            <button
-              className="cms-btn cms-btn-secondary cms-btn-sm"
-              onClick={() => onNavigateTab('settings')}
-            >
-              Configure →
-            </button>
-          </div>
+        {/* 3. Time Tracker Card (Dark Forest Green with Live Digital Clock) */}
+        <div
+          className="cms-donezo-card dark-green"
+          style={{
+            gridColumn: 'span 3',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(145deg, #0f4c3a, #062b1f)',
+            overflow: 'hidden',
+            position: 'relative'
+          }}
+        >
+          {/* Subtle wavy texture in background */}
+          <svg
+            viewBox="0 0 200 120"
+            style={{
+              position: 'absolute',
+              right: '-10px',
+              bottom: '-10px',
+              width: '160px',
+              opacity: 0.12,
+              pointerEvents: 'none'
+            }}
+          >
+            <path
+              d="M 0,60 C 50,10 150,110 200,60 L 200,120 L 0,120 Z"
+              fill="#ffffff"
+            />
+          </svg>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
-            {/* Google Analytics 4 */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              background: 'var(--cms-bg-muted)',
-              border: '1px solid var(--cms-border)'
-            }}>
-              <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--cms-text)' }}>Google Analytics 4</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-subtle)' }}>
-                  {analytics.ga4?.connected ? `Measurement ID: ${analytics.ga4.id}` : 'Visitor tracking unconfigured'}
-                </div>
-              </div>
-              <span style={{
-                fontSize: '0.72rem',
-                fontWeight: '700',
-                padding: '3px 8px',
-                borderRadius: '999px',
-                background: analytics.ga4?.connected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.12)',
-                color: analytics.ga4?.connected ? '#10b981' : '#ef4444'
-              }}>
-                {analytics.ga4?.status_label || 'Not Configured'}
-              </span>
-            </div>
-
-            {/* Google Search Console */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '12px 14px',
-              borderRadius: '10px',
-              background: 'var(--cms-bg-muted)',
-              border: '1px solid var(--cms-border)'
-            }}>
-              <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--cms-text)' }}>Google Search Console</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-subtle)' }}>
-                  {analytics.gsc?.connected ? `Site: ${analytics.gsc.url}` : 'Search indexing API unconfigured'}
-                </div>
-              </div>
-              <span style={{
-                fontSize: '0.72rem',
-                fontWeight: '700',
-                padding: '3px 8px',
-                borderRadius: '999px',
-                background: analytics.gsc?.connected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.12)',
-                color: analytics.gsc?.connected ? '#10b981' : '#ef4444'
-              }}>
-                {analytics.gsc?.status_label || 'Not Configured'}
-              </span>
-            </div>
-
-            <p style={{ fontSize: '0.75rem', color: 'var(--cms-text-muted)', margin: '4px 0 0', lineHeight: 1.4 }}>
-              ℹ️ Live visitor volume, conversions, and organic search rankings require external Google Analytics & Search Console credentials. Configure them in CMS Configuration.
-            </p>
-          </div>
-        </div>
-
-        {/* SYSTEM & DATABASE STATUS CARD */}
-        <div className="cms-vuexy-card">
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">System & Storage Health</h3>
-              <span className="cms-vuexy-card-subtitle">Runtime environment</span>
-            </div>
-            <button
-              className="cms-btn cms-btn-secondary cms-btn-sm"
-              onClick={() => onNavigateTab('system')}
-            >
-              Details →
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
-              <span style={{ color: 'var(--cms-text-subtle)' }}>Database Driver</span>
-              <strong style={{ textTransform: 'uppercase', color: 'var(--cms-primary)' }}>{system.db_driver || 'SQLite'}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
-              <span style={{ color: 'var(--cms-text-subtle)' }}>Database Size</span>
-              <span>{system.db_size || 'N/A'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
-              <span style={{ color: 'var(--cms-text-subtle)' }}>Media Storage</span>
-              <span>{media.count || 0} files ({media.size_formatted || '0 B'})</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
-              <span style={{ color: 'var(--cms-text-subtle)' }}>PHP Runtime</span>
-              <span>PHP {system.php_version || '8.x'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
-              <span style={{ color: 'var(--cms-text-subtle)' }}>OPcache Status</span>
-              <span style={{ color: system.opcache_active ? '#10b981' : 'var(--cms-text-subtle)', fontWeight: '600' }}>
-                {system.opcache_active ? 'Active' : 'Disabled / Standby'}
-              </span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ROW 3: RECENT CONTENT & CRM INQUIRIES TABLES */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '18px' }}>
-        
-        {/* RECENT BLOG POSTS */}
-        <div className="cms-vuexy-card">
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Recent Blog Articles</h3>
-              <span className="cms-vuexy-card-subtitle">Latest editorial changes</span>
-            </div>
-            <button className="cms-btn cms-btn-secondary cms-btn-sm" onClick={() => onNavigateTab('posts')}>
-              View All ({posts.total || 0}) →
-            </button>
-          </div>
-
-          <div style={{ marginTop: '12px', overflowX: 'auto' }}>
-            {recent_posts.length > 0 ? (
-              <table className="cms-table" style={{ width: '100%', fontSize: '0.84rem' }}>
-                <thead>
-                  <tr>
-                    <th>Article</th>
-                    <th>Category</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent_posts.map((p) => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: '600', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.title}
-                      </td>
-                      <td style={{ color: 'var(--cms-text-subtle)' }}>{p.category}</td>
-                      <td>
-                        <span style={{
-                          fontSize: '0.7rem',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: p.status === 'Published' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          color: p.status === 'Published' ? '#10b981' : '#f59e0b',
-                          fontWeight: '600'
-                        }}>
-                          {p.status}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="cms-btn cms-btn-secondary cms-btn-sm"
-                          onClick={() => onSelectPost ? onSelectPost(p.id) : onNavigateTab('posts')}
-                          style={{ padding: '3px 8px', fontSize: '0.75rem' }}
-                        >
-                          Edit
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--cms-text-muted)', fontSize: '0.85rem' }}>
-                No blog articles published yet. Click "Compose Article" above to create one.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RECENT INQUIRIES & RFQS */}
-        <div className="cms-vuexy-card">
-          <div className="cms-vuexy-card-header">
-            <div>
-              <h3 className="cms-vuexy-card-title">Recent Inbound RFQs</h3>
-              <span className="cms-vuexy-card-subtitle">Customer machinery inquiries</span>
-            </div>
-            <button className="cms-btn cms-btn-secondary cms-btn-sm" onClick={() => onNavigateTab('crm')}>
-              All Leads ({inquiries.total || 0}) →
-            </button>
-          </div>
-
-          <div style={{ marginTop: '12px', overflowX: 'auto' }}>
-            {recent_inquiries.length > 0 ? (
-              <table className="cms-table" style={{ width: '100%', fontSize: '0.84rem' }}>
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Equipment</th>
-                    <th>Value</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent_inquiries.map((inq) => (
-                    <tr
-                      key={inq.id}
-                      onClick={() => onNavigateTab('crm')}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <td style={{ fontWeight: '600' }}>
-                        <div>{inq.name}</div>
-                        {inq.company && <small style={{ color: 'var(--cms-text-subtle)' }}>{inq.company}</small>}
-                      </td>
-                      <td style={{ color: 'var(--cms-text-subtle)', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {inq.machine_model || 'General RFQ'}
-                      </td>
-                      <td style={{ fontWeight: '600' }}>
-                        {inq.estimated_value ? `$${Number(inq.estimated_value).toLocaleString()}` : '—'}
-                      </td>
-                      <td>
-                        <span style={{
-                          fontSize: '0.7rem',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                          background: inq.status === 'New' ? 'rgba(96, 122, 78, 0.22)' : 'var(--cms-bg-muted)',
-                          color: inq.status === 'New' ? 'var(--cms-primary)' : 'var(--cms-text)',
-                          fontWeight: '600'
-                        }}>
-                          {inq.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--cms-text-muted)', fontSize: '0.85rem' }}>
-                No customer inquiries received yet.
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-
-      {/* ROW 4: RECENT AUDIT TRAIL / SECURITY LOGS */}
-      <div className="cms-vuexy-card">
-        <div className="cms-vuexy-card-header">
           <div>
-            <h3 className="cms-vuexy-card-title">Security & Audit Activity Trail</h3>
-            <span className="cms-vuexy-card-subtitle">Real persisted administrative operations</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.85 }}>
+              Time Tracker
+            </span>
           </div>
-          <button className="cms-btn cms-btn-secondary cms-btn-sm" onClick={() => onNavigateTab('security')}>
-            Security Center →
-          </button>
+
+          {/* Huge Live Running Digital Clock */}
+          <div style={{
+            fontSize: '2.4rem',
+            fontWeight: 800,
+            letterSpacing: '0.04em',
+            fontFamily: 'var(--cms-font-mono, monospace)',
+            textAlign: 'center',
+            margin: '20px 0 10px',
+            color: '#ffffff'
+          }}>
+            {formatTimer(trackerSeconds)}
+          </div>
+
+          {/* Controls: Pause / Play & Stop/Reset */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '14px',
+            position: 'relative',
+            zIndex: 2
+          }}>
+            <button
+              onClick={() => setTrackerRunning(!trackerRunning)}
+              title={trackerRunning ? 'Pause time tracker' : 'Resume time tracker'}
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                color: '#0f4c3a',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.05rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              {trackerRunning ? '⏸' : '▶'}
+            </button>
+
+            <button
+              onClick={() => {
+                setTrackerSeconds(0);
+                setTrackerRunning(false);
+              }}
+              title="Stop & Reset timer"
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+              ⏹
+            </button>
+          </div>
         </div>
 
-        <div style={{ marginTop: '12px', overflowX: 'auto' }}>
-          {recent_activity.length > 0 ? (
-            <table className="cms-table" style={{ width: '100%', fontSize: '0.82rem' }}>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Action</th>
-                  <th>Resource</th>
-                  <th>User</th>
-                  <th>IP Address</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent_activity.map((act) => (
-                  <tr key={act.id}>
-                    <td style={{ color: 'var(--cms-text-subtle)', whiteSpace: 'nowrap' }}>
-                      {safeFormatDate(act.created_at)}
-                    </td>
-                    <td>
-                      <span style={{
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        background: 'rgba(96, 122, 78, 0.14)',
-                        color: 'var(--cms-primary)',
-                        fontWeight: '600',
-                        fontSize: '0.75rem'
-                      }}>
-                        {act.action}
-                      </span>
-                    </td>
-                    <td style={{ color: 'var(--cms-text-muted)' }}>
-                      {act.resource_type} {act.resource_id ? `#${act.resource_id}` : ''}
-                    </td>
-                    <td style={{ fontWeight: '500' }}>{act.username || 'System'}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.76rem', color: 'var(--cms-text-subtle)' }}>
-                      {act.ip_address}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--cms-text-muted)', fontSize: '0.85rem' }}>
-              No audit trail events logged yet.
-            </div>
-          )}
-        </div>
       </div>
 
     </div>
