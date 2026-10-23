@@ -3312,7 +3312,7 @@ export default function App() {
     const auth = detectAuthenticatedVisitor();
     return {
       authorName: auth?.displayName || auth?.name || '',
-      authorEmail: auth?.email || '',
+      authorEmail: '',
       content: ''
     };
   });
@@ -3389,8 +3389,7 @@ export default function App() {
       if (detected) {
         setCommentForm(prev => ({
           ...prev,
-          authorName: detected.displayName || detected.name || prev.authorName,
-          authorEmail: detected.email || prev.authorEmail
+          authorName: prev.authorName || detected.displayName || detected.name || ''
         }));
       }
     };
@@ -4137,7 +4136,7 @@ export default function App() {
                 setCommentForm(prev => ({
                   ...prev,
                   authorName: userName,
-                  authorEmail: userEmail
+                  authorEmail: ''
                 }));
                 setCommentEmailCheck({ status: 'valid', message: 'Real Google account verified', isValid: true, isGoogle: true });
                 setCommentSubmitError('');
@@ -10075,25 +10074,23 @@ export default function App() {
 
                     <div className="comment-input-row">
                       <label>
-                        Name {authVisitor ? '(Verified)' : '(Optional)'}
+                        Name
                         <input 
                           type="text" 
-                          disabled={Boolean(authVisitor)}
-                          placeholder={authVisitor ? (authVisitor.displayName || authVisitor.name) : "Your Name (or leave blank to post as Guest)"} 
-                          value={authVisitor ? (authVisitor.displayName || authVisitor.name || '') : commentForm.authorName} 
+                          placeholder="Name" 
+                          value={commentForm.authorName || (authVisitor ? (authVisitor.displayName || authVisitor.name || '') : '')} 
                           onChange={(e) => setCommentForm(prev => ({ ...prev, authorName: e.target.value }))}
                         />
                       </label>
                       <label>
-                        Email {authVisitor ? '(Verified)' : '(Optional)'}
+                        Email
                         <input 
                           type="email" 
-                          disabled={Boolean(authVisitor)}
-                          placeholder={authVisitor ? authVisitor.email : "Email (Optional, kept private by default)"} 
-                          value={authVisitor ? (authVisitor.email || '') : commentForm.authorEmail} 
+                          placeholder="Email" 
+                          value={commentForm.authorEmail} 
                           onChange={(e) => handleCommentEmailChange(e.target.value)}
                           style={{
-                            borderColor: (!commentForm.authorEmail || authVisitor)
+                            borderColor: (!commentForm.authorEmail)
                               ? '#d1d5db'
                               : commentEmailCheck.status === 'error'
                               ? '#ef4444'
