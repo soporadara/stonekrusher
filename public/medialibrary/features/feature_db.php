@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Feature Database — SQLite Setup
  * ================================
@@ -9,51 +8,39 @@
 
 declare(strict_types=1);
 
-if (! defined('FEATURE_DB_PATH')) {
-    require_once __DIR__.'/config.php';
+if (!defined('FEATURE_DB_PATH')) {
+    require_once __DIR__ . '/config.php';
 }
 
-function feature_db(): ?PDO
-{
+function feature_db(): ?PDO {
     static $pdo = null;
-    if ($pdo !== null) {
-        return $pdo;
-    }
+    if ($pdo !== null) return $pdo;
 
-    if (! class_exists('PDO')) {
-        return null;
-    }
+    if (!class_exists('PDO')) return null;
 
     $drivers = PDO::getAvailableDrivers();
-    if (! in_array('sqlite', $drivers, true)) {
-        return null;
-    }
+    if (!in_array('sqlite', $drivers, true)) return null;
 
     $dbPath = FEATURE_DB_PATH;
     $dir = dirname($dbPath);
-    if (! is_dir($dir)) {
-        @mkdir($dir, 0755, true);
-    }
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
     try {
-        $pdo = new PDO('sqlite:'.$dbPath, null, null, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        $pdo = new PDO('sqlite:' . $dbPath, null, null, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
         $pdo->exec('PRAGMA journal_mode=WAL');
         $pdo->exec('PRAGMA foreign_keys=ON');
         feature_db_migrate($pdo);
-
         return $pdo;
     } catch (Throwable $e) {
-        error_log('[FeatureDB] '.$e->getMessage());
-
+        error_log('[FeatureDB] ' . $e->getMessage());
         return null;
     }
 }
 
-function feature_db_migrate(PDO $pdo): void
-{
+function feature_db_migrate(PDO $pdo): void {
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS folder_meta (
             path        TEXT NOT NULL PRIMARY KEY,
@@ -121,8 +108,7 @@ function feature_db_migrate(PDO $pdo): void
 }
 
 // ─── Helper: get folder meta for a list of folder paths ─────────────────────
-function feature_db_get_folder_meta_bulk(array $paths, string $userId): array
-{
+function feature_db_get_folder_meta_bulk(array $paths, string $userId): array {
     $db = feature_db();
     $result = [];
 
@@ -130,9 +116,7 @@ function feature_db_get_folder_meta_bulk(array $paths, string $userId): array
         $result[$p] = ['color' => '', 'is_favorite' => false, 'is_pinned' => false];
     }
 
-    if (! $db || empty($paths)) {
-        return $result;
-    }
+    if (!$db || empty($paths)) return $result;
 
     try {
         $placeholders = implode(',', array_fill(0, count($paths), '?'));
@@ -158,7 +142,7 @@ function feature_db_get_folder_meta_bulk(array $paths, string $userId): array
             $result[$row['path']]['is_pinned'] = true;
         }
     } catch (Throwable $e) {
-        error_log('[FeatureDB bulk_meta] '.$e->getMessage());
+        error_log('[FeatureDB bulk_meta] ' . $e->getMessage());
     }
 
     return $result;

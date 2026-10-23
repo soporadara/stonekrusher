@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Feature Configuration
  * =====================
@@ -16,21 +15,22 @@ define('BRIA_RATE_LIMIT_PER_MINUTE', 20); // max AI calls per minute
 
 // ─── Storage Quota ─────────────────────────────────────────────────────────
 // Set the total storage quota shown in the dashboard (in bytes)
-define('STORAGE_QUOTA_BYTES', 15 * 1024 * 1024 * 1024); // 15 GB default
+define('STORAGE_QUOTA_BYTES', 150 * 1024 * 1024 * 1024); // 150 GB default
 
 // ─── AI Output Settings ────────────────────────────────────────────────────
 // Where to save AI-processed images (relative to the source folder)
 define('AI_OUTPUT_SUBFOLDER', 'AI Output');   // subfolder inside current folder
-define('AI_VERSIONS_DIR', __DIR__.'/.versions'); // hidden folder for image versions (stored outside ebay)
+define('AI_VERSIONS_DIR', __DIR__ . '/.versions'); // hidden folder for image versions (stored outside ebay)
 
 // ─── Feature Toggles ────────────────────────────────────────────────────────
-define('FEATURE_AI_BG_REMOVE', true);
+define('FEATURE_AI_BG_REMOVE',    true);
 define('FEATURE_DUPLICATE_FINDER', true);
-define('FEATURE_IMAGE_REPLACE', true);
+define('FEATURE_IMAGE_REPLACE',   true);
 define('FEATURE_VERSION_HISTORY', true);
-define('FEATURE_FOLDER_META', true);  // colors, favorites, pins
-define('FEATURE_PROPERTIES', true);
+define('FEATURE_FOLDER_META',     true);  // colors, favorites, pins
+define('FEATURE_PROPERTIES',      true);
+define('FEATURE_FILE_CONVERTER',  true);
 
 // ─── SQLite DB path ─────────────────────────────────────────────────────────
 // Stored outside webroot is ideal; fallback to img root
-define('FEATURE_DB_PATH', __DIR__.'/../.feature_db.sqlite');
+define('FEATURE_DB_PATH', __DIR__ . '/../.feature_db.sqlite');

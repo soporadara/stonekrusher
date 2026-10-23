@@ -414,14 +414,19 @@ class Security {
     }
 
     /**
-     * Validate session and load current user + permissions
+     * Validate session and load current user + permissions.
+     * Supports direct session ID (cms_sessions.id) as well as CSRF-token session resolution.
      */
-    public static function getCurrentUser() {
+    public static function getCurrentUser($overrideToken = null) {
         $pdo = get_cms_pdo();
         if (!$pdo) return null;
 
         $token = null;
-        if (!empty($_COOKIE['cms_token'])) {
+        if (!empty($overrideToken) && is_string($overrideToken) && strlen($overrideToken) === 64) {
+            $token = $overrideToken;
+        } elseif (!empty($_GET['cms_token']) && is_string($_GET['cms_token']) && strlen($_GET['cms_token']) === 64) {
+            $token = $_GET['cms_token'];
+        } elseif (!empty($_COOKIE['cms_token'])) {
             $token = $_COOKIE['cms_token'];
         } elseif (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
             if (preg_match('/Bearer\s+(\S+)/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
@@ -443,6 +448,25 @@ class Security {
                                WHERE s.id = ? AND s.is_revoked = 0 AND s.expires_at > ?");
         $stmt->execute([$token, $now]);
         $row = $stmt->fetch();
+
+        // Dual resolution: If token did not match session ID directly, check if it is a valid CSRF token of an active session
+        if (!$row) {
+            $csrfSecret = self::getCsrfSecret();
+            $activeStmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status, u.locked_until,
+                                                u.google_id, u.google_email, u.google_linked_at
+                                         FROM cms_sessions s
+                                         JOIN cms_users u ON s.user_id = u.id
+                                         WHERE s.is_revoked = 0 AND s.expires_at > ?
+                                         ORDER BY s.last_activity DESC LIMIT 50");
+            $activeStmt->execute([$now]);
+            foreach ($activeStmt->fetchAll() as $candidate) {
+                if (hash_hmac('sha256', $candidate['id'], $csrfSecret) === $token) {
+                    $row = $candidate;
+                    $token = $candidate['id'];
+                    break;
+                }
+            }
+        }
 
         if (!$row) {
             return null;

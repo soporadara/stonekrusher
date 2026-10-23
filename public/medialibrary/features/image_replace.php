@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Image Replace Handler
  * =====================
@@ -9,23 +8,22 @@
 
 declare(strict_types=1);
 
-if (! defined('FEATURE_DB_PATH')) {
-    require_once __DIR__.'/config.php';
+if (!defined('FEATURE_DB_PATH')) {
+    require_once __DIR__ . '/config.php';
 }
-require_once __DIR__.'/feature_db.php';
+require_once __DIR__ . '/feature_db.php';
 
-function image_replace_handle(array $post, array $files, string $baseDir, string $currentDir, string $current, string $userId, callable $cleanPath, callable $cleanExistingName, callable $autoBackup): void
-{
+function image_replace_handle(array $post, array $files, string $baseDir, string $currentDir, string $current, string $userId, callable $cleanPath, callable $cleanExistingName, callable $autoBackup): void {
     header('Content-Type: application/json');
 
     $targetName = ($cleanExistingName)($post['target_name'] ?? '');
-    if (! $targetName) {
+    if (!$targetName) {
         echo json_encode(['success' => false, 'error' => 'Target filename missing']);
         exit;
     }
 
-    $targetPath = $currentDir.'/'.$targetName;
-    if (! is_file($targetPath)) {
+    $targetPath = $currentDir . '/' . $targetName;
+    if (!is_file($targetPath)) {
         echo json_encode(['success' => false, 'error' => 'Target file not found']);
         exit;
     }
@@ -36,62 +34,57 @@ function image_replace_handle(array $post, array $files, string $baseDir, string
         exit;
     }
 
-    $uploadExt = strtolower(pathinfo($files['replace_file']['name'], PATHINFO_EXTENSION));
-    $targetExt = strtolower(pathinfo($targetName, PATHINFO_EXTENSION));
-    $tmpName = $files['replace_file']['tmp_name'];
+    $uploadExt  = strtolower(pathinfo($files['replace_file']['name'], PATHINFO_EXTENSION));
+    $targetExt  = strtolower(pathinfo($targetName, PATHINFO_EXTENSION));
+    $tmpName    = $files['replace_file']['tmp_name'];
 
-    if (! is_uploaded_file($tmpName) && ! is_file($tmpName)) {
+    if (!is_uploaded_file($tmpName) && !is_file($tmpName)) {
         echo json_encode(['success' => false, 'error' => 'Uploaded temp file missing']);
         exit;
     }
 
-    $allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
-    if (! in_array($uploadExt, $allowedExts, true)) {
+    $allowedExts = ['jpg','jpeg','png','webp','gif','svg','avif'];
+    if (!in_array($uploadExt, $allowedExts, true)) {
         echo json_encode(['success' => false, 'error' => 'File type not allowed']);
         exit;
     }
 
     // ── Step 1: Version the current file ─────────────────────────────────────
-    $relPath = $current ? $current.'/'.$targetName : $targetName;
-    $versionDir = AI_VERSIONS_DIR.'/'.$relPath;
+    $relPath = $current ? $current . '/' . $targetName : $targetName;
+    $versionDir = AI_VERSIONS_DIR . '/' . $relPath;
 
-    if (! is_dir($versionDir)) {
-        @mkdir($versionDir, 0755, true);
-    }
+    if (!is_dir($versionDir)) @mkdir($versionDir, 0755, true);
 
     // Find next version number
     $db = feature_db();
     $nextVersionNum = 1;
     if ($db) {
         try {
-            $stmt = $db->prepare('SELECT MAX(version_num) FROM image_versions WHERE original_path=?');
+            $stmt = $db->prepare("SELECT MAX(version_num) FROM image_versions WHERE original_path=?");
             $stmt->execute([$relPath]);
             $max = $stmt->fetchColumn();
-            if ($max !== false && $max !== null) {
-                $nextVersionNum = (int) $max + 1;
-            }
-        } catch (Throwable $e) {
-        }
+            if ($max !== false && $max !== null) $nextVersionNum = (int)$max + 1;
+        } catch (Throwable $e) {}
     }
 
-    $versionFileName = 'v'.$nextVersionNum.'.'.$targetExt;
-    $versionPath = $versionDir.'/'.$versionFileName;
-    $versionRelPath = $relPath.'/'.$versionFileName;
+    $versionFileName = 'v' . $nextVersionNum . '.' . $targetExt;
+    $versionPath     = $versionDir . '/' . $versionFileName;
+    $versionRelPath  = $relPath . '/' . $versionFileName;
 
-    if (! @copy($targetPath, $versionPath)) {
+    if (!@copy($targetPath, $versionPath)) {
         echo json_encode(['success' => false, 'error' => 'Could not create version backup']);
         exit;
     }
 
-    $versionSha256 = (string) (@hash_file('sha256', $versionPath) ?: '');
-    $versionId = bin2hex(random_bytes(12));
+    $versionSha256 = (string)(@hash_file('sha256', $versionPath) ?: '');
+    $versionId     = bin2hex(random_bytes(12));
 
     if ($db) {
         try {
-            $db->prepare('INSERT INTO image_versions(id, original_path, version_num, stored_path, size, sha256, replaced_at, replaced_by) VALUES(?,?,?,?,?,?,?,?)')
-                ->execute([$versionId, $relPath, $nextVersionNum, $versionRelPath, (int) filesize($versionPath), $versionSha256, time(), $userId]);
+            $db->prepare("INSERT INTO image_versions(id, original_path, version_num, stored_path, size, sha256, replaced_at, replaced_by) VALUES(?,?,?,?,?,?,?,?)")
+               ->execute([$versionId, $relPath, $nextVersionNum, $versionRelPath, (int)filesize($versionPath), $versionSha256, time(), $userId]);
         } catch (Throwable $e) {
-            error_log('[ImageReplace version] '.$e->getMessage());
+            error_log('[ImageReplace version] ' . $e->getMessage());
         }
     }
 
@@ -103,11 +96,11 @@ function image_replace_handle(array $post, array $files, string $baseDir, string
     if (is_uploaded_file($tmpName)) {
         $placed = @move_uploaded_file($tmpName, $targetPath);
     }
-    if (! $placed) {
+    if (!$placed) {
         $placed = @rename($tmpName, $targetPath) || (@copy($tmpName, $targetPath) && @unlink($tmpName));
     }
 
-    if (! $placed) {
+    if (!$placed) {
         // Rollback: restore version file
         @copy($versionPath, $targetPath);
         echo json_encode(['success' => false, 'error' => 'Could not replace file on disk']);
@@ -117,11 +110,11 @@ function image_replace_handle(array $post, array $files, string $baseDir, string
     @chmod($targetPath, 0644);
 
     echo json_encode([
-        'success' => true,
-        'message' => 'Image replaced. Old version saved as v'.$nextVersionNum.'.',
-        'version_num' => $nextVersionNum,
-        'version_id' => $versionId,
-        'original_path' => $relPath,
+        'success'      => true,
+        'message'      => 'Image replaced. Old version saved as v' . $nextVersionNum . '.',
+        'version_num'  => $nextVersionNum,
+        'version_id'   => $versionId,
+        'original_path'=> $relPath,
     ]);
     exit;
 }

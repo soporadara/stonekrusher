@@ -1,5 +1,4 @@
 <?php
-
 /**
  * AI Background Removal Handler
  * ==============================
@@ -10,16 +9,15 @@
 
 declare(strict_types=1);
 
-if (! defined('FEATURE_DB_PATH')) {
-    require_once __DIR__.'/config.php';
+if (!defined('FEATURE_DB_PATH')) {
+    require_once __DIR__ . '/config.php';
 }
-require_once __DIR__.'/feature_db.php';
+require_once __DIR__ . '/feature_db.php';
 
-function ai_bg_remove_handle(string $action, array $post, string $baseDir, string $currentDir, string $current, string $userId, string $baseUrl, callable $autoBackup): void
-{
+function ai_bg_remove_handle(string $action, array $post, string $baseDir, string $currentDir, string $current, string $userId, string $baseUrl, callable $autoBackup): void {
     header('Content-Type: application/json');
 
-    if (! FEATURE_AI_BG_REMOVE) {
+    if (!FEATURE_AI_BG_REMOVE) {
         echo json_encode(['success' => false, 'error' => 'AI feature is disabled']);
         exit;
     }
@@ -30,110 +28,104 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
     }
 
     $db = feature_db();
-    if (! $db) {
+    if (!$db) {
         echo json_encode(['success' => false, 'error' => 'Feature DB unavailable']);
         exit;
     }
 
     if ($action === 'ai_bg_remove_start') {
-        $paths = $post['paths'] ?? [];
-        if (is_string($paths)) {
-            $paths = json_decode($paths, true) ?: [];
-        }
-        $outputType = in_array($post['output_type'] ?? '', ['transparent', 'white'], true) ? $post['output_type'] : 'transparent';
-        $outputFormat = in_array($post['output_format'] ?? '', ['png', 'jpg', 'webp'], true) ? $post['output_format'] : 'webp';
-        $outputFolder = trim($post['output_folder'] ?? '');
-        $keepOrigName = ! empty($post['keep_original_name']);
-        $createFolder = ! empty($post['create_folder']);
+        $paths       = $post['paths'] ?? [];
+        if (is_string($paths)) $paths = json_decode($paths, true) ?: [];
+        $outputType  = in_array($post['output_type'] ?? '', ['transparent', 'white'], true) ? $post['output_type'] : 'transparent';
+        $outputFormat= in_array($post['output_format'] ?? '', ['png', 'jpg', 'webp'], true) ? $post['output_format'] : 'webp';
+        $outputFolder= trim($post['output_folder'] ?? '');
+        $keepOrigName= !empty($post['keep_original_name']);
+        $createFolder= !empty($post['create_folder']);
 
-        if (! is_array($paths) || empty($paths)) {
+        if (!is_array($paths) || empty($paths)) {
             echo json_encode(['success' => false, 'error' => 'No images selected']);
             exit;
         }
 
         $jobIds = [];
         foreach ($paths as $rel) {
-            $rel = trim((string) $rel, '/');
+            $rel = trim((string)$rel, '/');
             $rel = str_replace(['..', "\0"], '', $rel);
-            $absPath = $baseDir.'/'.$rel;
-            if (! is_file($absPath)) {
-                continue;
-            }
+            $absPath = $baseDir . '/' . $rel;
+            if (!is_file($absPath)) continue;
 
             $ext = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
-            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
-                continue;
-            }
+            if (!in_array($ext, ['jpg','jpeg','png','webp','avif'], true)) continue;
 
             $jobId = bin2hex(random_bytes(12));
             try {
-                $db->prepare('INSERT INTO ai_jobs(id, user_id, source_path, output_type, status, result_path, error, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?)')
-                    ->execute([$jobId, $userId, $rel, $outputType, 'pending', '', '', time(), time()]);
+                $db->prepare("INSERT INTO ai_jobs(id, user_id, source_path, output_type, status, result_path, error, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?)")
+                   ->execute([$jobId, $userId, $rel, $outputType, 'pending', '', '', time(), time()]);
                 $jobIds[] = [
-                    'id' => $jobId,
-                    'source_path' => $rel,
-                    'name' => basename($rel),
-                    'status' => 'pending',
+                    'id'         => $jobId,
+                    'source_path'=> $rel,
+                    'name'       => basename($rel),
+                    'status'     => 'pending',
                 ];
             } catch (Throwable $e) {
-                error_log('[AI Job] '.$e->getMessage());
+                error_log('[AI Job] ' . $e->getMessage());
             }
         }
 
         echo json_encode([
-            'success' => true,
-            'jobs' => $jobIds,
-            'output_type' => $outputType,
-            'output_format' => $outputFormat,
-            'output_folder' => $outputFolder,
-            'keep_orig_name' => $keepOrigName,
+            'success'      => true,
+            'jobs'         => $jobIds,
+            'output_type'  => $outputType,
+            'output_format'=> $outputFormat,
+            'output_folder'=> $outputFolder,
+            'keep_orig_name'=> $keepOrigName,
         ]);
         exit;
     }
 
     if ($action === 'ai_bg_remove_sync') {
         $pathRel = $post['path'] ?? '';
-        if (! $pathRel) {
+        if (!$pathRel) {
             echo json_encode(['success' => false, 'error' => 'No path provided']);
             exit;
         }
-
+        
         $absPath = false;
         if (function_exists('safeFullPath')) {
             $absPath = safeFullPath($baseDir, $pathRel);
         } else {
-            $absPath = realpath($baseDir.'/'.ltrim($pathRel, '/'));
+            $absPath = realpath($baseDir . '/' . ltrim($pathRel, '/'));
             if ($absPath === false || strpos($absPath, realpath($baseDir)) !== 0) {
                 $absPath = false;
             }
         }
-
-        if (! $absPath || ! is_file($absPath)) {
+        
+        if (!$absPath || !is_file($absPath)) {
             echo json_encode(['success' => false, 'error' => 'File not found or access denied']);
             exit;
         }
 
         $result = ai_call_bria($absPath, BRIA_API_KEY, BRIA_API_ENDPOINT);
-
-        if (! $result['success']) {
+        
+        if (!$result['success']) {
             echo json_encode(['success' => false, 'error' => $result['error'] ?? 'Unknown API error']);
             exit;
         }
-
+        
         $b64 = base64_encode($result['image_data']);
-        echo json_encode(['success' => true, 'image_b64' => 'data:image/png;base64,'.$b64]);
+        echo json_encode(['success' => true, 'image_b64' => 'data:image/png;base64,' . $b64]);
         exit;
     }
 
     if ($action === 'ai_bg_remove_process') {
         $jobId = preg_replace('/[^a-f0-9]/', '', $post['job_id'] ?? '');
-        if (! $jobId) {
+        if (!$jobId) {
             echo json_encode(['success' => false, 'error' => 'Invalid job ID']);
             exit;
         }
 
         try {
-            $stmt = $db->prepare('SELECT * FROM ai_jobs WHERE id=? AND user_id=?');
+            $stmt = $db->prepare("SELECT * FROM ai_jobs WHERE id=? AND user_id=?");
             $stmt->execute([$jobId, $userId]);
             $job = $stmt->fetch();
         } catch (Throwable $e) {
@@ -141,7 +133,7 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
             exit;
         }
 
-        if (! $job) {
+        if (!$job) {
             echo json_encode(['success' => false, 'error' => 'Job not found']);
             exit;
         }
@@ -154,14 +146,14 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
             exit;
         }
 
-        $outputType = $job['output_type'];
-        $outputFormat = $post['output_format'] ?? 'webp';
-        $outputSize = $post['output_size'] ?? '';
-        $outputFolder = trim($post['output_folder'] ?? '');
-        $keepOrigName = ! empty($post['keep_orig_name']);
+        $outputType  = $job['output_type'];
+        $outputFormat= $post['output_format'] ?? 'webp';
+        $outputSize  = $post['output_size'] ?? '';
+        $outputFolder= trim($post['output_folder'] ?? '');
+        $keepOrigName= !empty($post['keep_orig_name']);
 
-        $sourcePath = $baseDir.'/'.$job['source_path'];
-        if (! is_file($sourcePath)) {
+        $sourcePath = $baseDir . '/' . $job['source_path'];
+        if (!is_file($sourcePath)) {
             $db->prepare("UPDATE ai_jobs SET status='error', error=?, updated_at=? WHERE id=?")->execute(['Source file not found', time(), $jobId]);
             echo json_encode(['success' => false, 'status' => 'error', 'error' => 'Source file not found']);
             exit;
@@ -173,44 +165,40 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
         // Call Bria API
         $result = ai_call_bria($sourcePath, BRIA_API_KEY, BRIA_API_ENDPOINT);
 
-        if (! $result['success']) {
+        if (!$result['success']) {
             $db->prepare("UPDATE ai_jobs SET status='error', error=?, updated_at=? WHERE id=?")->execute([$result['error'], time(), $jobId]);
             echo json_encode(['success' => false, 'status' => 'error', 'error' => $result['error']]);
             exit;
         }
 
         // Save transparent PNG from Bria temporarily
-        $tmpPng = tempnam(sys_get_temp_dir(), 'bria_').'.png';
+        $tmpPng = tempnam(sys_get_temp_dir(), 'bria_') . '.png';
         file_put_contents($tmpPng, $result['image_data']);
 
         // If skip_edit is passed, save directly and mark done
-        if (! empty($post['skip_edit'])) {
+        if (!empty($post['skip_edit'])) {
             $sourceDirRelative = dirname($job['source_path']);
-            if ($sourceDirRelative === '.') {
-                $sourceDirRelative = '';
-            }
+            if ($sourceDirRelative === '.') $sourceDirRelative = '';
 
-            $outRelDir = ($sourceDirRelative ? $sourceDirRelative.'/' : '').($outputFolder ?: '.');
+            $outRelDir = ($sourceDirRelative ? $sourceDirRelative . '/' : '') . ($outputFolder ?: '.');
             $outRelDir = rtrim(str_replace('//', '/', $outRelDir), '/');
-            if ($outRelDir === '') {
-                $outRelDir = '.';
-            }
+            if ($outRelDir === '') $outRelDir = '.';
 
-            $targetFolder = $baseDir.'/'.$outRelDir;
-            if (! is_dir($targetFolder)) {
+            $targetFolder = $baseDir . '/' . $outRelDir;
+            if (!is_dir($targetFolder)) {
                 @mkdir($targetFolder, 0755, true);
                 if (function_exists('getSecureIndexHtml')) {
-                    @file_put_contents($targetFolder.'/index.html', getSecureIndexHtml());
+                    @file_put_contents($targetFolder . '/index.html', getSecureIndexHtml());
                 }
             }
 
             $origName = pathinfo($job['source_path'], PATHINFO_FILENAME);
-            $newName = $keepOrigName ? $origName.'.'.$outputFormat : 'ai_'.time().'_'.rand(100, 999).'.'.$outputFormat;
+            $newName = $keepOrigName ? $origName . '.' . $outputFormat : 'ai_' . time() . '_' . rand(100, 999) . '.' . $outputFormat;
+            
+            $tempName = 'temp_ai_' . uniqid() . '.' . $outputFormat;
+            $tempPath = $targetFolder . '/' . $tempName;
 
-            $tempName = 'temp_ai_'.uniqid().'.'.$outputFormat;
-            $tempPath = $targetFolder.'/'.$tempName;
-
-            if (! ai_process_output_image($tmpPng, $tempPath, $outputFormat, $outputType, $outputSize)) {
+            if (!ai_process_output_image($tmpPng, $tempPath, $outputFormat, $outputType, $outputSize)) {
                 @unlink($tmpPng);
                 @unlink($tempPath);
                 $db->prepare("UPDATE ai_jobs SET status='error', error=?, updated_at=? WHERE id=?")->execute(['Failed to process output image', time(), $jobId]);
@@ -218,57 +206,57 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
                 echo json_encode(['success' => false, 'error' => 'Failed to process output image']);
                 exit;
             }
-
+            
             @unlink($tmpPng);
 
             // Validation passed. Now handle original replacement.
-            $finalPath = $targetFolder.'/'.$newName;
-            $sourcePath = $baseDir.'/'.$job['source_path'];
-
+            $finalPath = $targetFolder . '/' . $newName;
+            $sourcePath = $baseDir . '/' . $job['source_path'];
+            
             if ($keepOrigName && is_file($sourcePath)) {
                 @unlink($sourcePath);
             }
-
+            
             // Move temp to final
             rename($tempPath, $finalPath);
-
-            $relPath = $outRelDir.'/'.$newName;
+            
+            $relPath = $outRelDir . '/' . $newName;
 
             $originalDeleted = 'No';
             if ($keepOrigName && is_file($sourcePath)) {
                 @unlink($sourcePath);
                 $originalDeleted = 'Yes';
             }
-
+            
             // Move temp to final
             rename($tempPath, $finalPath);
             $generatedRenamed = 'Yes';
-
+            
             $db->prepare("UPDATE ai_jobs SET status='done', result_path=?, updated_at=? WHERE id=?")->execute([$relPath, time(), $jobId]);
 
             error_log("[AI BG Removal] Original: {$origName} | Generated: {$newName} | Validation: Passed | Original Deleted: {$originalDeleted} | Generated Renamed: {$generatedRenamed} | Status: Success");
 
             echo json_encode([
-                'success' => true,
-                'status' => 'done',
-                'job_id' => $jobId,
-                'result_path' => $relPath,
+                'success'     => true,
+                'status'      => 'done',
+                'job_id'      => $jobId,
+                'result_path' => $relPath
             ]);
             exit;
         }
 
         // Otherwise return Base64 to frontend for the Canvas Editor
-        $b64 = 'data:image/png;base64,'.base64_encode(file_get_contents($tmpPng));
+        $b64 = 'data:image/png;base64,' . base64_encode(file_get_contents($tmpPng));
         @unlink($tmpPng);
 
         // Update status to needs_edit
         $db->prepare("UPDATE ai_jobs SET status='needs_edit', updated_at=? WHERE id=?")->execute([time(), $jobId]);
 
         echo json_encode([
-            'success' => true,
-            'status' => 'needs_edit',
-            'job_id' => $jobId,
-            'image_b64' => $b64,
+            'success'   => true,
+            'status'    => 'needs_edit',
+            'job_id'    => $jobId,
+            'image_b64' => $b64
         ]);
         exit;
     }
@@ -276,14 +264,14 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
     if ($action === 'ai_bg_remove_save_canvas') {
         $jobId = preg_replace('/[^a-f0-9]/', '', $post['job_id'] ?? '');
         $b64Data = $post['image_b64'] ?? '';
-
-        if (! $jobId || empty($b64Data)) {
+        
+        if (!$jobId || empty($b64Data)) {
             echo json_encode(['success' => false, 'error' => 'Invalid data']);
             exit;
         }
 
         try {
-            $stmt = $db->prepare('SELECT * FROM ai_jobs WHERE id=? AND user_id=?');
+            $stmt = $db->prepare("SELECT * FROM ai_jobs WHERE id=? AND user_id=?");
             $stmt->execute([$jobId, $userId]);
             $job = $stmt->fetch();
         } catch (Throwable $e) {
@@ -291,41 +279,35 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
             exit;
         }
 
-        if (! $job) {
+        if (!$job) {
             echo json_encode(['success' => false, 'error' => 'Job not found']);
             exit;
         }
 
-        $outputType = $job['output_type'];
-        $outputFormat = $post['output_format'] ?? 'webp';
-        $outputFolder = trim($post['output_folder'] ?? '');
-        $keepOrigName = ! empty($post['keep_orig_name']);
+        $outputType  = $job['output_type'];
+        $outputFormat= $post['output_format'] ?? 'webp';
+        $outputFolder= trim($post['output_folder'] ?? '');
+        $keepOrigName= !empty($post['keep_orig_name']);
 
         $sourceDirRelative = dirname($job['source_path']);
-        if ($sourceDirRelative === '.') {
-            $sourceDirRelative = '';
-        }
+        if ($sourceDirRelative === '.') $sourceDirRelative = '';
 
-        $outRelDir = ($sourceDirRelative ? $sourceDirRelative.'/' : '').($outputFolder ?: '.');
-        $outRelDir = rtrim(str_replace('//', '/', $outRelDir), '/');
-        if ($outRelDir === '') {
-            $outRelDir = '.';
-        }
-        $outAbsDir = $baseDir.'/'.$outRelDir;
-        if (! is_dir($outAbsDir)) {
-            @mkdir($outAbsDir, 0755, true);
-        }
+        $outRelDir  = ($sourceDirRelative ? $sourceDirRelative . '/' : '') . ($outputFolder ?: '.');
+        $outRelDir  = rtrim(str_replace('//', '/', $outRelDir), '/');
+        if ($outRelDir === '') $outRelDir = '.';
+        $outAbsDir  = $baseDir . '/' . $outRelDir;
+        if (!is_dir($outAbsDir)) @mkdir($outAbsDir, 0755, true);
 
         $baseName = pathinfo($job['source_path'], PATHINFO_FILENAME);
         if ($keepOrigName) {
-            $outName = $baseName.'.'.$outputFormat;
+            $outName = $baseName . '.' . $outputFormat;
         } else {
-            $suffix = $outputType === 'white' ? '_white_bg' : '_no_bg';
-            $outName = $baseName.$suffix.'.'.$outputFormat;
+            $suffix  = $outputType === 'white' ? '_white_bg' : '_no_bg';
+            $outName = $baseName . $suffix . '.' . $outputFormat;
         }
 
-        $outAbsPath = $outAbsDir.'/'.$outName;
-        $outRelPath = $outRelDir.'/'.$outName;
+        $outAbsPath = $outAbsDir . '/' . $outName;
+        $outRelPath = $outRelDir . '/' . $outName;
 
         // Decode Base64
         if (strpos($b64Data, ',') !== false) {
@@ -337,8 +319,8 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
             exit;
         }
 
-        $tempName = 'temp_ai_'.uniqid().'.tmp';
-        $tempPath = $outAbsDir.'/'.$tempName;
+        $tempName = 'temp_ai_' . uniqid() . '.tmp';
+        $tempPath = $outAbsDir . '/' . $tempName;
 
         if (file_put_contents($tempPath, $imgData) === false) {
             $db->prepare("UPDATE ai_jobs SET status='error', error=?, updated_at=? WHERE id=?")->execute(['Could not save final image', time(), $jobId]);
@@ -348,7 +330,7 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
         }
 
         $originalDeleted = 'No';
-        $sourcePath = $baseDir.'/'.$job['source_path'];
+        $sourcePath = $baseDir . '/' . $job['source_path'];
         if ($keepOrigName && is_file($sourcePath)) {
             @unlink($sourcePath);
             $originalDeleted = 'Yes';
@@ -364,8 +346,8 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
         error_log("[AI BG Removal] Original: {$baseName} | Generated: {$outName} | Validation: Passed | Original Deleted: {$originalDeleted} | Generated Renamed: {$generatedRenamed} | Status: Success");
 
         echo json_encode([
-            'success' => true,
-            'status' => 'done',
+            'success'     => true,
+            'status'      => 'done',
             'result_path' => $outRelPath,
             'result_name' => $outName,
         ]);
@@ -375,7 +357,7 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
     if ($action === 'canvas_edit_save') {
         $filePath = $post['file_path'] ?? '';
         $b64Data = $post['image_b64'] ?? '';
-
+        
         if (empty($filePath) || empty($b64Data)) {
             echo json_encode(['success' => false, 'error' => 'Invalid data']);
             exit;
@@ -391,7 +373,7 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
 
             // Target path
             $targetDir = $currentDir ?: $baseDir;
-            $targetPath = $targetDir.'/'.basename($filePath);
+            $targetPath = $targetDir . '/' . basename($filePath);
 
             if ($autoBackupFn && is_callable($autoBackupFn) && is_file($targetPath)) {
                 $autoBackupFn($targetPath);
@@ -408,17 +390,10 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
 
     if ($action === 'ai_bg_remove_status') {
         $ids = $post['job_ids'] ?? [];
-        if (is_string($ids)) {
-            $ids = json_decode($ids, true) ?: [];
-        }
-        if (! is_array($ids)) {
-            $ids = [];
-        }
-        $ids = array_filter(array_map(fn ($id) => preg_replace('/[^a-f0-9]/', '', (string) $id), $ids));
-        if (empty($ids)) {
-            echo json_encode(['success' => true, 'jobs' => []]);
-            exit;
-        }
+        if (is_string($ids)) $ids = json_decode($ids, true) ?: [];
+        if (!is_array($ids)) $ids = [];
+        $ids = array_filter(array_map(fn($id) => preg_replace('/[^a-f0-9]/', '', (string)$id), $ids));
+        if (empty($ids)) { echo json_encode(['success' => true, 'jobs' => []]); exit; }
 
         try {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
@@ -434,20 +409,15 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
 
     if ($action === 'ai_bg_remove_cancel') {
         $ids = $post['job_ids'] ?? [];
-        if (is_string($ids)) {
-            $ids = json_decode($ids, true) ?: [];
-        }
-        if (! is_array($ids)) {
-            $ids = [];
-        }
+        if (is_string($ids)) $ids = json_decode($ids, true) ?: [];
+        if (!is_array($ids)) $ids = [];
         $count = 0;
         foreach ($ids as $id) {
-            $id = preg_replace('/[^a-f0-9]/', '', (string) $id);
+            $id = preg_replace('/[^a-f0-9]/', '', (string)$id);
             try {
                 $result = $db->prepare("UPDATE ai_jobs SET status='cancelled', updated_at=? WHERE id=? AND user_id=? AND status IN ('pending','processing')")->execute([time(), $id, $userId]);
                 $count += $result;
-            } catch (Throwable $e) {
-            }
+            } catch (Throwable $e) {}
         }
         echo json_encode(['success' => true, 'cancelled' => $count]);
         exit;
@@ -455,15 +425,11 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
 
     if ($action === 'ai_bg_remove_download_zip') {
         $ids = $post['job_ids'] ?? [];
-        if (is_string($ids)) {
-            $ids = json_decode($ids, true) ?: [];
-        }
-        if (! is_array($ids)) {
-            $ids = [];
-        }
-        $ids = array_filter(array_map(fn ($id) => preg_replace('/[^a-f0-9]/', '', (string) $id), $ids));
+        if (is_string($ids)) $ids = json_decode($ids, true) ?: [];
+        if (!is_array($ids)) $ids = [];
+        $ids = array_filter(array_map(fn($id) => preg_replace('/[^a-f0-9]/', '', (string)$id), $ids));
 
-        if (empty($ids) || ! class_exists('ZipArchive')) {
+        if (empty($ids) || !class_exists('ZipArchive')) {
             echo json_encode(['success' => false, 'error' => 'ZIP unavailable or no jobs provided']);
             exit;
         }
@@ -478,28 +444,26 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
             exit;
         }
 
-        $tmpZip = tempnam(sys_get_temp_dir(), 'ai_bg_').'.zip';
-        $zip = new ZipArchive;
+        $tmpZip = tempnam(sys_get_temp_dir(), 'ai_bg_') . '.zip';
+        $zip = new ZipArchive();
         if ($zip->open($tmpZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             echo json_encode(['success' => false, 'error' => 'Could not create ZIP']);
             exit;
         }
 
         foreach ($jobs as $job) {
-            $absPath = $baseDir.'/'.$job['result_path'];
+            $absPath = $baseDir . '/' . $job['result_path'];
             if (is_file($absPath)) {
                 $zip->addFile($absPath, basename($absPath));
             }
         }
         $zip->close();
 
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
-        $zipName = 'ai_bg_removed_'.date('Ymd_His').'.zip';
+        while (ob_get_level()) ob_end_clean();
+        $zipName = 'ai_bg_removed_' . date('Ymd_His') . '.zip';
         header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="'.$zipName.'"');
-        header('Content-Length: '.filesize($tmpZip));
+        header('Content-Disposition: attachment; filename="' . $zipName . '"');
+        header('Content-Length: ' . filesize($tmpZip));
         readfile($tmpZip);
         @unlink($tmpZip);
         exit;
@@ -509,23 +473,25 @@ function ai_bg_remove_handle(string $action, array $post, string $baseDir, strin
     exit;
 }
 
-function ai_call_bria(string $imagePath, string $apiKey, string $endpoint): array
-{
-    if (! function_exists('curl_init')) {
+function ai_call_bria(string $imagePath, string $apiKey, string $endpoint): array {
+    if (!function_exists('curl_init')) {
         return ['success' => false, 'error' => 'cURL not available on this server'];
     }
 
-    $imageData = @file_get_contents($imagePath);
+    $imageData   = @file_get_contents($imagePath);
     if ($imageData === false) {
         return ['success' => false, 'error' => 'Could not read source image'];
     }
 
     $boundary = bin2hex(random_bytes(16));
-    $ext = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
-
-    // Bria API typically requires PNG or JPG. If it's WebP, convert it to PNG first.
-    if ($ext === 'webp' || $ext === 'gif' || $ext === 'bmp') {
+    $ext      = strtolower(pathinfo($imagePath, PATHINFO_EXTENSION));
+    
+    // Bria API typically requires PNG or JPG. If it's WebP or AVIF, convert it to PNG first.
+    if ($ext === 'webp' || $ext === 'gif' || $ext === 'bmp' || $ext === 'avif') {
         $img = @imagecreatefromstring($imageData);
+        if (!$img && $ext === 'avif' && function_exists('imagecreatefromavif') && is_file($imagePath)) {
+            $img = @imagecreatefromavif($imagePath);
+        }
         if ($img) {
             ob_start();
             imagepng($img);
@@ -535,103 +501,86 @@ function ai_call_bria(string $imagePath, string $apiKey, string $endpoint): arra
         }
     }
 
-    $mimeMap = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
-    $mime = $mimeMap[$ext] ?? 'image/jpeg';
+    $mimeMap  = ['jpg'=>'image/jpeg','jpeg'=>'image/jpeg','png'=>'image/png','webp'=>'image/webp','avif'=>'image/avif'];
+    $mime     = $mimeMap[$ext] ?? 'image/jpeg';
 
-    $body = "--{$boundary}\r\n";
+    $body  = "--{$boundary}\r\n";
     $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"image.{$ext}\"\r\n";
     $body .= "Content-Type: {$mime}\r\n\r\n";
-    $body .= $imageData."\r\n";
+    $body .= $imageData . "\r\n";
     $body .= "--{$boundary}--\r\n";
 
     $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
-        CURLOPT_POST => true,
+        CURLOPT_POST           => true,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POSTFIELDS => $body,
-        CURLOPT_HTTPHEADER => [
-            'api_token: '.$apiKey,
-            'Content-Type: multipart/form-data; boundary='.$boundary,
+        CURLOPT_POSTFIELDS     => $body,
+        CURLOPT_HTTPHEADER     => [
+            'api_token: ' . $apiKey,
+            'Content-Type: multipart/form-data; boundary=' . $boundary,
             'Accept: application/json',
         ],
-        CURLOPT_TIMEOUT => 120,
+        CURLOPT_TIMEOUT        => 120,
         CURLOPT_CONNECTTIMEOUT => 15,
     ]);
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
+    $curlErr  = curl_error($ch);
     curl_close($ch);
 
     if ($curlErr) {
-        return ['success' => false, 'error' => 'Network error: '.$curlErr];
+        return ['success' => false, 'error' => 'Network error: ' . $curlErr];
     }
     if ($httpCode !== 200) {
         $errMsg = '';
-        $decoded = @json_decode((string) $response, true);
-        if (is_array($decoded)) {
-            $errMsg = $decoded['error'] ?? $decoded['message'] ?? '';
-        }
-
-        return ['success' => false, 'error' => "Bria API error (HTTP {$httpCode})".($errMsg ? ": {$errMsg}" : '')];
+        $decoded = @json_decode((string)$response, true);
+        if (is_array($decoded)) $errMsg = $decoded['error'] ?? $decoded['message'] ?? '';
+        return ['success' => false, 'error' => "Bria API error (HTTP {$httpCode})" . ($errMsg ? ": {$errMsg}" : '')];
     }
 
     // Bria returns JSON with result_url OR raw image binary
-    $decoded = @json_decode((string) $response, true);
-    if (is_array($decoded) && ! empty($decoded['result_url'])) {
+    $decoded = @json_decode((string)$response, true);
+    if (is_array($decoded) && !empty($decoded['result_url'])) {
         // Fetch the result image
         $imgData = @file_get_contents($decoded['result_url']);
         if ($imgData === false) {
             return ['success' => false, 'error' => 'Could not download result from Bria'];
         }
-
         return ['success' => true, 'image_data' => $imgData];
     }
 
     // Raw binary PNG response
-    if (strlen((string) $response) > 100) {
+    if (strlen((string)$response) > 100) {
         return ['success' => true, 'image_data' => $response];
     }
 
     return ['success' => false, 'error' => 'Unexpected response from Bria API'];
 }
 
-function ai_process_output_image(string $pngPath, string $outPath, string $format, string $type, string $size = ''): bool
-{
-    if (! function_exists('imagecreatefrompng')) {
-        return false;
-    }
+function ai_process_output_image(string $pngPath, string $outPath, string $format, string $type, string $size = ''): bool {
+    if (!function_exists('imagecreatefrompng')) return false;
 
     $src = @imagecreatefrompng($pngPath);
-    if (! $src) {
-        return false;
-    }
+    if (!$src) return false;
 
     $w = imagesx($src);
     $h = imagesy($src);
-
+    
     $outW = $w;
     $outH = $h;
-
+    
     if ($size && strpos($size, 'x') !== false) {
         $parts = explode('x', $size);
-        $outW = (int) $parts[0];
-        $outH = (int) $parts[1];
+        $outW = (int)$parts[0];
+        $outH = (int)$parts[1];
     }
-
-    if ($outW <= 0) {
-        $outW = $w;
-    }
-    if ($outH <= 0) {
-        $outH = $h;
-    }
+    
+    if ($outW <= 0) $outW = $w;
+    if ($outH <= 0) $outH = $h;
 
     $canvas = imagecreatetruecolor($outW, $outH);
-    if (! $canvas) {
-        imagedestroy($src);
-
-        return false;
-    }
+    if (!$canvas) { imagedestroy($src); return false; }
 
     if ($type === 'white') {
         $white = imagecolorallocate($canvas, 255, 255, 255);
@@ -643,18 +592,18 @@ function ai_process_output_image(string $pngPath, string $outPath, string $forma
         $transparent = imagecolorallocatealpha($canvas, 0, 0, 0, 127);
         imagefill($canvas, 0, 0, $transparent);
     }
-
+    
     // Scale and center the source image to fit inside the new canvas size
     if ($w > 0 && $h > 0) {
         $scale = min($outW / $w, $outH / $h);
-        $newW = (int) round($w * $scale);
-        $newH = (int) round($h * $scale);
-        $dstX = (int) round(($outW - $newW) / 2);
-        $dstY = (int) round(($outH - $newH) / 2);
-
+        $newW = (int)round($w * $scale);
+        $newH = (int)round($h * $scale);
+        $dstX = (int)round(($outW - $newW) / 2);
+        $dstY = (int)round(($outH - $newH) / 2);
+        
         imagecopyresampled($canvas, $src, $dstX, $dstY, 0, 0, $newW, $newH, $w, $h);
     }
-
+    
     imagedestroy($src);
 
     if ($format === 'jpg' || $format === 'jpeg') {
@@ -666,6 +615,5 @@ function ai_process_output_image(string $pngPath, string $outPath, string $forma
     }
 
     imagedestroy($canvas);
-
-    return (bool) $result;
+    return (bool)$result;
 }

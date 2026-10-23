@@ -154,7 +154,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
         if (!res.ok || !data.success) {
           applyFailure(data, 'Google sign-in failed. Please try again.');
         } else {
-          onLoginSuccessRef.current(data.user, data.csrf_token);
+          onLoginSuccessRef.current(data.user, data.csrf_token, data.session_token || data.token);
         }
       } catch {
         setError('Unable to reach the server. Please check your connection and try again.');
@@ -224,7 +224,7 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
         applyFailure(data, 'Authentication failed. Please check your credentials.');
         setPassword('');
       } else {
-        onLoginSuccess(data.user, data.csrf_token);
+        onLoginSuccess(data.user, data.csrf_token, data.session_token || data.token);
       }
     } catch {
       setError('Unable to reach the server. Please check your connection and try again.');

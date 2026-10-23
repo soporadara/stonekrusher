@@ -83,8 +83,13 @@ export default function CmsSeoSuite({ csrfToken }) {
             className="cms-btn cms-btn-primary"
             onClick={handlePingSearchEngines}
             disabled={pingLoading}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
           >
-            <span>📡</span> {pingLoading ? 'Pinging Engines...' : 'Ping IndexNow (Bing & Google)'}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="2" />
+              <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" />
+            </svg>
+            <span>{pingLoading ? 'Pinging Engines...' : 'Ping IndexNow (Bing & Google)'}</span>
           </button>
         </div>
       </div>
@@ -117,7 +122,13 @@ export default function CmsSeoSuite({ csrfToken }) {
               {s.sitemap_exists ? 'Active in public/sitemap.xml' : 'Sitemap file not found'}
             </div>
           </div>
-          <div className="cms-stat-icon-wrapper cms-stat-icon-green">🗺️</div>
+          <div className="cms-stat-icon-wrapper cms-stat-icon-green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+              <line x1="8" y1="2" x2="8" y2="18" />
+              <line x1="16" y1="6" x2="16" y2="22" />
+            </svg>
+          </div>
         </div>
 
         <div className="cms-stat-card">
@@ -128,7 +139,11 @@ export default function CmsSeoSuite({ csrfToken }) {
               Pre-rendered static HTML pages
             </div>
           </div>
-          <div className="cms-stat-icon-wrapper cms-stat-icon-blue">🚜</div>
+          <div className="cms-stat-icon-wrapper cms-stat-icon-blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 17h20M6 17v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4M14 11V7a2 2 0 0 1 2-2h3l3 4v8M2 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0M18 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0" />
+            </svg>
+          </div>
         </div>
 
         <div className="cms-stat-card">
@@ -139,7 +154,12 @@ export default function CmsSeoSuite({ csrfToken }) {
               Distinct product hubs
             </div>
           </div>
-          <div className="cms-stat-icon-wrapper cms-stat-icon-purple">🏷️</div>
+          <div className="cms-stat-icon-wrapper cms-stat-icon-purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+          </div>
         </div>
 
         <div className="cms-stat-card">
@@ -152,7 +172,15 @@ export default function CmsSeoSuite({ csrfToken }) {
               public/llms.txt {s.llms_exists ? 'verified' : 'not found'}
             </div>
           </div>
-          <div className="cms-stat-icon-wrapper cms-stat-icon-amber">🤖</div>
+          <div className="cms-stat-icon-wrapper cms-stat-icon-amber">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <circle cx="12" cy="5" r="2" />
+              <path d="M12 7v4" />
+              <line x1="8" y1="16" x2="8.01" y2="16" />
+              <line x1="16" y1="16" x2="16.01" y2="16" />
+            </svg>
+          </div>
         </div>
       </div>
 

@@ -7,22 +7,22 @@ export default function CmsCommandPalette({ isOpen, onClose, onNavigateTab }) {
 
   const actions = [
     // Dashboards
-    { id: 'overview', title: 'Analytics Dashboard', category: 'Dashboards', icon: '📊' },
-    { id: 'crm', title: 'CRM & Quote Leads', category: 'Dashboards', icon: '📋' },
-    { id: 'support', title: 'Support & Warranty Tracker', category: 'Dashboards', icon: '🎫' },
-    { id: 'seo', title: 'SEO & Web Rankings Suite', category: 'Dashboards', icon: '🌐' },
+    { id: 'overview', title: 'Dashboard', category: 'Operations', icon: '📊' },
+    { id: 'crm', title: 'Leads & Inquiries', category: 'Operations', icon: '📋' },
+    { id: 'support', title: 'Support Tickets', category: 'Operations', icon: '🎫' },
+    { id: 'seo', title: 'SEO Suite', category: 'Operations', icon: '🌐' },
 
     // Content & Catalog
-    { id: 'posts_new', title: 'Compose New Blog Post', category: 'Content Hub', icon: '✍️' },
-    { id: 'posts', title: 'All Blog Articles', category: 'Content Hub', icon: '📝' },
-    { id: 'categories', title: 'Categories & Topics', category: 'Content Hub', icon: '🏷️' },
-    { id: 'products', title: 'Machinery Catalog (174 Models)', category: 'Catalog', icon: '🚜' },
-    { id: 'media', title: 'Media Library File Manager', category: 'Assets', icon: '📁' },
+    { id: 'posts_new', title: 'Create Article', category: 'Article', icon: '✍️' },
+    { id: 'posts', title: 'Articles', category: 'Article', icon: '📝' },
+    { id: 'categories', title: 'Categories', category: 'Article', icon: '🏷️' },
+    { id: 'products', title: 'Product Catalog', category: 'Product', icon: '🚜' },
+    { id: 'media', title: 'Media Library', category: 'Media', icon: '📁' },
 
-    // Governance & Security
-    { id: 'security', title: 'Security Center & Shield', category: 'Governance', icon: '🛡️' },
-    { id: 'users', title: 'Users & Roles Management', category: 'Governance', icon: '👥' },
-    { id: 'settings', title: 'CMS System Settings', category: 'System', icon: '⚙️' }
+    // Settings
+    { id: 'security', title: 'Security Center', category: 'Settings', icon: '🛡️' },
+    { id: 'users', title: 'Team Users', category: 'Settings', icon: '👥' },
+    { id: 'settings', title: 'General Settings', category: 'Settings', icon: '⚙️' }
   ];
 
   const filtered = actions.filter(a =>

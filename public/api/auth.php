@@ -96,6 +96,7 @@ switch ($action) {
                     'success' => true,
                     'message' => 'Login successful',
                     'token' => $sessionData['token'],
+                    'session_token' => $sessionData['token'],
                     'csrf_token' => $sessionData['csrf_token'],
                     'expires_at' => $sessionData['expires_at'],
                     'user' => $sessionData['user']
@@ -186,6 +187,7 @@ switch ($action) {
             'success' => true,
             'message' => 'Login successful',
             'token' => $sessionData['token'],
+            'session_token' => $sessionData['token'],
             'csrf_token' => $sessionData['csrf_token'],
             'expires_at' => $sessionData['expires_at'],
             'user' => $sessionData['user']

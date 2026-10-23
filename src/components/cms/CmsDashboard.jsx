@@ -765,7 +765,13 @@ export default function CmsDashboard({
             onClick={handleExportPdfReport}
             title="Generate high-contrast print / PDF report of fleet & blog rankings"
           >
-            <span>📄</span> Export as PDF
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
+            <span>Export as PDF</span>
           </button>
 
           {/* Quick Subview Switcher */}
@@ -774,13 +780,23 @@ export default function CmsDashboard({
               className={`cms-dash-subnav-btn ${subView === 'overview' ? 'active' : ''}`}
               onClick={() => setSubView('overview')}
             >
-              <span>📊</span> Overview
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="9" rx="1" />
+                <rect x="14" y="3" width="7" height="5" rx="1" />
+                <rect x="14" y="12" width="7" height="9" rx="1" />
+                <rect x="3" y="16" width="7" height="5" rx="1" />
+              </svg>
+              <span>Overview</span>
             </button>
             <button
               className={`cms-dash-subnav-btn ${subView === 'topBlogs' ? 'active' : ''}`}
               onClick={() => setSubView('topBlogs')}
             >
-              <span>🔥</span> Top Blogs
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+              <span>Top Blogs</span>
             </button>
           </div>
 
@@ -790,33 +806,16 @@ export default function CmsDashboard({
             target="_blank"
             rel="noopener noreferrer"
             className="cms-donezo-btn-secondary cms-donezo-btn-sm"
-            style={{ textDecoration: 'none', padding: '9px 16px' }}
+            style={{ textDecoration: 'none', padding: '9px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             title="Open StoneKrusher public website in new tab"
           >
-            <span>🌐</span> Live Site ↗
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span>Live Site ↗</span>
           </a>
-
-          {/* Sync Catalog */}
-          <button
-            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
-            onClick={handlePublishCatalog}
-            disabled={actionLoading}
-            title="Publish verified products & blog articles to public catalog"
-            style={{ padding: '9px 16px' }}
-          >
-            <span>🚀</span> {actionLoading ? 'Syncing...' : 'Sync Catalog'}
-          </button>
-
-          {/* Flush Cache */}
-          <button
-            className="cms-donezo-btn-secondary cms-donezo-btn-sm"
-            onClick={handlePurgeCache}
-            disabled={actionLoading}
-            title="Flush PHP OPcache & LiteSpeed Server Cache"
-            style={{ padding: '9px 16px' }}
-          >
-            <span>⚡</span> Flush Cache
-          </button>
         </div>
       </div>
 
@@ -847,7 +846,9 @@ export default function CmsDashboard({
                 {totalProductsCount}
               </div>
               <div className="cms-donezo-kpi-sub" style={{ fontSize: '0.8rem', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🚜</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 17h20M6 17v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v4M14 11V7a2 2 0 0 1 2-2h3l3 4v8M2 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0M18 17a2 2 0 1 0 4 0 2 2 0 1 0-4 0" />
+                </svg>
                 <span>{publishedProductsCount} Published &bull; 8 Fleet Categories</span>
               </div>
             </div>
@@ -867,7 +868,10 @@ export default function CmsDashboard({
                 {publishedBlogsCount}
               </div>
               <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📝</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                </svg>
                 <span>6 Technical Guides &bull; 0 Drafts</span>
               </div>
             </div>
@@ -899,28 +903,11 @@ export default function CmsDashboard({
                 {totalBlogViewsCount.toLocaleString()}
               </div>
               <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🔒</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
                 <span>Private to CMS &bull; Hidden on live site</span>
-              </div>
-            </div>
-
-            {/* Card 4: CRM Pipeline & RFQ Inquiries */}
-            <div
-              className="cms-donezo-card"
-              onClick={() => onNavigateTab('crm')}
-              style={{ cursor: 'pointer' }}
-              title="Click to manage Inbound Quotes & RFQs"
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>CRM Pipeline & RFQs</span>
-                <span className="cms-donezo-arrow-btn">↗</span>
-              </div>
-              <div style={{ fontSize: '2.6rem', fontWeight: 800, lineHeight: 1, color: 'var(--cms-text)', letterSpacing: '-0.02em' }}>
-                ${(pipelineValue / 1000).toFixed(1)}k
-              </div>
-              <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>💼</span>
-                <span>{totalInquiriesCount} Total Quotes &bull; {newInquiriesCount} New Pending</span>
               </div>
             </div>
 
@@ -1038,7 +1025,21 @@ export default function CmsDashboard({
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '1.4rem' }}>💬</span>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                      </div>
                       <div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
                           Customer Comments
@@ -1078,7 +1079,23 @@ export default function CmsDashboard({
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '1.4rem' }}>🎫</span>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(59, 130, 246, 0.12)',
+                        color: '#3b82f6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                          <line x1="9" y1="9" x2="9.01" y2="9" />
+                          <line x1="15" y1="15" x2="15.01" y2="15" />
+                        </svg>
+                      </div>
                       <div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
                           Support & Warranty
@@ -1118,7 +1135,22 @@ export default function CmsDashboard({
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '1.4rem' }}>📋</span>
+                      <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        background: 'rgba(245, 158, 11, 0.12)',
+                        color: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                        </svg>
+                      </div>
                       <div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--cms-text)' }}>
                           Machinery RFQ Leads
@@ -1146,10 +1178,14 @@ export default function CmsDashboard({
               <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--cms-card-border, #e2e8f0)' }}>
                 <button
                   className="cms-donezo-btn-primary"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  style={{ width: '100%', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
                   onClick={() => setSubView('topBlogs')}
                 >
-                  <span>🔥</span> View Top Blogs Performance Ranking
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
+                  <span>View Top Blogs Performance Ranking</span>
                 </button>
               </div>
             </div>

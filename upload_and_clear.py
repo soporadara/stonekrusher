@@ -78,16 +78,26 @@ def find_sshpass():
             return p
     return shutil.which('sshpass')
 
+COMMON_SSH_OPTS = [
+    "-o", "StrictHostKeyChecking=accept-new",
+    "-o", "ServerAliveInterval=15",
+    "-o", "ServerAliveCountMax=4",
+    "-o", "ConnectTimeout=30",
+    "-o", "ControlMaster=auto",
+    "-o", "ControlPath=/tmp/ssh-stonekrusher-%C",
+    "-o", "ControlPersist=15m"
+]
+
 def get_ssh_cmd_prefix():
     """Determine the best SSH command shape (key-based alias or explicit params)."""
     # Test SSH_ALIAS first (Host stonekrusher-prod in ~/.ssh/config)
     try:
         res = subprocess.run(
-            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", SSH_ALIAS, "echo OK"],
+            ["ssh"] + COMMON_SSH_OPTS + ["-o", "BatchMode=yes", SSH_ALIAS, "echo OK"],
             capture_output=True, text=True, timeout=20
         )
         if res.returncode == 0 and "OK" in res.stdout:
-            return ["ssh", SSH_ALIAS], SSH_ALIAS
+            return ["ssh"] + COMMON_SSH_OPTS + [SSH_ALIAS], SSH_ALIAS
     except Exception:
         pass
 
@@ -95,25 +105,25 @@ def get_ssh_cmd_prefix():
     if os.path.exists(SSH_KEY):
         try:
             res = subprocess.run(
-                ["ssh", "-i", SSH_KEY, "-p", SSH_PORT, "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", f"{SSH_USER}@{SSH_HOST}", "echo OK"],
+                ["ssh", "-i", SSH_KEY, "-p", SSH_PORT] + COMMON_SSH_OPTS + ["-o", "BatchMode=yes", f"{SSH_USER}@{SSH_HOST}", "echo OK"],
                 capture_output=True, text=True, timeout=20
             )
             if res.returncode == 0 and "OK" in res.stdout:
-                return ["ssh", "-i", SSH_KEY, "-p", SSH_PORT, f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
+                return ["ssh", "-i", SSH_KEY, "-p", SSH_PORT] + COMMON_SSH_OPTS + [f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
         except Exception:
             pass
 
     # Fallback to sshpass with password
     sshpass = find_sshpass()
     if sshpass:
-        return [sshpass, "-p", SSH_PASS_FALLBACK, "ssh", "-p", SSH_PORT, "-o", "StrictHostKeyChecking=accept-new", f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
+        return [sshpass, "-p", SSH_PASS_FALLBACK, "ssh", "-p", SSH_PORT] + COMMON_SSH_OPTS + [f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
 
     # Default to direct ssh
-    return ["ssh", "-p", SSH_PORT, f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
+    return ["ssh", "-p", SSH_PORT] + COMMON_SSH_OPTS + [f"{SSH_USER}@{SSH_HOST}"], f"{SSH_USER}@{SSH_HOST}"
 
 def get_rsync_e_flag():
     """Return the -e flag for rsync."""
-    ssh_opts = "-o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=30"
+    ssh_opts = "-o StrictHostKeyChecking=accept-new -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o ConnectTimeout=30 -o ControlMaster=auto -o ControlPath=/tmp/ssh-stonekrusher-%C -o ControlPersist=15m"
     if os.path.exists(SSH_KEY):
         return f"ssh -i {SSH_KEY} -p {SSH_PORT} {ssh_opts}"
     return f"ssh -p {SSH_PORT} {ssh_opts}"

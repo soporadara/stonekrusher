@@ -119,12 +119,16 @@ export default function CmsCategoryManager({ csrfToken }) {
     <div>
       <div className="cms-section-header">
         <div className="cms-section-title-group">
-          <h1>Blog Categories & Topics</h1>
-          <p>Organize machinery articles, guides, safety manuals, and technical comparisons</p>
+          <h1>Equipment & Blog Categories</h1>
+          <p>Organize machinery fleet taxonomy, technical field guides, and article topics</p>
         </div>
         <div className="cms-section-actions">
           <button className="cms-btn cms-btn-primary" onClick={handleOpenCreate}>
-            <span>🏷️</span> Add Category
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Add Category</span>
           </button>
         </div>
       </div>
@@ -134,48 +138,58 @@ export default function CmsCategoryManager({ csrfToken }) {
           <table className="cms-table">
             <thead>
               <tr>
-                <th>Category Name</th>
-                <th>URL Slug</th>
-                <th>Description</th>
-                <th>Assigned Articles</th>
-                <th>Actions</th>
+                <th style={{ width: '22%' }}>Category Name</th>
+                <th style={{ width: '18%' }}>URL Slug</th>
+                <th style={{ width: '38%' }}>Description</th>
+                <th style={{ width: '12%' }}>Assigned Articles</th>
+                <th style={{ width: '10%', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px' }}>Loading categories...</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '36px', color: 'var(--cms-text-muted)' }}>Loading categories...</td></tr>
               ) : categories.length === 0 ? (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px' }}>No categories created yet.</td></tr>
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '36px', color: 'var(--cms-text-muted)' }}>No categories created yet.</td></tr>
               ) : (
                 categories.map((cat) => (
                   <tr key={cat.id}>
                     <td style={{ fontWeight: '700', color: 'var(--cms-text)' }}>
-                      {cat.name}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cms-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                          <line x1="7" y1="7" x2="7.01" y2="7" />
+                        </svg>
+                        <span>{cat.name}</span>
+                      </div>
                     </td>
                     <td>
-                      <code style={{ fontSize: '0.78rem', background: 'var(--cms-input-bg)', padding: '2px 6px', borderRadius: '4px' }}>
+                      <code style={{ fontSize: '0.78rem', background: 'var(--cms-input-bg)', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--cms-card-border)' }}>
                         /{cat.slug}
                       </code>
                     </td>
-                    <td style={{ color: 'var(--cms-text-muted)', fontSize: '0.84rem' }}>
+                    <td style={{ color: 'var(--cms-text-muted)', fontSize: '0.86rem', lineHeight: 1.5 }}>
                       {cat.description || '—'}
                     </td>
                     <td>
-                      <span className="cms-badge cms-badge-info">
+                      <span className="cms-badge cms-badge-info" style={{ padding: '4px 10px' }}>
                         {cat.post_count || 0} Posts
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'flex-end' }}>
                         <button
+                          type="button"
                           className="cms-btn cms-btn-secondary cms-btn-sm"
                           onClick={() => handleOpenEdit(cat)}
+                          title="Edit Category Details"
                         >
                           Edit
                         </button>
                         <button
+                          type="button"
                           className="cms-btn cms-btn-danger cms-btn-sm"
                           onClick={() => handleDeleteClick(cat)}
+                          title="Delete Category"
                         >
                           Delete
                         </button>
