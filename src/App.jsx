@@ -1689,11 +1689,8 @@ export const getUserProfileAvatar = (email, name) => {
 
   // 1. Direct match for staff, admin, verified users, and real accounts
   if (
-    cleanEmail.includes('sopoa') ||
-    cleanEmail.includes('sopo') ||
-    cleanEmail.includes('latoureiffel') ||
-    cleanEmail.includes('latour') ||
-    cleanEmail.includes('kiuq.com') ||
+    cleanEmail === 'latoureiffel1802@gmail.com' ||
+    cleanEmail === 'sopoadara@gmail.com' ||
     cleanEmail.endsWith('@kiuq.com') ||
     cleanEmail === 'admin@stonekrusher.com' ||
     cleanEmail === 'admin@happymachinery.com' ||
@@ -4086,7 +4083,12 @@ export default function App() {
     }
 
     const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
-    const isSpecialReal = clean.includes('latoureiffel') || clean.includes('sopo') || clean.includes('kiuq');
+    const isVerifiedViaAuth = Boolean(
+      (verifiedGoogleUser?.email?.toLowerCase() === clean && verifiedGoogleUser?.verified) ||
+      clean === 'latoureiffel1802@gmail.com' ||
+      clean === 'sopoadara@gmail.com' ||
+      clean.endsWith('@kiuq.com')
+    );
 
     if (isGoogle) {
       const username = clean.split('@')[0] || '';
@@ -4095,16 +4097,29 @@ export default function App() {
           status: 'error',
           message: 'Invalid Google email: Gmail usernames must be between 6 and 30 characters.',
           isValid: false,
+          isVerified: false,
           isGoogle: true
         });
         return;
       }
-      setCommentEmailCheck({
-        status: 'valid',
-        message: isSpecialReal ? 'Real Google account verified.' : 'Real Google email detected. Click Continue with Google below to link your official photo.',
-        isValid: true,
-        isGoogle: true
-      });
+
+      if (isVerifiedViaAuth) {
+        setCommentEmailCheck({
+          status: 'valid',
+          message: '✓ Real Google account verified.',
+          isValid: true,
+          isVerified: true,
+          isGoogle: true
+        });
+      } else {
+        setCommentEmailCheck({
+          status: 'unverified',
+          message: '⚠️ Google account not verified. Please click "Comment with Google" above to authenticate this real account.',
+          isValid: false,
+          isVerified: false,
+          isGoogle: true
+        });
+      }
       return;
     }
 
@@ -4112,14 +4127,32 @@ export default function App() {
     fetch(`/api/verify-comment-email.php?email=${encodeURIComponent(clean)}`)
       .then(res => res.json())
       .then(data => {
-        if (data.valid) {
-          setCommentEmailCheck({ status: 'valid', message: data.message || 'Real email verified.', isValid: true, isGoogle: data.is_google });
+        if (data.valid && data.verified) {
+          setCommentEmailCheck({
+            status: 'valid',
+            message: '✓ Real email domain verified.',
+            isValid: true,
+            isVerified: true,
+            isGoogle: false
+          });
         } else {
-          setCommentEmailCheck({ status: 'error', message: data.error || 'Fake email detected: Domain has no mail server.', isValid: false, isGoogle: false });
+          setCommentEmailCheck({
+            status: 'error',
+            message: data.error || (data.message || '⚠️ Unverified email. Please use a verified Google account.'),
+            isValid: false,
+            isVerified: false,
+            isGoogle: Boolean(data.is_google)
+          });
         }
       })
       .catch(() => {
-        setCommentEmailCheck({ status: 'valid', message: 'Real email format verified.', isValid: true, isGoogle: false });
+        setCommentEmailCheck({
+          status: isVerifiedViaAuth ? 'valid' : 'unverified',
+          message: isVerifiedViaAuth ? '✓ Real email verified.' : '⚠️ Email unverified. Please authenticate with Google above.',
+          isValid: isVerifiedViaAuth,
+          isVerified: isVerifiedViaAuth,
+          isGoogle: false
+        });
       });
   };
 
@@ -4152,7 +4185,7 @@ export default function App() {
       'fake.com', 'test.com', 'example.com', 'asdf.com', 'qwerty.com'
     ];
     if (disposableDomains.includes(domain) || domain.endsWith('.fake') || domain.endsWith('.test')) {
-      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real email address or sign in with Google.');
+      setCommentSubmitError('Fake or disposable email addresses cannot comment. Please use your real verified email address.');
       return;
     }
 
@@ -4161,12 +4194,18 @@ export default function App() {
       return;
     }
 
+    const isGoogle = (domain === 'gmail.com' || domain === 'googlemail.com' || domain === 'google.com');
     const isVerifiedReal = Boolean(
-      (verifiedGoogleUser?.email === cleanEmail && verifiedGoogleUser?.verified) ||
-      cleanEmail.includes('latoureiffel') ||
-      cleanEmail.includes('sopo') ||
-      cleanEmail.includes('kiuq')
+      (verifiedGoogleUser?.email?.toLowerCase() === cleanEmail && verifiedGoogleUser?.verified) ||
+      cleanEmail === 'latoureiffel1802@gmail.com' ||
+      cleanEmail === 'sopoadara@gmail.com' ||
+      cleanEmail.endsWith('@kiuq.com')
     );
+
+    if (isGoogle && !isVerifiedReal) {
+      setCommentSubmitError('This Google account has not been verified. Please click "Comment with Google" above to authenticate your real account.');
+      return;
+    }
 
     const avatarUrl = (verifiedGoogleUser?.email === cleanEmail && verifiedGoogleUser?.picture)
       ? verifiedGoogleUser.picture
@@ -9715,7 +9754,7 @@ export default function App() {
                                     loading="lazy"
                                     referrerPolicy="no-referrer"
                                     onError={(e) => {
-                                      if (e.currentTarget.src !== USER_REAL_AVATAR && (comment.authorEmail?.toLowerCase().includes('kiuq') || comment.authorEmail?.toLowerCase().includes('sopo'))) {
+                                      if (e.currentTarget.src !== USER_REAL_AVATAR && (comment.authorEmail?.toLowerCase() === 'latoureiffel1802@gmail.com' || comment.authorEmail?.toLowerCase() === 'sopoadara@gmail.com' || comment.authorEmail?.toLowerCase().endsWith('@kiuq.com'))) {
                                         e.currentTarget.src = USER_REAL_AVATAR;
                                         return;
                                       }
@@ -9733,7 +9772,16 @@ export default function App() {
                                   <div className="comment-header-row">
                                     <div className="comment-author-info">
                                       <strong className="commenter-name text-black">{comment.authorName}</strong>
-                                      <span className="comment-verified-badge" title="Verified Commenter via Google / Firebase (Email kept private)">
+                                      {comment.authorEmail && (
+                                        <span className="comment-email-chip" title={`Verified email: ${comment.authorEmail}`}>
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                            <polyline points="22,6 12,13 2,6"/>
+                                          </svg>
+                                          <span>{comment.authorEmail}</span>
+                                        </span>
+                                      )}
+                                      <span className="comment-verified-badge" title={`Verified Commenter (${comment.authorEmail || 'Public profile'})`}>
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                                         </svg>
@@ -9751,179 +9799,236 @@ export default function App() {
                     )}
                   </div>
 
-                  <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
-                      <h3 style={{ margin: 0 }}>Leave a Comment</h3>
-                      {verifiedGoogleUser ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 163, 74, 0.08)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
-                          <span>✓ Verified Google Account</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              localStorage.removeItem('stonekrusher_verified_commenter');
-                              setVerifiedGoogleUser(null);
-                            }}
-                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
-                          >
-                            Sign out
-                          </button>
+                  {(() => {
+                    const currentFormEmail = commentForm.authorEmail.trim().toLowerCase();
+                    const isFormEmailGoogle = currentFormEmail.endsWith('@gmail.com') || currentFormEmail.endsWith('@googlemail.com') || currentFormEmail.endsWith('@google.com');
+                    const isFormEmailVerified = Boolean(
+                      currentFormEmail &&
+                      (
+                        (verifiedGoogleUser?.email && verifiedGoogleUser.email.toLowerCase() === currentFormEmail && verifiedGoogleUser?.verified) ||
+                        currentFormEmail === 'latoureiffel1802@gmail.com' ||
+                        currentFormEmail === 'sopoadara@gmail.com' ||
+                        currentFormEmail.endsWith('@kiuq.com') ||
+                        (!isFormEmailGoogle && commentEmailCheck.isValid && commentEmailCheck.isVerified && commentEmailCheck.status === 'valid')
+                      )
+                    );
+
+                    return (
+                      <form className="comment-reply-form" onSubmit={handleCommentSubmit}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+                          <h3 style={{ margin: 0 }}>Leave a Comment</h3>
+                          {verifiedGoogleUser ? (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(22, 163, 74, 0.08)', padding: '5px 12px', borderRadius: '999px', fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
+                              <span>✓ Verified Google Account</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  localStorage.removeItem('stonekrusher_verified_commenter');
+                                  setVerifiedGoogleUser(null);
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
+                              >
+                                Sign out
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
 
-                    <p className="comment-form-note">
-                      Your email address will not be published. Real profile picture is connected via your verified Google / email account. Only real, verified emails can comment. Required fields are marked *
-                    </p>
+                        <p className="comment-form-note">
+                          <strong>Public Discussion:</strong> Your real name, verified email, and official profile photo will be displayed publicly on this article. Only authenticated, verified real accounts are permitted to comment. Required fields are marked *
+                        </p>
 
-                    {/* Google 1-Click Comment Banner */}
-                    {!verifiedGoogleUser && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '14px',
-                        padding: '14px 18px',
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        marginBottom: '20px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-                      }}>
-                        <div>
-                          <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>⚡</span> Comment with Google
-                          </div>
-                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                            Sign in to display your real official Google profile picture & verified badge.
-                          </div>
-                        </div>
-                        <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
-                      </div>
-                    )}
-
-                    {/* Real Profile Photo Preview Card */}
-                    {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
-                      <div
-                        className="comment-email-avatar-preview"
-                        style={{
-                          borderLeft: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
-                            ? '3px solid #16a34a'
-                            : '3px solid #f59e0b',
-                          background: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
-                            ? 'rgba(22, 163, 74, 0.05)'
-                            : '#f8fafc'
-                        }}
-                      >
-                        <img
-                          src={verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() && verifiedGoogleUser?.picture
-                            ? verifiedGoogleUser.picture
-                            : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)}
-                          alt="Profile photo preview"
-                          className="comment-preview-avatar-img"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            if (e.currentTarget.src !== USER_REAL_AVATAR) {
-                              e.currentTarget.src = USER_REAL_AVATAR;
-                            }
-                          }}
-                        />
-                        <div className="comment-preview-meta">
-                          <span className="comment-preview-title" style={{
-                            color: (commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
-                              ? '#15803d'
-                              : '#1e293b',
+                        {/* Google 1-Click Comment Banner */}
+                        {!verifiedGoogleUser && (
+                          <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '5px'
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: '14px',
+                            padding: '14px 18px',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '12px',
+                            marginBottom: '20px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                           }}>
-                            {(commentEmailCheck.isValid && (verifiedGoogleUser?.email === commentForm.authorEmail.trim().toLowerCase() || commentForm.authorEmail.toLowerCase().includes('latoureiffel') || commentForm.authorEmail.toLowerCase().includes('sopo') || commentForm.authorEmail.toLowerCase().includes('kiuq')))
-                              ? '✓ Real Profile Photo Connected'
-                              : 'Real Profile Photo Connected'}
-                          </span>
-                          <span className="comment-preview-sub">
-                            {commentEmailCheck.isValid
-                              ? 'Your email is kept private and will never be displayed on the page.'
-                              : (commentEmailCheck.message || 'Please use a real email address.')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="comment-input-row">
-                      <label>
-                        Name *
-                        <input 
-                          type="text" 
-                          required 
-                          placeholder="John Doe" 
-                          value={commentForm.authorName} 
-                          onChange={(e) => setCommentForm(prev => ({ ...prev, authorName: e.target.value }))}
-                        />
-                      </label>
-                      <label>
-                        Email *
-                        <input 
-                          type="email" 
-                          required 
-                          placeholder="latoureiffel1802@gmail.com" 
-                          value={commentForm.authorEmail} 
-                          onChange={(e) => handleCommentEmailChange(e.target.value)}
-                          style={{
-                            borderColor: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#d1d5db')
-                          }}
-                        />
-                        {commentEmailCheck.message && (
-                          <span style={{
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            marginTop: '2px',
-                            color: commentEmailCheck.status === 'error' ? '#ef4444' : (commentEmailCheck.status === 'valid' ? '#16a34a' : '#64748b')
-                          }}>
-                            {commentEmailCheck.message}
-                          </span>
+                            <div>
+                              <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>⚡</span> Comment with Google
+                              </div>
+                              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                                Sign in to display your real official Google profile picture & verified badge.
+                              </div>
+                            </div>
+                            <div ref={googleCommentBtnRef} id="google-comment-signin-btn"></div>
+                          </div>
                         )}
-                      </label>
-                    </div>
-                    
-                    <label className="comment-textarea-label">
-                      Comment *
-                      <textarea 
-                        required 
-                        rows="5" 
-                        placeholder="Share your thoughts or questions about this machine/guide..." 
-                        value={commentForm.content} 
-                        onChange={(e) => setCommentForm(prev => ({ ...prev, content: e.target.value }))}
-                      />
-                    </label>
 
-                    {commentSubmitError && (
-                      <div style={{
-                        padding: '10px 14px',
-                        background: '#fee2e2',
-                        border: '1px solid #f87171',
-                        borderRadius: '8px',
-                        color: '#b91c1c',
-                        fontSize: '12.5px',
-                        fontWeight: '600',
-                        marginBottom: '16px'
-                      }}>
-                        ⚠️ {commentSubmitError}
-                      </div>
-                    )}
-                    
-                    <button
-                      type="submit"
-                      className="cta-button accent-pill-btn comment-submit-btn"
-                      disabled={commentEmailCheck.status === 'error'}
-                      style={{
-                        opacity: commentEmailCheck.status === 'error' ? 0.6 : 1,
-                        cursor: commentEmailCheck.status === 'error' ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      Post Comment
-                    </button>
-                  </form>
+                        {/* Real Profile Photo Preview Card */}
+                        {commentForm.authorEmail && commentForm.authorEmail.includes('@') && (
+                          <div
+                            className="comment-email-avatar-preview"
+                            style={{
+                              borderLeft: isFormEmailVerified ? '3px solid #16a34a' : '3px solid #f59e0b',
+                              background: isFormEmailVerified ? 'rgba(22, 163, 74, 0.05)' : '#fffbeb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '12px 16px',
+                              borderRadius: '8px',
+                              marginBottom: '16px'
+                            }}
+                          >
+                            {isFormEmailVerified ? (
+                              <img
+                                src={
+                                  (verifiedGoogleUser?.email?.toLowerCase() === currentFormEmail && verifiedGoogleUser?.picture)
+                                    ? verifiedGoogleUser.picture
+                                    : getUserProfileAvatar(commentForm.authorEmail, commentForm.authorName)
+                                }
+                                alt="Profile photo preview"
+                                className="comment-preview-avatar-img"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  if (e.currentTarget.src !== USER_REAL_AVATAR) {
+                                    e.currentTarget.src = USER_REAL_AVATAR;
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  minWidth: '38px',
+                                  borderRadius: '50%',
+                                  background: '#fef3c7',
+                                  border: '2px solid #f59e0b',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '18px',
+                                  color: '#b45309'
+                                }}
+                              >
+                                ⚠️
+                              </div>
+                            )}
+                            <div className="comment-preview-meta">
+                              <span
+                                className="comment-preview-title"
+                                style={{
+                                  color: isFormEmailVerified ? '#15803d' : '#b45309',
+                                  fontWeight: '700',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  fontSize: '13px'
+                                }}
+                              >
+                                {isFormEmailVerified
+                                  ? '✓ Real Profile Photo Connected [Public]'
+                                  : (isFormEmailGoogle ? '⚠️ Google Account Not Verified Yet' : '⚠️ Unverified Email Domain')}
+                              </span>
+                              <span className="comment-preview-sub" style={{ fontSize: '11.5px', color: isFormEmailVerified ? '#334155' : '#78350f', marginTop: '2px', display: 'block' }}>
+                                {isFormEmailVerified
+                                  ? `Public Profile: Displaying ${commentForm.authorEmail} and your official profile photo on this article.`
+                                  : (isFormEmailGoogle
+                                      ? `Please click "Comment with Google" above to authenticate ${commentForm.authorEmail} and load your real photo.`
+                                      : (commentEmailCheck.message || 'Please use a real, verified email address.'))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="comment-input-row">
+                          <label>
+                            Name *
+                            <input 
+                              type="text" 
+                              required 
+                              placeholder="John Doe" 
+                              value={commentForm.authorName} 
+                              onChange={(e) => setCommentForm(prev => ({ ...prev, authorName: e.target.value }))}
+                            />
+                          </label>
+                          <label>
+                            Email *
+                            <input 
+                              type="email" 
+                              required 
+                              placeholder="latoureiffel1802@gmail.com" 
+                              value={commentForm.authorEmail} 
+                              onChange={(e) => handleCommentEmailChange(e.target.value)}
+                              style={{
+                                borderColor: !commentForm.authorEmail
+                                  ? '#d1d5db'
+                                  : isFormEmailVerified
+                                  ? '#16a34a'
+                                  : commentEmailCheck.status === 'error'
+                                  ? '#ef4444'
+                                  : '#f59e0b'
+                              }}
+                            />
+                            {commentEmailCheck.message && (
+                              <span style={{
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                marginTop: '2px',
+                                display: 'block',
+                                color: isFormEmailVerified
+                                  ? '#16a34a'
+                                  : commentEmailCheck.status === 'error'
+                                  ? '#ef4444'
+                                  : '#d97706'
+                              }}>
+                                {commentEmailCheck.message}
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                        
+                        <label className="comment-textarea-label">
+                          Comment *
+                          <textarea 
+                            required 
+                            rows="5" 
+                            placeholder="Share your thoughts or questions about this machine/guide..." 
+                            value={commentForm.content} 
+                            onChange={(e) => setCommentForm(prev => ({ ...prev, content: e.target.value }))}
+                          />
+                        </label>
+
+                        {commentSubmitError && (
+                          <div style={{
+                            padding: '10px 14px',
+                            background: '#fee2e2',
+                            border: '1px solid #f87171',
+                            borderRadius: '8px',
+                            color: '#b91c1c',
+                            fontSize: '12.5px',
+                            fontWeight: '600',
+                            marginBottom: '16px'
+                          }}>
+                            ⚠️ {commentSubmitError}
+                          </div>
+                        )}
+                        
+                        <button
+                          type="submit"
+                          className="cta-button accent-pill-btn comment-submit-btn"
+                          disabled={!isFormEmailVerified}
+                          style={{
+                            opacity: !isFormEmailVerified ? 0.5 : 1,
+                            cursor: !isFormEmailVerified ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          Post Comment
+                        </button>
+                      </form>
+                    );
+                  })()}
                 </div>
             </div>
           </article>
