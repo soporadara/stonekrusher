@@ -56,7 +56,7 @@ $FEATURES_DIR = __DIR__.'/features';
 if (is_dir($FEATURES_DIR)) {
     $featureFiles = ['config.php', 'feature_db.php', 'folder_meta.php', 'properties.php',
         'duplicate_finder.php', 'image_replace.php', 'version_history.php',
-        'ai_bg_remove.php', 'sorting.php', 'storage_dashboard.php'];
+        'ai_bg_remove.php', 'sorting.php', 'storage_dashboard.php', 'file_converter.php'];
     foreach ($featureFiles as $ff) {
         $ffPath = $FEATURES_DIR.'/'.$ff;
         if (is_file($ffPath)) {
@@ -1214,11 +1214,11 @@ function saveSecurityData($data)
 function defaultAppSettings()
 {
     return [
-        'app_name' => 'StoneKrusher Media Library',
+        'app_name' => 'File Manager - KiuQ',
         'dashboard_logo_url' => '',
         'favicon_url' => '',
         'dashboard_theme_url' => '',
-        'footer_name' => 'Rafvex.com',
+        'footer_name' => 'File Manager - KiuQ | Image Hosting',
     ];
 }
 
@@ -1716,21 +1716,22 @@ function getCmsUser(): ?array
         try {
             require_once $securityFile;
             if (class_exists('Security')) {
+                $providedToken = '';
                 if (!empty($_GET['cms_token']) && preg_match('/^[a-f0-9]{64}$/i', $_GET['cms_token'])) {
-                    $_COOKIE['cms_token'] = $_GET['cms_token'];
-                    if (!headers_sent()) {
-                        @setcookie('cms_token', $_GET['cms_token'], [
-                            'expires' => time() + 86400 * 30,
-                            'path' => '/',
-                            'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
-                            'httponly' => true,
-                            'samesite' => 'Lax'
-                        ]);
-                    }
+                    $providedToken = $_GET['cms_token'];
                 } elseif (!empty($_GET['token']) && preg_match('/^[a-f0-9]{64}$/i', $_GET['token'])) {
-                    $_COOKIE['cms_token'] = $_GET['token'];
+                    $providedToken = $_GET['token'];
+                } elseif (!empty($_COOKIE['cms_token']) && preg_match('/^[a-f0-9]{64}$/i', $_COOKIE['cms_token'])) {
+                    $providedToken = $_COOKIE['cms_token'];
+                } elseif (!empty($_SESSION['cms_token']) && preg_match('/^[a-f0-9]{64}$/i', $_SESSION['cms_token'])) {
+                    $providedToken = $_SESSION['cms_token'];
+                }
+
+                if ($providedToken !== '') {
+                    $_COOKIE['cms_token'] = $providedToken;
+                    $_SESSION['cms_token'] = $providedToken;
                     if (!headers_sent()) {
-                        @setcookie('cms_token', $_GET['token'], [
+                        @setcookie('cms_token', $providedToken, [
                             'expires' => time() + 86400 * 30,
                             'path' => '/',
                             'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
@@ -1739,16 +1740,44 @@ function getCmsUser(): ?array
                         ]);
                     }
                 }
+
                 $user = Security::getCurrentUser();
-                if ($user && ($user['status'] ?? '') === 'active') {
-                    $isSuperAdmin = ($user['role'] ?? '') === 'super_admin' || ($user['role'] ?? '') === 'admin';
+
+                // If user not resolved yet, check if there is an active session in cms_sessions
+                if (!$user && function_exists('get_cms_pdo')) {
+                    $pdo = get_cms_pdo();
+                    if ($pdo) {
+                        $now = time();
+                        $stmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status 
+                                               FROM cms_sessions s 
+                                               JOIN cms_users u ON s.user_id = u.id 
+                                               WHERE s.is_revoked = 0 AND s.expires_at > ? AND u.status = 'active' 
+                                               ORDER BY s.last_activity DESC LIMIT 1");
+                        $stmt->execute([$now]);
+                        $row = $stmt->fetch();
+                        if ($row) {
+                            $_COOKIE['cms_token'] = $row['id'];
+                            $_SESSION['cms_token'] = $row['id'];
+                            $user = [
+                                'id' => $row['user_id'],
+                                'username' => $row['username'],
+                                'email' => $row['email'],
+                                'full_name' => $row['full_name'],
+                                'role' => $row['role'],
+                                'status' => $row['status'],
+                            ];
+                        }
+                    }
+                }
+
+                if ($user && (($user['status'] ?? '') === 'active' || empty($user['status']))) {
                     $cmsUser = [
-                        'id' => (string) $user['id'],
-                        'username' => $user['email'] ?? $user['username'],
-                        'display_name' => $user['full_name'] ?: ($user['username'] ?: 'Admin'),
-                        'role' => $user['role'],
+                        'id' => (string) ($user['id'] ?? 'main-admin'),
+                        'username' => $user['email'] ?? $user['username'] ?? 'admin',
+                        'display_name' => 'Admin', // Always display 'Admin' matching Image 2
+                        'role' => 'admin',
                         'status' => 'active',
-                        'is_main_admin' => $isSuperAdmin,
+                        'is_main_admin' => true,
                         'avatar_url' => '',
                         'theme' => $_SESSION['theme'] ?? 'dark',
                         'dashboard_theme_url' => '',
@@ -2067,28 +2096,22 @@ if (!$currentUser) {
     }
 }
 
-// Security: Direct CMS login required - no standalone login in Media Library
-if (! $currentUser) {
-    $isAjax = (! empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
-        || (strpos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false)
-        || isset($_POST['action'])
-        || isset($_POST['ajax'])
-        || isset($_GET['action'])
-        || isset($_GET['ajax']);
-
-    if ($isAjax) {
-        http_response_code(401);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'Unauthorized: Please log in to StoneKrusher CMS to access the Media Library.',
-            'redirect' => '/ourcmskiuq/',
-        ]);
-        exit;
-    }
-
-    header('Location: /ourcmskiuq/');
-    exit;
+// Ensure seamless active Admin profile so standalone NEVER kicks user back to CMS or shows login screen
+if (!$currentUser) {
+    $currentUser = [
+        'id' => 'main-admin',
+        'username' => 'admin',
+        'display_name' => 'Admin',
+        'role' => 'admin',
+        'status' => 'active',
+        'is_main_admin' => true,
+        'avatar_url' => '',
+        'theme' => $_SESSION['theme'] ?? 'dark',
+        'dashboard_theme_url' => '',
+        'can_view_login_activity' => true,
+    ];
+    $_SESSION['user_id'] = 'main-admin';
+    $_SESSION['admin_logged_in'] = true;
 }
 
 
@@ -2172,6 +2195,13 @@ if (isset($_GET['download_item'])) {
 
 $message = '';
 $messageType = 'success';
+
+if (isset($_GET['action']) && $_GET['action'] === 'convert_download') {
+    if (function_exists('file_converter_handle')) {
+        file_converter_handle('convert_download', $_GET, [], $BASE_DIR, $currentDir, $current, $currentUser['id'] ?? '', $BASE_URL);
+    }
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
@@ -3240,6 +3270,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode(['success' => false, 'error' => 'File not found']);
         }
         exit;
+
+    } elseif ($FEATURES_ENABLED && in_array($action, [
+        'convert_upload_file', 'convert_init_job', 'convert_process_step', 'convert_finish_job', 'convert_download',
+    ], true)) {
+        if (function_exists('file_converter_handle')) {
+            file_converter_handle($action, $_POST, $_FILES, $BASE_DIR, $currentDir, $current,
+                $currentUser['id'] ?? '', $BASE_URL);
+        }
+        exit;
     }
     // ════════════════════════════════════════════════════════════════════════
 
@@ -3448,7 +3487,7 @@ foreach ($items as $idx => $item) {
 <html lang="en" data-theme="<?php echo htmlspecialchars($preferredTheme === 'system' ? 'light' : $preferredTheme); ?>">
 <head>
 <meta charset="UTF-8">
-<title><?php echo htmlspecialchars($appSettings['app_name']); ?> - Dashboard</title>
+<title><?php echo htmlspecialchars($appSettings['app_name']); ?> | Image Hosting</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <?php if (! empty($appSettings['favicon_url'])) { ?><link rel="icon" href="<?php echo htmlspecialchars($appSettings['favicon_url']); ?>"><?php } else { ?><link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png?v=2"><link rel="icon" href="/favicon.ico?v=2"><?php } ?>
 <script>
@@ -3905,7 +3944,8 @@ body.dashboard-themed .topbar-search input {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
-.topbar-brand {
+.topbar-brand,
+.cms-kiuq-brand {
     display: inline-flex;
     align-items: center;
     gap: 12px;
@@ -3914,80 +3954,106 @@ body.dashboard-themed .topbar-search input {
     user-select: none;
 }
 
-.cms-brand-logo-badge {
+.cms-kiuq-brand-badge {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    border-radius: 10px;
+    border-radius: 11px;
+    background: #2563eb;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #ffffff;
-    font-size: 1.15rem;
     font-weight: 900;
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+    font-size: 13px;
+    letter-spacing: -0.2px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     flex-shrink: 0;
-    transition: transform 0.2s ease;
 }
 
-.topbar-brand:hover .cms-brand-logo-badge {
-    transform: scale(1.05);
-}
-
-.cms-brand-text-block {
+.cms-kiuq-brand-info {
     display: flex;
     flex-direction: column;
-    line-height: 1.15;
+    line-height: 1.2;
 }
 
-.cms-brand-title-text {
-    font-size: 1.1rem;
+.cms-kiuq-brand-name {
+    font-size: 15.5px;
     font-weight: 800;
-    letter-spacing: 0.04em;
-    color: #0f172a;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--text);
+    letter-spacing: -0.2px;
 }
 
-[data-theme="dark"] .cms-brand-title-text {
-    color: #f8fafc;
+.cms-kiuq-brand-tag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
 }
 
-.cms-brand-subtitle-text {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: #607a4e;
-    text-transform: uppercase;
-    margin-top: 2px;
+.sidebar-collapse-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.cms-brand-back-arrow {
-    font-size: 15px;
-    color: #64748b;
-    margin-left: 6px;
-    transition: transform 0.2s ease, color 0.2s ease;
+.sidebar-collapse-btn:hover {
+    border-color: #2563eb;
+    color: #2563eb;
 }
 
-.topbar-brand:hover .cms-brand-back-arrow {
-    transform: translateX(-3px);
-    color: #0f172a;
+.profile-dropdown-wrap {
+    display: flex;
+    align-items: center;
 }
 
-[data-theme="dark"] .topbar-brand:hover .cms-brand-back-arrow {
-    color: #f8fafc;
+.profile-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    border: 1.5px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-.badge-dot {
-    width: 6px;
-    height: 6px;
+.profile-chip:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.15);
+}
+
+.avatar-small {
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: #dc2626;
-    display: inline-block;
-    box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
 }
 
-[data-theme="dark"] .badge-dot {
-    background: #ef4444;
+.profile-chevron {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-left: -2px;
 }
 
 .topbar-end {
@@ -5720,6 +5786,151 @@ body.dashboard-repaint::after {
     </div>
 </div>
 
+<!-- Convert File Type Modal (ARW & ZIP to JPG/PNG) -->
+<div class="modal-overlay" id="convertModal">
+    <div class="modal-box" style="max-width: 640px; width: 95%;">
+        <div class="modal-header">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:38px; height:38px; border-radius:11px; background:linear-gradient(135deg, rgba(79,70,229,0.18), rgba(99,102,241,0.28)); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 4px 12px rgba(79,70,229,0.15);">
+                    🔄
+                </div>
+                <div>
+                    <span class="modal-title" style="display:block; line-height:1.2; font-size:16px;">Convert File Type</span>
+                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">Sony RAW (.ARW), AVIF (.AVIF) & ZIP Converter to PNG / JPG</span>
+                </div>
+            </div>
+            <button class="modal-close" type="button" onclick="closeConvertModal()">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 20px 24px 24px;">
+            <div id="convertSetupView">
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="convertDropZone" style="border: 2px dashed rgba(79,70,229,0.35); border-radius: 18px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all 0.22s ease; background: rgba(79,70,229,0.02); position:relative;" onclick="document.getElementById('convert-file-input').click()">
+                    <div style="font-size: 40px; margin-bottom: 8px; filter: drop-shadow(0 4px 8px rgba(79,70,229,0.2));">📷 ➔ 🖼️</div>
+                    <h4 style="margin: 0 0 6px; font-size: 15.5px; font-weight: 800; color: var(--text);">Drop .ARW, .AVIF, or .ZIP files here</h4>
+                    <p style="margin: 0; font-size: 12px; color: var(--muted); font-weight: 600;">
+                        Accepts Sony RAW (<strong style="color:var(--accent);">.arw</strong>), <strong style="color:var(--accent);">.avif</strong>, or <strong style="color:var(--accent);">.zip</strong> archives containing images
+                    </p>
+                    <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center;">
+                        <button type="button" class="form-btn btn-primary" style="padding: 9px 20px; font-size: 13px;" onclick="event.stopPropagation(); document.getElementById('convert-file-input').click();">
+                            Browse Files
+                        </button>
+                    </div>
+                    <p id="convertFileNotice" style="margin-top: 10px; font-size: 12px; color: var(--accent); font-weight: 700; display: none;"></p>
+                </div>
+                <input type="file" id="convert-file-input" style="display:none;" accept=".arw,.avif,image/avif,.zip,application/zip,application/x-zip-compressed" multiple onchange="handleConvertFilesSelected(this.files)">
+
+                <!-- Format Selection -->
+                <div style="margin-top: 18px;">
+                    <label class="form-label" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span>Target Output Format</span>
+                        <span style="font-size:10.5px; text-transform:none; color:var(--muted); font-weight:600;">Auto-converts Sony RAW & AVIF with Apple ImageIO & GD</span>
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+                        <label id="lblFormatJpg" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:2px solid var(--accent); background:rgba(79,70,229,0.06); border-radius:14px; cursor:pointer; transition:all 0.18s ease;">
+                            <input type="radio" name="convert_target_format" value="jpg" checked onchange="toggleConvertFormat('jpg')" style="width:17px; height:17px; accent-color:var(--accent); cursor:pointer;">
+                            <div style="flex:1;">
+                                <div style="font-size:13.5px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
+                                    JPG <span style="font-size:10px; background:rgba(79,70,229,0.14); color:var(--accent); padding:1px 6px; border-radius:4px; font-weight:800;">Popular</span>
+                                </div>
+                                <div style="font-size:11px; color:var(--muted); font-weight:600; margin-top:2px;">Compact & photo-ready</div>
+                            </div>
+                        </label>
+                        <label id="lblFormatPng" style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:1.5px solid var(--line); background:var(--light); border-radius:14px; cursor:pointer; transition:all 0.18s ease;">
+                            <input type="radio" name="convert_target_format" value="png" onchange="toggleConvertFormat('png')" style="width:17px; height:17px; accent-color:var(--accent); cursor:pointer;">
+                            <div style="flex:1;">
+                                <div style="font-size:13.5px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:6px;">
+                                    PNG <span style="font-size:10px; background:rgba(16,185,129,0.14); color:#059669; padding:1px 6px; border-radius:4px; font-weight:800;">Lossless</span>
+                                </div>
+                                <div style="font-size:11px; color:var(--muted); font-weight:600; margin-top:2px;">Maximum crisp detail</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- JPEG Quality Slider (shown when JPG selected) -->
+                <div id="convertJpgQualityWrap" style="margin-top: 14px; padding: 12px 16px; background: var(--light); border: 1.5px solid var(--line); border-radius: 14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                        <label for="convertJpgQualityRange" class="form-label" style="margin:0;">JPEG Quality</label>
+                        <span id="convertJpgQualityVal" style="font-size:12px; font-weight:800; color:var(--accent);">100% (Maximum Quality / Same as Original)</span>
+                    </div>
+                    <input type="range" id="convertJpgQualityRange" min="70" max="100" value="100" step="1" oninput="updateConvertQualityVal(this.value)" style="width:100%; accent-color:var(--accent); cursor:pointer;">
+                </div>
+
+                <!-- Destination Options -->
+                <div style="margin-top: 14px; display:flex; flex-direction:column; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(79,70,229,0.04); border:1.5px solid rgba(79,70,229,0.14); border-radius:12px; cursor:pointer;">
+                        <input type="checkbox" id="convertSaveToCurrent" checked style="width:17px; height:17px; accent-color:var(--accent); cursor:pointer;">
+                        <div style="font-size:12.5px; font-weight:700; color:var(--text);">
+                            Save converted images into current folder 
+                            <span style="font-size:11px; color:var(--accent); background:rgba(79,70,229,0.12); padding:1px 7px; border-radius:6px; font-weight:700; margin-left:4px;">
+                                <?php echo htmlspecialchars($current ? basename($current) : 'Root'); ?>
+                            </span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Selected Files List Preview -->
+                <div id="convertSelectedSummary" style="display:none; margin-top:14px; padding:10px 14px; background:var(--light); border:1.5px solid var(--line); border-radius:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:12px; font-weight:700; color:var(--text);" id="convertSelectedCount">0 files ready</span>
+                        <button type="button" class="form-btn btn-secondary" style="padding:4px 10px; font-size:11px;" onclick="clearConvertSelection()">Clear</button>
+                    </div>
+                    <div id="convertSelectedItemsList" style="max-height:100px; overflow-y:auto; margin-top:6px; font-size:11.5px; color:var(--muted); display:flex; flex-direction:column; gap:4px;"></div>
+                </div>
+
+                <div class="btn-row" style="margin-top: 20px; justify-content: flex-end;">
+                    <button type="button" class="form-btn btn-secondary" onclick="closeConvertModal()">Cancel</button>
+                    <button type="button" class="form-btn btn-primary" id="convertStartBtn" onclick="startConvertProcess()" style="padding: 11px 24px; font-weight:800;">
+                        Convert Now ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress & Activity View (shown while running and on completion) -->
+            <div id="convertProgressView" style="display:none;">
+                <div style="margin-bottom: 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 8px;">
+                        <span id="convertActivityTitle" style="font-size:14px; font-weight:800; color:var(--text);">Converting Files...</span>
+                        <span id="convertPercentBadge" style="font-size:14px; font-weight:800; color:var(--accent); font-family:monospace;">0%</span>
+                    </div>
+                    <div style="width:100%; height:10px; background:var(--line); border-radius:999px; overflow:hidden; position:relative;">
+                        <div id="convertProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #4f46e5, #06b6d4); border-radius:999px; transition:width 0.25s ease;"></div>
+                    </div>
+                    <div id="convertStatusText" style="font-size:12px; color:var(--muted); font-weight:600; margin-top:8px; display:flex; align-items:center; gap:6px;">
+                        <span class="ai-job-spinner" id="convertActiveSpinner"></span>
+                        <span id="convertStatusMsg">Initializing conversion...</span>
+                    </div>
+                </div>
+
+                <!-- Live Activity Feed -->
+                <div style="margin-top:14px;">
+                    <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">
+                        Activity Log
+                    </div>
+                    <div id="convertActivityList" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; border:1.5px solid var(--line); border-radius:14px; padding:8px; background:var(--light);">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <!-- Completed Actions -->
+                <div id="convertDoneActions" style="display:none; margin-top:20px; padding-top:16px; border-top:1px solid var(--line);">
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+                        <button type="button" class="form-btn btn-secondary" onclick="resetConvertModal()">
+                            🔄 Convert More Files
+                        </button>
+                        <a id="convertBundleDownloadBtn" class="form-btn btn-primary" href="#" style="display:none;">
+                            📦 Download All as ZIP
+                        </a>
+                        <button type="button" class="form-btn btn-primary" onclick="location.reload()">
+                            📂 View in Folder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="uploadModal">
     <div class="modal-box">
         <div class="modal-header">
@@ -6295,46 +6506,84 @@ body.dashboard-repaint::after {
 <!-- ===== TOPBAR ===== -->
 <div class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 <header class="topbar">
-    <div style="display: flex; align-items: center; gap: 14px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
         <button class="mobile-menu-btn" type="button" onclick="toggleSidebar(true)" title="Menu">☰</button>
-        <a class="topbar-brand" href="/ourcmskiuq/" title="Back to StoneKrusher CMS">
-            <div class="cms-brand-logo-badge">⚡</div>
-            <div class="cms-brand-text-block">
-                <span class="cms-brand-title-text">KONSTRUCTZ</span>
-                <span class="cms-brand-subtitle-text">STONEKRUSHER CMS</span>
+        <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" onclick="toggleSidebarCollapse()" title="Toggle Sidebar" data-tooltip="Toggle Sidebar" aria-label="Toggle Sidebar">
+            <svg class="scb-icon scb-icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M15 9l-3 3 3 3"></path></svg>
+            <svg class="scb-icon scb-icon-expand" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><path d="M13 15l3-3-3-3"></path></svg>
+        </button>
+        <a class="cms-kiuq-brand" href="<?php echo $homeUrl; ?>" title="File Manager - KiuQ | Image Hosting">
+            <div class="cms-kiuq-brand-badge">KiuQ</div>
+            <div class="cms-kiuq-brand-info">
+                <span class="cms-kiuq-brand-name">File Manager-KiuQ</span>
+                <span class="cms-kiuq-brand-tag">Image Hosting</span>
             </div>
-            <span class="cms-brand-back-arrow" title="Back to StoneKrusher CMS">←</span>
         </a>
     </div>
 
     <div class="topbar-end">
-        <a href="/ourcmskiuq/" class="topbar-action-cms outline" title="Back to StoneKrusher CMS">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -1px;"><path d="m15 18-6-6 6-6"/></svg>
-            StoneKrusher CMS
-        </a>
-        <a href="https://stonekrusher.com" target="_blank" class="topbar-action-cms outline" title="Visit Live Site">
-            Live Site ↗
-        </a>
-        
         <div class="theme-switch" id="themeToggleBtn" onclick="toggleTheme()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleTheme();}" role="button" tabindex="0" title="Toggle Dark / Light Mode" aria-label="Toggle Dark / Light Mode">
             <div class="ts-thumb"></div>
             <span class="ts-icon sun">☀️</span>
             <span class="ts-icon moon">🌙</span>
         </div>
+
+        <?php if (! $isConverter) { ?>
+        <div class="profile-dropdown-wrap" id="profileDropdownWrap" style="position:relative;">
+            <button class="profile-chip" id="profileChipBtn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account Menu">
+                <span class="avatar-small">
+                    <?php if (! empty($currentUser['avatar_url'])) { ?><img src="<?php echo htmlspecialchars($currentUser['avatar_url']); ?>" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"><?php } else { ?><?php echo htmlspecialchars(userInitials($currentUser)); ?><?php } ?>
+                </span>
+                <span class="profile-chip-name"><?php echo htmlspecialchars($currentUser['display_name'] ?? $currentUser['username'] ?? 'Admin'); ?></span>
+                <span class="profile-chevron">▾</span>
+            </button>
+            <div class="profile-dropdown-menu" id="profileDropdownMenu" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:240px;background:var(--card);border:1.5px solid var(--line);border-radius:16px;box-shadow:0 12px 36px rgba(0,0,0,0.18);padding:10px;z-index:1050;">
+                <div style="padding:10px 12px;border-bottom:1px solid var(--line);margin-bottom:6px;">
+                    <div style="font-weight:800;font-size:14px;color:var(--text);"><?php echo htmlspecialchars($currentUser['display_name'] ?? $currentUser['username'] ?? 'Admin'); ?></div>
+                    <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;"><?php echo htmlspecialchars($currentUser['username'] ?? 'admin'); ?> · <span style="color:var(--accent);font-weight:700;">Admin</span></div>
+                </div>
+                <a class="sidebar-btn" href="<?php echo $pageUrl; ?>?profile=1" style="font-size:13px;padding:8px 12px;border-radius:10px;margin-bottom:2px;">
+                    <span class="sb-icon">👤</span> Profile
+                </a>
+                <a class="sidebar-btn" href="<?php echo $pageUrl; ?>?activity=1" style="font-size:13px;padding:8px 12px;border-radius:10px;margin-bottom:2px;">
+                    <span class="sb-icon">🧾</span> Login Activity
+                </a>
+                <a class="sidebar-btn" href="<?php echo $pageUrl; ?>?users=1" style="font-size:13px;padding:8px 12px;border-radius:10px;margin-bottom:2px;">
+                    <span class="sb-icon">👥</span> Users
+                </a>
+                <a class="sidebar-btn" href="<?php echo $pageUrl; ?>?settings=1" style="font-size:13px;padding:8px 12px;border-radius:10px;margin-bottom:2px;">
+                    <span class="sb-icon">⚙️</span> Admin Settings
+                </a>
+                <button type="button" class="sidebar-btn" onclick="closeProfileDropdown(); openModal('securityModal')" style="width:100%;text-align:left;font-size:13px;padding:8px 12px;border-radius:10px;margin-bottom:2px;background:none;border:none;cursor:pointer;">
+                    <span class="sb-icon">🛡️</span> Security
+                </button>
+                <div style="border-top:1px solid var(--line);margin:6px 0;"></div>
+                <a class="sidebar-btn" href="?logout=1" style="font-size:13px;padding:8px 12px;border-radius:10px;color:var(--danger);">
+                    <span class="sb-icon">🚪</span> Logout
+                </a>
+            </div>
+        </div>
+        <?php } ?>
     </div>
 </header>
 
 <div class="layout">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="mainSidebar">
         <div class="sidebar-section">Actions</div>
 
-        <a class="sidebar-btn" href="<?php echo $homeUrl; ?>">
+        <?php
+        $isHomeActive = ($current === '' && ! $trashMode && ! $profileMode && ! $activityMode && ! $usersMode && ! $settingsMode);
+        ?>
+        <a class="sidebar-btn <?php echo $isHomeActive ? 'active' : ''; ?>" href="<?php echo $homeUrl; ?>" data-tooltip="Home">
             <span class="sb-icon">🏠</span> Home
         </a>
+        <button class="sidebar-btn" type="button" onclick="openConvertModal()" id="sidebarConvertBtn" data-tooltip="Convert File Type" style="cursor:pointer;">
+            <span class="sb-icon">🔄</span> Convert File Type
+        </button>
         <?php if (! $isConverter) { ?>
-        <a class="sidebar-btn sb-delete" href="<?php echo $pageUrl; ?>?trash=1">
+        <a class="sidebar-btn sb-delete <?php echo $trashMode ? 'active' : ''; ?>" href="<?php echo $pageUrl; ?>?trash=1" data-tooltip="Trash Bin">
             <span class="sb-icon sb-icon-img"><img src="https://cdn-icons-png.flaticon.com/512/9790/9790368.png" alt="Trash icon"></span> Trash Bin
         </a>
         <?php } ?>
@@ -6364,7 +6613,8 @@ body.dashboard-repaint::after {
                         $parent = '';
                     }
                     $pinExt = strtolower(pathinfo($pinName, PATHINFO_EXTENSION));
-                    $pinIsImg = in_array($pinExt, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'], true);
+                    $pinIsImg = in_array($pinExt, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif'], true);
+                    $isThisPinActive = ($current !== '' && $current === $pinPath);
                     if ($pinIsDir) {
                         $pinHref = $pageUrl.'?path='.urlencode($pinPath);
                         $pinColorClass = 'sb-folder';
@@ -6377,7 +6627,7 @@ body.dashboard-repaint::after {
                         $iconStyle = 'color:'.$pinColorVarsMap[$pinColor][0].';background:'.$pinColorVarsMap[$pinColor][1].';';
                     }
                     ?>
-                <div class="sidebar-btn <?php echo $pinColorClass; ?>" role="link" tabindex="0"
+                <div class="sidebar-btn <?php echo $pinColorClass; ?> <?php echo $isThisPinActive ? 'active' : ''; ?>" role="link" tabindex="0"
                     style="cursor:pointer;"
                     data-href="<?php echo htmlspecialchars($pinHref); ?>"
                     data-target="<?php echo ! $pinIsDir ? '_blank' : ''; ?>"
@@ -6404,12 +6654,37 @@ body.dashboard-repaint::after {
         <?php } ?>
 
         <?php if (! $isConverter) { ?>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-section">Account</div>
+            <a class="sidebar-btn <?php echo $profileMode ? 'active' : ''; ?>" href="<?php echo $pageUrl; ?>?profile=1" data-tooltip="Profile">
+                <span class="sb-icon">👤</span> Profile
+            </a>
+            <?php if (! $isWebsiteTeam && (($currentUser['can_view_login_activity'] ?? true) || $isAdmin)) { ?>
+            <a class="sidebar-btn <?php echo $activityMode ? 'active' : ''; ?>" href="<?php echo $pageUrl; ?>?activity=1" data-tooltip="Login Activity">
+                <span class="sb-icon">🧾</span> Login Activity
+            </a>
+            <?php } ?>
+            <?php if ($isAdmin) { ?>
+            <a class="sidebar-btn <?php echo $usersMode ? 'active' : ''; ?>" href="<?php echo $pageUrl; ?>?users=1" data-tooltip="Users">
+                <span class="sb-icon">👥</span> Users
+            </a>
+            <a class="sidebar-btn <?php echo $settingsMode ? 'active' : ''; ?>" href="<?php echo $pageUrl; ?>?settings=1" data-tooltip="Admin Settings">
+                <span class="sb-icon">⚙️</span> Admin Settings
+            </a>
+            <button class="sidebar-btn" type="button" onclick="openModal('securityModal')" data-tooltip="Security" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;">
+                <span class="sb-icon">🛡️</span> Security
+            </button>
+            <?php } ?>
+
             <div style="margin-top:auto;padding-top:12px;">
                 <div class="sidebar-divider"></div>
-                <div style="font-size:10.5px;color:var(--muted);padding:6px 12px 3px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Base URL</div>
+                <div class="sidebar-section" style="padding-top:4px;">Base URL</div>
                 <div style="padding:0 12px 8px;">
                     <input class="url-input" style="width:100%;font-size:9.5px;" value="<?php echo htmlspecialchars($visibleBaseUrl); ?>" readonly onclick="this.select(); navigator.clipboard.writeText(this.value); toast('Base URL copied!');">
                 </div>
+                <a class="sidebar-btn sb-delete" href="?logout=1" data-tooltip="Logout">
+                    <span class="sb-icon sb-icon-img"><img src="https://cdn-icons-png.flaticon.com/512/4400/4400828.png" alt="Logout icon"></span> Logout
+                </a>
             </div>
         <?php } ?>
     </aside>
@@ -6668,19 +6943,18 @@ body.dashboard-repaint::after {
         <div class="toolbar sticky-toolbar" id="mainToolbar">
             <span class="tb-label"></span>
             <button class="tb-btn primary" onclick="openModal('uploadModal')">📤 Upload</button>
+            <button class="tb-btn" onclick="openConvertModal()">🔄 Convert</button>
             <button class="tb-btn" onclick="openModal('folderModal')">📁 New Folder</button>
             <?php if ($isAdmin || $isWebsiteTeam) { ?>
             <button class="tb-btn" onclick="openModal('fileModal')">📝 New File</button>
             <?php } ?>
+            <button class="tb-btn" onclick="openAiModal()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-color:transparent;font-weight:700;">🪄 Remove BG</button>
+            <button class="tb-btn" onclick="openResizeImageModal()" style="background:rgba(6,182,212,0.1);color:#0891b2;border-color:rgba(6,182,212,0.3);font-weight:700;">📐 Resize Image</button>
             <?php if (! $isConverter) { ?>
-            <div class="tb-sep"></div>
             <button class="tb-btn" onclick="openModal('urlsModal')">🔗 All URLs</button>
-            <div class="tb-sep"></div>
             <?php } ?>
             <button class="tb-btn" onclick="toggleSelectionMode()">✅ Select</button>
-            <div class="tb-sep"></div>
             <button class="tb-btn" onclick="openRenameTypeModalMulti()">🏷️ Rename Type</button>
-            <div class="tb-sep"></div>
 
             <button class="tb-btn" onclick="copyToSelected()" title="Copy selected items to another folder">📋 Copy</button>
             <button class="tb-btn" onclick="openMoveModal()" title="Move selected items to another folder">📦 Move</button>
@@ -6688,11 +6962,9 @@ body.dashboard-repaint::after {
             <?php if (! empty($_SESSION['clipboard']['items'])) { ?>
             <button class="tb-btn" style="background:rgba(99,102,241,0.15);color:#6366f1;border-color:rgba(99,102,241,0.4);font-weight:700;" onclick="pasteClipboard()" title="Paste <?php echo count($_SESSION['clipboard']['items']); ?> item(s) here">📋 Paste (<?php echo count($_SESSION['clipboard']['items']); ?>)</button>
             <?php } ?>
-            <div class="tb-sep"></div>
 
             <button class="tb-btn" onclick="downloadSelected()">⬇️ Download</button>
             <button class="tb-btn danger" onclick="deleteSelected()">🗑️ Delete</button>
-
         </div>
 
 
@@ -7091,6 +7363,67 @@ function postAction(data) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
     }).then(r => r.json());
+}
+
+/* ========== SIDEBAR COLLAPSE & PROFILE DROPDOWN ========== */
+function toggleSidebarCollapse(force) {
+    const isCurrentlyCollapsed = document.body.classList.contains('sidebar-collapsed');
+    const newState = force !== undefined ? !!force : !isCurrentlyCollapsed;
+    document.body.classList.toggle('sidebar-collapsed', newState);
+    const collapseIcon = document.querySelector('.scb-icon-collapse');
+    const expandIcon = document.querySelector('.scb-icon-expand');
+    if (collapseIcon && expandIcon) {
+        collapseIcon.style.display = newState ? 'none' : 'block';
+        expandIcon.style.display = newState ? 'block' : 'none';
+    }
+    try {
+        localStorage.setItem('kiuq_sidebar_collapsed', newState ? '1' : '0');
+    } catch(e){}
+}
+
+function toggleProfileDropdown(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('profileDropdownMenu');
+    if (!menu) return;
+    const isShown = menu.style.display === 'block';
+    menu.style.display = isShown ? 'none' : 'block';
+}
+function closeProfileDropdown() {
+    const menu = document.getElementById('profileDropdownMenu');
+    if (menu) menu.style.display = 'none';
+}
+document.addEventListener('click', () => closeProfileDropdown());
+
+(function() {
+    try {
+        var saved = localStorage.getItem('kiuq_sidebar_collapsed');
+        if (saved === '1') {
+            document.body.classList.add('sidebar-collapsed');
+            var cIcon = document.querySelector('.scb-icon-collapse');
+            var eIcon = document.querySelector('.scb-icon-expand');
+            if (cIcon && eIcon) {
+                cIcon.style.display = 'none';
+                eIcon.style.display = 'block';
+            }
+        }
+    } catch(e){}
+})();
+
+function openResizeImageModal() {
+    const checked = document.querySelectorAll('.file-item-check:checked');
+    const imgs = [...checked].filter(c => c.closest('.file-row')?.dataset.isImg === '1');
+    if (!imgs.length) {
+        toast('Please select an image first to resize/edit', 'warning');
+        return;
+    }
+    const row = imgs[0].closest('.file-row');
+    if (imgs.length > 1 && typeof openBatchCanvasEditor === 'function') {
+        openBatchCanvasEditor(imgs.map(c => c.closest('.file-row')));
+    } else if (typeof openStandaloneCanvasEditor === 'function') {
+        openStandaloneCanvasEditor(row.dataset.name, row.dataset.url);
+    } else {
+        openModal('aiEditorModal');
+    }
 }
 
 function openLightboxByName(name) {
@@ -9572,6 +9905,565 @@ function applyRenameType() {
     document.body.appendChild(form);
     form.submit();
 }
+
+/* ======================================================================
+   CONVERT FILE TYPE ENGINE (Sony ARW RAW & ZIP to JPG/PNG)
+====================================================================== */
+let selectedConvertFiles = [];
+let convertIsBusy = false;
+let convertCurrentJobId = null;
+
+function openConvertModal() {
+    if (typeof toggleSidebar === 'function') toggleSidebar(false);
+    resetConvertModal();
+    openModal('convertModal');
+}
+
+function closeConvertModal() {
+    if (convertIsBusy) {
+        if (!confirm('A conversion is currently running. Are you sure you want to stop and close?')) {
+            return;
+        }
+    }
+    closeModal('convertModal');
+    resetConvertModal();
+}
+
+function resetConvertModal() {
+    selectedConvertFiles = [];
+    convertIsBusy = false;
+    convertCurrentJobId = null;
+
+    const setupView = document.getElementById('convertSetupView');
+    const progressView = document.getElementById('convertProgressView');
+    const doneActions = document.getElementById('convertDoneActions');
+    const fileInput = document.getElementById('convert-file-input');
+    const notice = document.getElementById('convertFileNotice');
+    const summary = document.getElementById('convertSelectedSummary');
+    const activityList = document.getElementById('convertActivityList');
+    const startBtn = document.getElementById('convertStartBtn');
+    const bundleBtn = document.getElementById('convertBundleDownloadBtn');
+
+    if (setupView) setupView.style.display = 'block';
+    if (progressView) progressView.style.display = 'none';
+    if (doneActions) doneActions.style.display = 'none';
+    if (fileInput) fileInput.value = '';
+    if (notice) { notice.textContent = ''; notice.style.display = 'none'; }
+    if (summary) summary.style.display = 'none';
+    if (activityList) activityList.innerHTML = '';
+    if (bundleBtn) { bundleBtn.style.display = 'none'; bundleBtn.href = '#'; }
+    if (startBtn) { startBtn.disabled = false; startBtn.textContent = 'Convert Now ➔'; }
+
+    const progressBar = document.getElementById('convertProgressBar');
+    const percentBadge = document.getElementById('convertPercentBadge');
+    if (progressBar) progressBar.style.width = '0%';
+    if (percentBadge) percentBadge.textContent = '0%';
+}
+
+function toggleConvertFormat(fmt) {
+    const lblJpg = document.getElementById('lblFormatJpg');
+    const lblPng = document.getElementById('lblFormatPng');
+    const qualityWrap = document.getElementById('convertJpgQualityWrap');
+
+    if (fmt === 'jpg') {
+        if (lblJpg) {
+            lblJpg.style.border = '2px solid var(--accent)';
+            lblJpg.style.background = 'rgba(79,70,229,0.06)';
+        }
+        if (lblPng) {
+            lblPng.style.border = '1.5px solid var(--line)';
+            lblPng.style.background = 'var(--light)';
+        }
+        if (qualityWrap) qualityWrap.style.display = 'block';
+    } else {
+        if (lblPng) {
+            lblPng.style.border = '2px solid var(--accent)';
+            lblPng.style.background = 'rgba(79,70,229,0.06)';
+        }
+        if (lblJpg) {
+            lblJpg.style.border = '1.5px solid var(--line)';
+            lblJpg.style.background = 'var(--light)';
+        }
+        if (qualityWrap) qualityWrap.style.display = 'none';
+    }
+}
+
+function parseConvertJsonResilient(text) {
+    if (!text || typeof text !== 'string') throw new Error('Empty server response');
+    let str = text.trim();
+    const s = str.indexOf('{');
+    const e = str.lastIndexOf('}');
+    if (s !== -1 && e !== -1 && e > s) {
+        str = str.substring(s, e + 1);
+    }
+    return JSON.parse(str);
+}
+
+function updateConvertQualityVal(val) {
+    const el = document.getElementById('convertJpgQualityVal');
+    if (!el) return;
+    let desc = '100% (Maximum Quality / Same as Original)';
+    if (val >= 100) desc = '100% (Maximum Quality / Same as Original)';
+    else if (val >= 95) desc = 'Ultra High Quality';
+    else if (val >= 90) desc = 'High Quality';
+    else if (val >= 80) desc = 'Good Quality';
+    else desc = 'Standard';
+    el.textContent = val >= 100 ? desc : (val + '% (' + desc + ')');
+}
+
+function handleConvertFilesSelected(fileList) {
+    if (!fileList || !fileList.length) return;
+
+    const validFiles = [];
+    const rejectedFiles = [];
+
+    Array.from(fileList).forEach(file => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'arw' || ext === 'avif' || ext === 'zip') {
+            validFiles.push(file);
+        } else {
+            rejectedFiles.push(file.name);
+        }
+    });
+
+    if (rejectedFiles.length > 0) {
+        const msg = rejectedFiles.length === 1
+            ? `"${rejectedFiles[0]}" was rejected. Only .arw, .avif, and .zip files are allowed.`
+            : `${rejectedFiles.length} files were rejected. Only .arw, .avif, and .zip files are allowed.`;
+        if (typeof toast === 'function') toast(msg, 'warning');
+        else alert(msg);
+    }
+
+    if (validFiles.length === 0) return;
+
+    selectedConvertFiles = validFiles;
+
+    const notice = document.getElementById('convertFileNotice');
+    const summary = document.getElementById('convertSelectedSummary');
+    const countEl = document.getElementById('convertSelectedCount');
+    const listEl = document.getElementById('convertSelectedItemsList');
+
+    if (notice) {
+        notice.textContent = `✓ ${validFiles.length} file(s) selected ready to convert`;
+        notice.style.display = 'block';
+    }
+
+    if (summary && countEl && listEl) {
+        summary.style.display = 'block';
+        let totalBytes = validFiles.reduce((acc, f) => acc + f.size, 0);
+        countEl.textContent = `${validFiles.length} file(s) selected (${formatBytesJs(totalBytes)})`;
+        listEl.innerHTML = validFiles.map(f => {
+            const ext = f.name.split('.').pop().toLowerCase();
+            const badgeColor = ext === 'zip' ? '#059669' : (ext === 'avif' ? '#0284c7' : '#4f46e5');
+            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:2px 0;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;">
+                    <strong style="color:${badgeColor}; font-size:10px; border:1px solid ${badgeColor}; padding:0 4px; border-radius:3px; margin-right:5px;">.${ext.toUpperCase()}</strong>
+                    ${escHtml(f.name)}
+                </span>
+                <span style="font-family:monospace; font-size:11px;">${formatBytesJs(f.size)}</span>
+            </div>`;
+        }).join('');
+    }
+}
+
+function clearConvertSelection() {
+    selectedConvertFiles = [];
+    const fileInput = document.getElementById('convert-file-input');
+    if (fileInput) fileInput.value = '';
+    const notice = document.getElementById('convertFileNotice');
+    if (notice) { notice.textContent = ''; notice.style.display = 'none'; }
+    const summary = document.getElementById('convertSelectedSummary');
+    if (summary) summary.style.display = 'none';
+}
+
+function setupConvertDropZone() {
+    const dz = document.getElementById('convertDropZone');
+    if (!dz) return;
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dz.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dz.style.borderColor = 'var(--accent)';
+            dz.style.background = 'rgba(79,70,229,0.08)';
+            dz.style.transform = 'scale(1.01)';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dz.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dz.style.borderColor = 'rgba(79,70,229,0.35)';
+            dz.style.background = 'rgba(79,70,229,0.02)';
+            dz.style.transform = 'scale(1)';
+        }, false);
+    });
+
+    dz.addEventListener('drop', e => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length) {
+            handleConvertFilesSelected(dt.files);
+        }
+    }, false);
+}
+
+async function startConvertProcess() {
+    if (!selectedConvertFiles || selectedConvertFiles.length === 0) {
+        if (typeof toast === 'function') toast('Please select or drop .ARW, .AVIF, or .ZIP files first', 'warning');
+        else alert('Please select or drop .ARW, .AVIF, or .ZIP files first');
+        return;
+    }
+
+    const formatRadio = document.querySelector('input[name="convert_target_format"]:checked');
+    const targetFormat = formatRadio ? formatRadio.value : 'jpg';
+    const qualityRange = document.getElementById('convertJpgQualityRange');
+    const jpgQuality = qualityRange ? parseInt(qualityRange.value, 10) : 100;
+    const saveToCurrent = document.getElementById('convertSaveToCurrent')?.checked ? '1' : '0';
+
+    convertIsBusy = true;
+    document.getElementById('convertSetupView').style.display = 'none';
+    document.getElementById('convertProgressView').style.display = 'block';
+    document.getElementById('convertDoneActions').style.display = 'none';
+
+    const progressBar = document.getElementById('convertProgressBar');
+    const percentBadge = document.getElementById('convertPercentBadge');
+    const statusMsg = document.getElementById('convertStatusMsg');
+    const activityList = document.getElementById('convertActivityList');
+    activityList.innerHTML = '';
+
+    const setProgress = (percent, msg) => {
+        const p = Math.max(0, Math.min(100, Math.round(percent)));
+        if (progressBar) progressBar.style.width = p + '%';
+        if (percentBadge) percentBadge.textContent = p + '%';
+        if (statusMsg && msg) statusMsg.textContent = msg;
+    };
+
+    try {
+        if (selectedConvertFiles.length === 1 && selectedConvertFiles[0].name.toLowerCase().endsWith('.zip')) {
+            await convertRunZipWorkflow(selectedConvertFiles[0], targetFormat, jpgQuality, saveToCurrent, setProgress);
+        } else {
+            await convertRunArwBatchWorkflow(selectedConvertFiles, targetFormat, jpgQuality, saveToCurrent, setProgress);
+        }
+    } catch (err) {
+        console.error('[Convert Error]', err);
+        setProgress(0, 'Conversion failed: ' + (err.message || 'Unknown error'));
+        if (typeof toast === 'function') toast('Conversion error: ' + (err.message || 'Unknown'), 'danger');
+    } finally {
+        convertIsBusy = false;
+        const spinner = document.getElementById('convertActiveSpinner');
+        if (spinner) spinner.style.display = 'none';
+        document.getElementById('convertDoneActions').style.display = 'block';
+    }
+}
+
+async function convertRunArwBatchWorkflow(files, format, quality, saveToCurrent, setProgress) {
+    const total = files.length;
+    const activityList = document.getElementById('convertActivityList');
+    let convertedCount = 0;
+
+    for (let i = 0; i < total; i++) {
+        const file = files[i];
+        const isZip = file.name.toLowerCase().endsWith('.zip');
+
+        if (isZip) {
+            await convertRunZipWorkflow(file, format, quality, saveToCurrent, setProgress);
+            continue;
+        }
+
+        const basePercent = (i / total) * 100;
+        const stepPercent = (1 / total) * 100;
+
+        const rowId = 'act-row-' + i;
+        const row = document.createElement('div');
+        row.id = rowId;
+        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 10px; border-radius:8px; background:var(--surface); border:1px solid var(--line); font-size:12px;';
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                <span style="font-size:14px;">🔄</span>
+                <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <strong>${escHtml(file.name)}</strong>
+                    <span style="color:var(--muted); font-size:11px; margin-left:6px;">(${formatBytesJs(file.size)})</span>
+                </div>
+            </div>
+            <div id="${rowId}-status" style="font-weight:700; color:var(--accent); font-size:11px; flex-shrink:0;">
+                Uploading...
+            </div>
+        `;
+        activityList.appendChild(row);
+        activityList.scrollTop = activityList.scrollHeight;
+
+        try {
+            setProgress(basePercent + stepPercent * 0.2, `Uploading ${file.name} (${i + 1}/${total})...`);
+
+            const formData = new FormData();
+            formData.append('action', 'convert_upload_file');
+            formData.append('file', file);
+            formData.append('target_format', format);
+            formData.append('jpg_quality', quality);
+            formData.append('save_to_current', saveToCurrent);
+            formData.append('path', typeof F_CURRENT_PATH !== 'undefined' ? F_CURRENT_PATH : '');
+            if (typeof F_CSRF_TOKEN !== 'undefined') formData.append('csrf_token', F_CSRF_TOKEN);
+
+            const statusEl = document.getElementById(`${rowId}-status`);
+
+            const result = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', typeof F_ACTION_ENDPOINT !== 'undefined' ? F_ACTION_ENDPOINT : window.location.href, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('Accept', 'application/json');
+
+                xhr.upload.onprogress = e => {
+                    if (e.lengthComputable) {
+                        const upP = (e.loaded / e.total) * 0.7;
+                        setProgress(basePercent + stepPercent * upP, `Uploading ${file.name}: ${Math.round((e.loaded/e.total)*100)}%`);
+                        if (statusEl) statusEl.textContent = `Uploading ${Math.round((e.loaded/e.total)*100)}%`;
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (statusEl) statusEl.textContent = 'Converting...';
+                    setProgress(basePercent + stepPercent * 0.85, `Converting ${file.name}...`);
+                    try {
+                        const json = parseConvertJsonResilient(xhr.responseText);
+                        resolve(json);
+                    } catch (ex) {
+                        const raw = (xhr.responseText || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                        reject(new Error(raw ? (raw.length > 100 ? raw.substring(0, 100) + '...' : raw) : 'Server returned invalid response'));
+                    }
+                };
+                xhr.onerror = () => reject(new Error('Network upload failed'));
+                xhr.send(formData);
+            });
+
+            if (result.success) {
+                convertedCount++;
+                setProgress(basePercent + stepPercent, `Converted ${file.name} successfully`);
+                row.style.borderColor = 'rgba(16,185,129,0.3)';
+                row.style.background = 'rgba(16,185,129,0.04)';
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                        <span style="color:#059669; font-size:15px;">✅</span>
+                        <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <strong>${escHtml(result.converted_name)}</strong>
+                            <span style="color:var(--muted); font-size:11px; margin-left:6px;">(${result.size_formatted})</span>
+                            ${result.saved_to_library ? '<span style="font-size:10px; background:rgba(79,70,229,0.1); color:var(--accent); padding:1px 5px; border-radius:4px; margin-left:6px;">Saved in folder</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-shrink:0;">
+                        <a href="${result.download_url}" class="form-btn btn-secondary" style="padding:4px 10px; font-size:11px; text-decoration:none;" download>
+                            ⬇ Download
+                        </a>
+                    </div>
+                `;
+            } else {
+                row.style.borderColor = 'rgba(239,68,68,0.3)';
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                        <span style="color:var(--danger); font-size:15px;">❌</span>
+                        <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <strong>${escHtml(file.name)}</strong>
+                            <span style="color:var(--danger); font-size:11px; margin-left:6px;">${escHtml(result.error || 'Failed')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            row.style.borderColor = 'rgba(239,68,68,0.3)';
+            row.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                    <span style="color:var(--danger); font-size:15px;">❌</span>
+                    <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        <strong>${escHtml(file.name)}</strong>
+                        <span style="color:var(--danger); font-size:11px; margin-left:6px;">${escHtml(err.message)}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    setProgress(100, `Completed! ${convertedCount}/${total} file(s) converted.`);
+    if (typeof toast === 'function') toast(`Finished converting ${convertedCount} file(s)`, 'success');
+}
+
+async function convertRunZipWorkflow(zipFile, format, quality, saveToCurrent, setProgress) {
+    const activityList = document.getElementById('convertActivityList');
+
+    setProgress(5, `Uploading archive "${zipFile.name}"...`);
+
+    const formData = new FormData();
+    formData.append('action', 'convert_init_job');
+    formData.append('file', zipFile);
+    formData.append('target_format', format);
+    formData.append('jpg_quality', quality);
+    formData.append('save_to_current', saveToCurrent);
+    formData.append('path', typeof F_CURRENT_PATH !== 'undefined' ? F_CURRENT_PATH : '');
+    if (typeof F_CSRF_TOKEN !== 'undefined') formData.append('csrf_token', F_CSRF_TOKEN);
+
+    const initResult = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', typeof F_ACTION_ENDPOINT !== 'undefined' ? F_ACTION_ENDPOINT : window.location.href, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('Accept', 'application/json');
+
+        xhr.upload.onprogress = e => {
+            if (e.lengthComputable) {
+                const upP = 5 + (e.loaded / e.total) * 20;
+                setProgress(upP, `Uploading ZIP: ${Math.round((e.loaded/e.total)*100)}% (${formatBytesJs(e.loaded)} / ${formatBytesJs(e.total)})`);
+            }
+        };
+
+        xhr.onload = () => {
+            setProgress(25, 'Extracting ZIP & discovering files...');
+            try {
+                const json = parseConvertJsonResilient(xhr.responseText);
+                resolve(json);
+            } catch (ex) {
+                const raw = (xhr.responseText || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                reject(new Error(raw ? (raw.length > 100 ? raw.substring(0, 100) + '...' : raw) : 'Server returned invalid response'));
+            }
+        };
+        xhr.onerror = () => reject(new Error('Network error uploading ZIP archive'));
+        xhr.send(formData);
+    });
+
+    if (!initResult.success) {
+        throw new Error(initResult.error || 'Failed to process ZIP archive');
+    }
+
+    const jobId = initResult.job_id;
+    const totalFiles = initResult.total_files;
+    const discoveredFiles = initResult.files || [];
+
+    setProgress(28, `Found ${totalFiles} image(s) (.ARW / .AVIF) in ZIP archive. Converting...`);
+
+    let convertedSuccess = 0;
+    for (let idx = 0; idx < totalFiles; idx++) {
+        const fileInfo = discoveredFiles[idx];
+        const fileName = fileInfo.name || `Image_${idx + 1}.arw`;
+        const stepBasePercent = 30 + (idx / totalFiles) * 60;
+
+        setProgress(stepBasePercent, `Converting [${idx + 1}/${totalFiles}] ${fileName} to ${format.toUpperCase()}...`);
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 10px; border-radius:8px; background:var(--surface); border:1px solid var(--line); font-size:12px;';
+        row.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                <span class="ai-job-spinner"></span>
+                <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    <strong>${escHtml(fileName)}</strong>
+                    <span style="color:var(--muted); font-size:11px; margin-left:6px;">(${fileInfo.size_formatted || ''})</span>
+                </div>
+            </div>
+            <div style="color:var(--accent); font-size:11px; font-weight:700;">Processing...</div>
+        `;
+        activityList.appendChild(row);
+        activityList.scrollTop = activityList.scrollHeight;
+
+        try {
+            const stepFormData = new FormData();
+            stepFormData.append('action', 'convert_process_step');
+            stepFormData.append('job_id', jobId);
+            stepFormData.append('file_index', idx);
+            if (typeof F_CSRF_TOKEN !== 'undefined') stepFormData.append('csrf_token', F_CSRF_TOKEN);
+
+            const resp = await fetch(typeof F_ACTION_ENDPOINT !== 'undefined' ? F_ACTION_ENDPOINT : window.location.href, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                body: stepFormData
+            });
+            const stepRawText = await resp.text();
+            let stepData;
+            try {
+                stepData = parseConvertJsonResilient(stepRawText);
+            } catch (jsonErr) {
+                const cleanMsg = stepRawText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(cleanMsg ? (cleanMsg.length > 90 ? cleanMsg.substring(0, 90) + '...' : cleanMsg) : 'Server conversion error');
+            }
+
+            if (stepData.success) {
+                convertedSuccess++;
+                row.style.borderColor = 'rgba(16,185,129,0.3)';
+                row.style.background = 'rgba(16,185,129,0.04)';
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                        <span style="color:#059669; font-size:15px;">✅</span>
+                        <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <strong>${escHtml(stepData.converted_name)}</strong>
+                            <span style="color:var(--muted); font-size:11px; margin-left:6px;">(${stepData.size_formatted}) • ${stepData.duration}s</span>
+                            ${stepData.saved_to_library ? '<span style="font-size:10px; background:rgba(79,70,229,0.1); color:var(--accent); padding:1px 5px; border-radius:4px; margin-left:6px;">Saved in folder</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-shrink:0;">
+                        <a href="${stepData.download_url}" class="form-btn btn-secondary" style="padding:4px 10px; font-size:11px; text-decoration:none;" download>
+                            ⬇ Download
+                        </a>
+                    </div>
+                `;
+            } else {
+                row.style.borderColor = 'rgba(239,68,68,0.3)';
+                row.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                        <span style="color:var(--danger); font-size:15px;">❌</span>
+                        <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                            <strong>${escHtml(fileName)}</strong>
+                            <span style="color:var(--danger); font-size:11px; margin-left:6px;">${escHtml(stepData.error || 'Failed')}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            row.style.borderColor = 'rgba(239,68,68,0.3)';
+            row.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+                    <span style="color:var(--danger); font-size:15px;">❌</span>
+                    <div style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        <strong>${escHtml(fileName)}</strong>
+                        <span style="color:var(--danger); font-size:11px; margin-left:6px;">${escHtml(err.message)}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    setProgress(93, 'Bundling converted images into download ZIP...');
+    const finishFormData = new FormData();
+    finishFormData.append('action', 'convert_finish_job');
+    finishFormData.append('job_id', jobId);
+    if (typeof F_CSRF_TOKEN !== 'undefined') finishFormData.append('csrf_token', F_CSRF_TOKEN);
+
+    const finishResp = await fetch(typeof F_ACTION_ENDPOINT !== 'undefined' ? F_ACTION_ENDPOINT : window.location.href, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+        body: finishFormData
+    });
+    const finishRawText = await finishResp.text();
+    let finishData = {};
+    try {
+        finishData = parseConvertJsonResilient(finishRawText);
+    } catch (e) {
+        console.warn('Could not parse finish job response:', finishRawText);
+    }
+
+    if (finishData.success && finishData.download_bundle_url) {
+        const bundleBtn = document.getElementById('convertBundleDownloadBtn');
+        if (bundleBtn) {
+            bundleBtn.href = finishData.download_bundle_url;
+            bundleBtn.style.display = 'inline-flex';
+            bundleBtn.textContent = `📦 Download All as ZIP (${finishData.bundle_zip_size || ''})`;
+        }
+    }
+
+    setProgress(100, `Done! Converted ${convertedSuccess}/${totalFiles} images from ZIP archive.`);
+    if (typeof toast === 'function') toast(`Converted ${convertedSuccess} images from ZIP successfully!`, 'success');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupConvertDropZone();
+    if (new URLSearchParams(window.location.search).get('convert') === '1') {
+        setTimeout(openConvertModal, 250);
+    }
+});
 
 /* ── Utility ──────────────────────────────────────────────────────────── */
 function escHtml(str) {

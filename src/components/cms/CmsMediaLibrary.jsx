@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './cms-kiuq.css';
 
-export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectMedia }) {
+export default function CmsMediaLibrary({ csrfToken, sessionToken, isPicker = false, onSelectMedia }) {
+  const effectiveToken = sessionToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('cms_session_token') || '' : '');
   // Navigation & Display Modes
   const [activeTab, setActiveTab] = useState('files'); // 'files' | 'urls' | 'previews'
   const [selectedFolder, setSelectedFolder] = useState('all');
@@ -289,24 +290,13 @@ export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectM
       {/* TOP HEADER BAR */}
       <header className="cms-kiuq-topbar">
         <div className="cms-kiuq-topbar-left">
-          <div className="cms-kiuq-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '38px',
-              height: '38px',
-              background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              fontWeight: '900',
-              fontSize: '1.2rem',
-              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
-              flexShrink: 0
-            }}>⚡</div>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-              <span style={{ fontWeight: '800', fontSize: '1.05rem', letterSpacing: '0.04em', color: 'var(--kiuq-text)' }}>KONSTRUCTZ</span>
-              <span style={{ fontSize: '0.72rem', color: '#607a4e', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '2px' }}>STONEKRUSHER CMS</span>
+          <div className="cms-kiuq-brand">
+            <div className="cms-kiuq-brand-badge">
+              <span>KiuQ</span>
+            </div>
+            <div className="cms-kiuq-brand-info">
+              <span className="cms-kiuq-brand-name">File Manager - KiuQ</span>
+              <span className="cms-kiuq-brand-tag">Image Hosting</span>
             </div>
           </div>
         </div>
@@ -358,7 +348,7 @@ export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectM
           </button>
 
           <a
-            href="/medialibrary/index.php"
+            href={`/medialibrary/index.php${effectiveToken ? `?cms_token=${encodeURIComponent(effectiveToken)}` : ''}`}
             target="_blank"
             rel="noopener noreferrer"
             className="cms-kiuq-cms-btn"
@@ -367,9 +357,12 @@ export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectM
             ↗ Open Standalone
           </a>
 
-          <div className="cms-kiuq-user-pill">
-            <div className="cms-kiuq-user-avatar">D</div>
-            <span>Dara Admin</span>
+          <div className="cms-kiuq-user-pill" title="Admin Profile">
+            <div className="cms-kiuq-user-avatar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span>Admin</span>
+            <span style={{ fontSize: '11px', opacity: 0.7, marginLeft: '2px' }}>▾</span>
           </div>
         </div>
       </header>
@@ -379,7 +372,7 @@ export default function CmsMediaLibrary({ csrfToken, isPicker = false, onSelectM
         <div style={{ height: 'calc(100vh - 160px)', minHeight: '750px', width: '100%' }}>
           <iframe
             key={iframeKey}
-            src="/medialibrary/index.php"
+            src={`/medialibrary/index.php${effectiveToken ? `?cms_token=${encodeURIComponent(effectiveToken)}` : ''}`}
             title="KiuQ File Manager"
             style={{ width: '100%', height: '100%', border: 'none', background: 'var(--kiuq-card)' }}
             allow="clipboard-read; clipboard-write; fullscreen"

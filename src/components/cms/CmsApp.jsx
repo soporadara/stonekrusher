@@ -24,6 +24,8 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [csrfToken, setCsrfToken] = useState('');
   const [authChecking, setAuthChecking] = useState(true);
 
+  const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('cms_session_token') || '');
+
   // Layout & Theme State
   const [activeTab, setActiveTab] = useState(initialTab);
   const [tabOptions, setTabOptions] = useState({});
@@ -50,6 +52,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
           setCsrfToken(data.csrf_token || '');
+          const sTok = data.session_token || data.token || '';
+          if (sTok) {
+            setSessionToken(sTok);
+            localStorage.setItem('cms_session_token', sTok);
+          }
         } else {
           setCurrentUser(null);
           setCsrfToken('');
@@ -76,9 +83,14 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  const handleLoginSuccess = (user, token) => {
+  const handleLoginSuccess = (user, token, sessionTok) => {
     setCurrentUser(user);
     setCsrfToken(token);
+    const sTok = sessionTok || user?.session_token || user?.token || token || '';
+    if (sTok && sTok.length === 64) {
+      setSessionToken(sTok);
+      localStorage.setItem('cms_session_token', sTok);
+    }
     setActiveTab('overview');
   };
 
@@ -91,6 +103,8 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
     } catch {
       // non-fatal
     }
+    localStorage.removeItem('cms_session_token');
+    setSessionToken('');
     setCurrentUser(null);
     setCsrfToken('');
   };
@@ -454,7 +468,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             )}
 
             {activeTab === 'media' && (
-              <CmsMediaLibrary csrfToken={csrfToken} />
+              <CmsMediaLibrary
+                csrfToken={csrfToken}
+                sessionToken={sessionToken}
+                currentUser={currentUser}
+              />
             )}
 
             {activeTab === 'crm' && (

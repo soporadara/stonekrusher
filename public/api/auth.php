@@ -217,6 +217,8 @@ switch ($action) {
                 'google_linked_at' => $currentUser['google_linked_at'] ?? null,
                 'is_google_linked' => !empty($currentUser['is_google_linked'])
             ],
+            'session_token' => $currentUser['session_id'],
+            'token' => $currentUser['session_id'],
             'csrf_token' => $currentUser['csrf_token']
         ]);
         exit;
