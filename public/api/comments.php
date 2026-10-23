@@ -45,6 +45,9 @@ function get_client_ip(): string {
 function ensure_comments_table($pdo): void {
     if (!$pdo) return;
     try {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $isMysql = ($driver === 'mysql');
+
         $pdo->exec("CREATE TABLE IF NOT EXISTS blog_comments (
             id VARCHAR(64) PRIMARY KEY,
             post_slug VARCHAR(255) NOT NULL,
@@ -62,6 +65,47 @@ function ensure_comments_table($pdo): void {
             created_at BIGINT NOT NULL,
             updated_at BIGINT NOT NULL
         )");
+
+        // Fetch existing columns to dynamically add missing ones on older databases
+        $existingCols = [];
+        if ($isMysql) {
+            $q = $pdo->query("SHOW COLUMNS FROM blog_comments");
+            while ($row = $q->fetch(PDO::FETCH_ASSOC)) {
+                $existingCols[] = strtolower($row['Field']);
+            }
+        } else {
+            $q = $pdo->query("PRAGMA table_info(blog_comments)");
+            while ($row = $q->fetch(PDO::FETCH_ASSOC)) {
+                $existingCols[] = strtolower($row['name']);
+            }
+        }
+
+        $neededCols = [
+            'post_slug' => "VARCHAR(255) NOT NULL DEFAULT ''",
+            'uid' => "VARCHAR(128) NULL",
+            'display_name' => "VARCHAR(100) NOT NULL DEFAULT 'Guest'",
+            'author_email' => "VARCHAR(255) NULL",
+            'public_email' => "VARCHAR(255) NULL",
+            'email_verified' => "INT DEFAULT 0",
+            'is_guest' => "INT DEFAULT 1",
+            'photo_url' => "TEXT NULL",
+            'content' => "TEXT NULL",
+            'moderation_status' => "VARCHAR(50) DEFAULT 'Approved'",
+            'ip_address' => "VARCHAR(45) NULL",
+            'user_agent' => "VARCHAR(255) NULL",
+            'created_at' => "BIGINT NOT NULL DEFAULT 0",
+            'updated_at' => "BIGINT NOT NULL DEFAULT 0"
+        ];
+
+        foreach ($neededCols as $col => $definition) {
+            if (!in_array(strtolower($col), $existingCols, true)) {
+                try {
+                    $pdo->exec("ALTER TABLE blog_comments ADD COLUMN {$col} {$definition}");
+                } catch (Exception $alterEx) {
+                    // Column already added
+                }
+            }
+        }
     } catch (Exception $e) {
         error_log("Failed to ensure blog_comments table: " . $e->getMessage());
     }
@@ -127,7 +171,7 @@ if ($method === 'GET') {
 
         send_json(200, ['success' => true, 'comments' => $comments]);
     } catch (Exception $e) {
-        send_json(200, ['success' => true, 'comments' => [], 'debug_err' => $e->getMessage()]);
+        send_json(200, ['success' => true, 'comments' => []]);
     }
 }
 
