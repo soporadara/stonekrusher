@@ -315,7 +315,12 @@ def main():
         "--exclude=uploads/",
         "--exclude=medialibrary/blog/",
         "--exclude=medialibrary/.trash/",
-        "--exclude=medialibrary/.feature_db.sqlite",
+        "--exclude=medialibrary/.feature_db.sqlite*",
+        "--exclude=medialibrary/.trash_index.json",
+        "--exclude=medialibrary/.security.json",
+        "--exclude=medialibrary/.app_settings.json",
+        "--exclude=medialibrary/.login_activity.json",
+        "--exclude=medialibrary/img-webp-converter/",
     ]
 
     target_destination = f"{SSH_USER}@{SSH_HOST}:{REMOTE_PUBLIC}/"
@@ -367,6 +372,9 @@ def main():
 
         log_info("Ensuring PHP endpoints, API, and .htaccess are in sync...")
         backend_files = [
+            ("public/api/security.php", f"{REMOTE_PUBLIC}/api/security.php"),
+            ("public/api/auth.php", f"{REMOTE_PUBLIC}/api/auth.php"),
+            ("public/api/cms.php", f"{REMOTE_PUBLIC}/api/cms.php"),
             ("public/api/blog-posts.php", f"{REMOTE_PUBLIC}/api/blog-posts.php"),
             ("public/api/config.php", f"{REMOTE_PUBLIC}/api/config.php"),
             ("public/api/verify-comment-email.php", f"{REMOTE_PUBLIC}/api/verify-comment-email.php"),
