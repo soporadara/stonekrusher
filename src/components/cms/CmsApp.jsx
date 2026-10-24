@@ -973,8 +973,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowProfileModal(true); }}
             >
-              <div className="cms-donezo-user-avatar">
-                {userInitials}
+              <div className="cms-donezo-user-avatar-wrap">
+                <div className="cms-donezo-user-avatar">
+                  {userInitials}
+                </div>
+                <span className="cms-user-status-dot-indicator" title="Active session" />
               </div>
               <div className="cms-donezo-user-info">
                 <span className="cms-donezo-user-name">
@@ -984,6 +987,9 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
                   {userRoleTitle}
                 </span>
               </div>
+              <svg className="cms-user-capsule-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </div>
           </div>
         </header>
