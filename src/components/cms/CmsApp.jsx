@@ -56,8 +56,8 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [expandedMenus, setExpandedMenus] = useState(() => ({
     'grp-dashboard': true,
     'grp-editorial': true,
-    'grp-sales': false,
-    'grp-admin': false
+    'grp-sales': true,
+    'grp-admin': true
   }));
 
   // Auto-expand parent group when activeTab changes
