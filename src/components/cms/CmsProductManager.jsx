@@ -380,47 +380,49 @@ export default function CmsProductManager({ csrfToken }) {
   if (subView === 'editor') {
     return (
       <div className="cms-product-editor-container">
-        {/* Top Bar Navigation */}
-        <div className="cms-editor-top-nav">
-          <button
-            type="button"
-            className="cms-back-btn"
-            onClick={() => setSubView('list')}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="19" y1="12" x2="5" y2="12" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            <span>BACK TO PRODUCTS</span>
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className={`cms-status-btn-pill ${editorStatus === 'Published' ? 'published' : 'draft'}`}>
-              <span className="cms-status-dot" />
-              <span>{editorStatus}</span>
-            </span>
+        {/* Fixed Top Action Header */}
+        <div className="cms-editor-sticky-header">
+          <div className="cms-editor-top-nav">
             <button
               type="button"
-              className="cms-btn cms-btn-primary cms-btn-sm"
-              onClick={() => handleSaveProduct(editorStatus)}
-              disabled={saving}
+              className="cms-back-btn"
+              onClick={() => setSubView('list')}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
               </svg>
-              <span>{saving ? 'SAVING...' : 'SAVE CHANGES'}</span>
+              <span>BACK TO PRODUCTS</span>
             </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span className={`cms-status-btn-pill ${editorStatus === 'Published' ? 'published' : 'draft'}`}>
+                <span className="cms-status-dot" />
+                <span>{editorStatus}</span>
+              </span>
+              <button
+                type="button"
+                className="cms-btn cms-btn-primary cms-btn-sm"
+                onClick={() => handleSaveProduct(editorStatus)}
+                disabled={saving}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{saving ? 'SAVING...' : 'SAVE CHANGES'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="cms-editor-h1-row">
+            <h1>{editorId ? `EDIT: ${editorName || 'Product'}` : 'CREATE PRODUCT'}</h1>
           </div>
         </div>
 
-        <div className="cms-editor-h1-row">
-          <h1>{editorId ? `EDIT: ${editorName || 'Product'}` : 'CREATE PRODUCT'}</h1>
-        </div>
-
-        {/* 2-Column Responsive Layout */}
+        {/* 2-Column Responsive Independent-Scroll Layout */}
         <div className="cms-prod-editor-grid">
-          {/* LEFT COLUMN: Main Product Content */}
-          <div className="cms-editor-left-column">
+          {/* LEFT COLUMN: Main Product Content (Independently Scrollable) */}
+          <div className="cms-editor-left-column custom-admin-scroll">
             {/* Basic Information Card */}
             <div className="cms-editor-card">
               <div className="cms-form-field-group">
@@ -443,11 +445,11 @@ export default function CmsProductManager({ csrfToken }) {
 
               <div className="cms-form-field-group">
                 <label className="cms-form-label">URL SLUG</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--cms-text-subtle)' }}>stonekrusher.com/equipment/</span>
+                <div className="cms-slug-input-group">
+                  <span className="cms-slug-prefix">stonekrusher.com/equipment/</span>
                   <input
                     type="text"
-                    className="cms-input-text"
+                    className="cms-input-text cms-slug-input"
                     placeholder="typhon-stomp-v980"
                     value={editorSlug}
                     onChange={(e) => setEditorSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-'))}
@@ -456,8 +458,8 @@ export default function CmsProductManager({ csrfToken }) {
               </div>
 
               <div className="cms-form-field-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="cms-form-label">SHORT DESCRIPTION</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="cms-form-label" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>SHORT DESCRIPTION</label>
                   <span style={{ fontSize: '0.72rem', color: 'var(--cms-text-muted)' }}>{editorShortDesc.length}/300 chars</span>
                 </div>
                 <textarea
@@ -629,8 +631,8 @@ export default function CmsProductManager({ csrfToken }) {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Sidebar Controls */}
-          <div className="cms-editor-right-column">
+          {/* RIGHT COLUMN: Sidebar Controls (Independently Scrollable) */}
+          <div className="cms-editor-right-column custom-admin-scroll">
             {/* Publish Action Card */}
             <div className="cms-editor-card cms-publish-card">
               <div className="cms-editor-card-title">
