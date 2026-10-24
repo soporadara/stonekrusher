@@ -282,7 +282,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           meta_title: parsedData.meta_title || '',
           meta_description: parsedData.meta_description || '',
           tags: Array.isArray(tagsArr) ? tagsArr.join(', ') : '',
-          published_date: p.published_date || new Date().toISOString().split('T')[0]
+          published_date: p.published_date || parsedData.publishedDate || parsedData.published_date || (parsedData.date && !isNaN(Date.parse(parsedData.date)) ? new Date(parsedData.date).toISOString().split('T')[0] : (p.updated_at ? new Date(typeof p.updated_at === 'number' && p.updated_at < 1e11 ? p.updated_at * 1000 : Number(p.updated_at)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]))
         });
         setRevisions(Array.isArray(data.revisions) ? data.revisions : []);
         setIsEditing(true);
@@ -1170,6 +1170,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                 <th>Article</th>
                 <th>Category</th>
                 <th>Author</th>
+                <th>Views</th>
                 <th>Status</th>
                 <th>Date</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
@@ -1178,13 +1179,13 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: 'var(--cms-text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: 'var(--cms-text-muted)' }}>
                     Loading articles...
                   </td>
                 </tr>
               ) : (Array.isArray(posts) ? posts : []).length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--cms-text-muted)' }}>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '48px', color: 'var(--cms-text-muted)' }}>
                     <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📝</div>
                     <div style={{ fontWeight: '600' }}>No articles found</div>
                     <p style={{ fontSize: '0.84rem', marginTop: '4px' }}>
@@ -1227,12 +1228,23 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       <span className="cms-author-text">{p.author || 'Admin'}</span>
                     </td>
                     <td>
+                      <span className="cms-views-pill" title={`${Number(p.views || 0).toLocaleString()} total reader views`}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span>{Number(p.views || 0).toLocaleString()}</span>
+                      </span>
+                    </td>
+                    <td>
                       <span className={`cms-status-badge is-${(p.status || 'published').toLowerCase()}`}>
                         {p.status || 'Published'}
                       </span>
                     </td>
                     <td>
-                      <span className="cms-date-text">{p.published_date || 'Draft'}</span>
+                      <span className="cms-date-text">
+                        {p.published_date || (p.updated_at ? new Date(typeof p.updated_at === 'number' && p.updated_at < 1e11 ? p.updated_at * 1000 : Number(p.updated_at)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Draft')}
+                      </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className="cms-table-actions">

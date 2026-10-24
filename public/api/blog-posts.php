@@ -77,6 +77,19 @@ if ($method === 'GET') {
     send_json(200, ['posts' => $filtered]);
 }
 
+// Public Action: Track View (Increment blog post reader views in database)
+if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'track_view') {
+    $slug = trim($_GET['slug'] ?? '');
+    if (!empty($slug) && $pdo) {
+        try {
+            $stmt = $pdo->prepare("UPDATE blog_posts SET views = COALESCE(views, 0) + 1 WHERE slug = ? OR id = ?");
+            $stmt->execute([$slug, $slug]);
+            send_json(200, ['success' => true, 'slug' => $slug]);
+        } catch (Exception $e) {}
+    }
+    send_json(200, ['success' => false]);
+}
+
 // All mutation requests (PUT, POST, DELETE) MUST be authenticated
 $currentUser = Security::requireAuth();
 Security::requirePermission($currentUser, 'posts.edit');

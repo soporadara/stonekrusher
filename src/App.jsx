@@ -4758,10 +4758,17 @@ export default function App() {
         views[slug] = (views[slug] || 0) + 1;
         setBlogPostViews(views);
         localStorage.setItem('konstructzBlogPostViews', JSON.stringify(views));
+
+        // Asynchronously notify backend to record view in database
+        if (slug) {
+          fetch(`/api/blog-posts.php?action=track_view&slug=${encodeURIComponent(slug)}`, {
+            method: 'POST'
+          }).catch(() => {});
+        }
       } catch (err) {
         console.error('Failed to update blog post views:', err);
       }
-    }, 0);
+    }, 300);
 
     return () => window.clearTimeout(timer);
   }, [currentView, selectedBlogPost]);

@@ -215,10 +215,12 @@ export default function CmsDashboard({
 
   // Helper to extract article date as YYYY-MM-DD
   const getArticleDateStr = (p) => {
-    if (p.published_date) {
-      const match = String(p.published_date).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!p) return '';
+    const raw = p.published_date || p.publishedDate || p.date || '';
+    if (raw) {
+      const match = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
       if (match) return match[0];
-      const parsed = new Date(p.published_date);
+      const parsed = new Date(raw);
       if (!isNaN(parsed.getTime())) return formatDateToYMD(parsed);
     }
     if (p.updated_at) {
@@ -607,7 +609,10 @@ export default function CmsDashboard({
                   const views = Number(post.views || 0);
                   const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
                   const imgSrc = post.featured_image || 'https://stonekrusher.com/assets/products/skoop-ii-jobsite-loader.png';
-                  const pubDate = getArticleDateStr(post) || post.published_date || 'Live';
+                  const rawD = getArticleDateStr(post) || post.published_date || '';
+                  const pubDate = rawD
+                    ? (rawD.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(rawD + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : rawD)
+                    : (post.updated_at ? new Date(typeof post.updated_at === 'number' && post.updated_at < 1e11 ? post.updated_at * 1000 : Number(post.updated_at)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Live');
                   return `
                   <tr>
                     <td style="text-align: center;">
@@ -1778,7 +1783,10 @@ export default function CmsDashboard({
                       const pctOfMax = Math.round((views / maxViewsValue) * 100);
                       const isEditingViews = editingViewsPostId === post.id;
                       const publicUrl = `/blog/${post.slug}`;
-                      const formattedPubDate = getArticleDateStr(post) || post.published_date || 'Live';
+                      const rawD = getArticleDateStr(post) || post.published_date || '';
+                      const formattedPubDate = rawD
+                        ? (rawD.match(/^\d{4}-\d{2}-\d{2}$/) ? new Date(rawD + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : rawD)
+                        : (post.updated_at ? new Date(typeof post.updated_at === 'number' && post.updated_at < 1e11 ? post.updated_at * 1000 : Number(post.updated_at)).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Live');
 
                       return (
                         <tr

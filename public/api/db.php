@@ -281,20 +281,39 @@ function ensure_cms_schema_migrated($pdo) {
             }
         }
 
-        // Backfill empty columns from data_json in blog_posts
+        // Backfill empty columns from data_json in blog_posts (including published_date)
         try {
-            $unpopulated = $pdo->query("SELECT id, data_json FROM blog_posts WHERE category IS NULL OR status IS NULL OR status = ''")->fetchAll();
+            $unpopulated = $pdo->query("SELECT id, data_json, published_date, category, author, featured_image, excerpt, status FROM blog_posts WHERE published_date IS NULL OR published_date = '' OR category IS NULL OR category = '' OR status IS NULL OR status = ''")->fetchAll();
             if (!empty($unpopulated)) {
                 $updateStmt = $pdo->prepare("UPDATE blog_posts SET category = ?, author = ?, featured_image = ?, excerpt = ?, status = ?, published_date = ? WHERE id = ?");
                 foreach ($unpopulated as $row) {
                     $d = json_decode($row['data_json'] ?? '{}', true) ?: [];
+                    $pDate = trim($row['published_date'] ?? '');
+                    if (empty($pDate)) {
+                        $pDate = trim($d['publishedDate'] ?? ($d['published_date'] ?? ''));
+                        if (empty($pDate) && !empty($d['date'])) {
+                            $ts = strtotime($d['date']);
+                            if ($ts !== false) {
+                                $pDate = date('Y-m-d', $ts);
+                            }
+                        }
+                        if (empty($pDate) && !empty($row['updated_at'])) {
+                            $ts = (int)$row['updated_at'];
+                            if ($ts > 1e11) $ts = (int)($ts / 1000);
+                            $pDate = date('Y-m-d', $ts);
+                        }
+                        if (empty($pDate)) {
+                            $pDate = date('Y-m-d');
+                        }
+                    }
+
                     $updateStmt->execute([
-                        $d['category'] ?? 'Guide',
-                        $d['author'] ?? 'Admin KONSTRUCTZ',
-                        $d['image'] ?? ($d['featuredImage'] ?? ''),
-                        $d['desc'] ?? ($d['excerpt'] ?? ''),
-                        $d['status'] ?? 'Published',
-                        $d['publishedDate'] ?? ($d['date'] ?? date('Y-m-d')),
+                        !empty($row['category']) ? $row['category'] : ($d['category'] ?? 'Guide'),
+                        !empty($row['author']) ? $row['author'] : ($d['author'] ?? 'Admin KONSTRUCTZ'),
+                        !empty($row['featured_image']) ? $row['featured_image'] : ($d['image'] ?? ($d['featuredImage'] ?? '')),
+                        !empty($row['excerpt']) ? $row['excerpt'] : ($d['desc'] ?? ($d['excerpt'] ?? '')),
+                        !empty($row['status']) ? $row['status'] : ($d['status'] ?? 'Published'),
+                        $pDate,
                         $row['id']
                     ]);
                 }
