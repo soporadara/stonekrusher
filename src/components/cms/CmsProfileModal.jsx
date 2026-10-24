@@ -269,53 +269,25 @@ export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUp
         </div>
 
         {/* NAVIGATION TABS */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--cms-card-border)', background: 'var(--cms-bg-subtle)' }}>
+        <div className="cms-modal-tabs">
           <button
             type="button"
+            className={`cms-modal-tab-btn ${activeTab === 'google' ? 'active' : ''}`}
             onClick={() => setActiveTab('google')}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: 'none',
-              background: activeTab === 'google' ? 'var(--cms-card-bg)' : 'transparent',
-              color: activeTab === 'google' ? 'var(--cms-primary)' : 'var(--cms-text-muted)',
-              borderBottom: activeTab === 'google' ? '2px solid var(--cms-primary)' : '2px solid transparent',
-              fontWeight: '700',
-              fontSize: '0.86rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
           >
             <span>🔗</span>
             <span>Google Login</span>
             {currentUser.is_google_linked ? (
-              <span style={{ padding: '2px 6px', fontSize: '0.68rem', borderRadius: '999px', background: 'var(--cms-success-bg)', color: 'var(--cms-success)' }}>Linked</span>
+              <span className="cms-modal-tab-badge linked">Linked</span>
             ) : (
-              <span style={{ padding: '2px 6px', fontSize: '0.68rem', borderRadius: '999px', background: 'rgba(255,255,255,0.08)', color: 'var(--cms-text-subtle)' }}>Unlinked</span>
+              <span className="cms-modal-tab-badge unlinked">Unlinked</span>
             )}
           </button>
 
           <button
             type="button"
+            className={`cms-modal-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: 'none',
-              background: activeTab === 'profile' ? 'var(--cms-card-bg)' : 'transparent',
-              color: activeTab === 'profile' ? 'var(--cms-primary)' : 'var(--cms-text-muted)',
-              borderBottom: activeTab === 'profile' ? '2px solid var(--cms-primary)' : '2px solid transparent',
-              fontWeight: '700',
-              fontSize: '0.86rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
           >
             <span>👤</span>
             <span>Profile Details</span>
@@ -323,22 +295,8 @@ export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUp
 
           <button
             type="button"
+            className={`cms-modal-tab-btn ${activeTab === 'password' ? 'active' : ''}`}
             onClick={() => setActiveTab('password')}
-            style={{
-              flex: 1,
-              padding: '12px 16px',
-              border: 'none',
-              background: activeTab === 'password' ? 'var(--cms-card-bg)' : 'transparent',
-              color: activeTab === 'password' ? 'var(--cms-primary)' : 'var(--cms-text-muted)',
-              borderBottom: activeTab === 'password' ? '2px solid var(--cms-primary)' : '2px solid transparent',
-              fontWeight: '700',
-              fontSize: '0.86rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
           >
             <span>🔒</span>
             <span>Password</span>
@@ -416,12 +374,15 @@ export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUp
                   <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px' }}>
                     <button
                       type="button"
-                      className="cms-btn cms-btn-sm"
-                      style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--cms-danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+                      className="cms-btn cms-btn-danger cms-btn-sm"
                       onClick={handleUnlinkGoogle}
                       disabled={googleUnlinking}
                     >
-                      {googleUnlinking ? 'Disconnecting...' : 'Disconnect Google Account'}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                        <line x1="12" y1="2" x2="12" y2="12" />
+                      </svg>
+                      <span>{googleUnlinking ? 'Disconnecting...' : 'Disconnect Google Account'}</span>
                     </button>
                   </div>
                 </div>

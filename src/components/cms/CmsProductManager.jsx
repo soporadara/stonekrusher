@@ -398,11 +398,13 @@ export default function CmsProductManager({ csrfToken }) {
             </span>
             <button
               type="button"
-              className="cms-btn-primary-blue cms-prod-publish-btn"
+              className="cms-btn cms-btn-primary cms-prod-publish-btn"
               onClick={() => handleSaveProduct(editorStatus)}
               disabled={saving}
             >
-              <span>✓</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               <span>{saving ? 'SAVING...' : 'SAVE CHANGES'}</span>
             </button>
           </div>
@@ -630,11 +632,15 @@ export default function CmsProductManager({ csrfToken }) {
             <div className="cms-editor-card">
               <button
                 type="button"
-                className="cms-btn-primary-blue cms-prod-publish-btn"
+                className="cms-btn cms-btn-primary cms-prod-publish-btn"
                 onClick={() => handleSaveProduct('Published')}
                 disabled={saving}
               >
-                <span>🌐</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
                 <span>{saving && editorStatus === 'Published' ? 'PUBLISHING...' : 'PUBLISH PRODUCT'}</span>
               </button>
 
@@ -653,11 +659,17 @@ export default function CmsProductManager({ csrfToken }) {
 
               <button
                 type="button"
-                className="cms-action-btn-outline cms-prod-draft-btn"
+                className="cms-btn cms-btn-secondary cms-prod-draft-btn"
                 onClick={() => handleSaveProduct('Draft')}
                 disabled={saving}
               >
-                <span>📄</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
                 <span>{saving && editorStatus === 'Draft' ? 'Saving Draft...' : 'Save as Draft'}</span>
               </button>
             </div>
@@ -872,10 +884,13 @@ export default function CmsProductManager({ csrfToken }) {
 
           <button
             type="button"
-            className="cms-btn-primary-blue"
+            className="cms-btn cms-btn-primary"
             onClick={handleOpenCreate}
           >
-            <span>+</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
             <span>Add Product</span>
           </button>
         </div>
@@ -935,7 +950,10 @@ export default function CmsProductManager({ csrfToken }) {
       {/* Filter & Search Toolbar */}
       <div className="cms-products-filter-toolbar">
         <div className="cms-filter-search-box">
-          <span>🔍</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input
             type="text"
             placeholder="Search by product name, SKU, brand, or category..."
@@ -946,8 +964,8 @@ export default function CmsProductManager({ csrfToken }) {
           {search && (
             <button
               type="button"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--cms-text-muted)' }}
               onClick={() => { setSearch(''); fetchProducts(); }}
+              title="Clear search"
             >
               ✕
             </button>
@@ -1206,9 +1224,10 @@ export default function CmsProductManager({ csrfToken }) {
                 disabled={page <= 1}
                 onClick={() => setPage(p => Math.max(1, p - 1))}
               >
-                ← Prev
+                <span>←</span>
+                <span>Prev</span>
               </button>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, padding: '0 8px' }}>
+              <span className="cms-page-number">
                 Page {page} of {totalPages}
               </span>
               <button
@@ -1217,7 +1236,8 @@ export default function CmsProductManager({ csrfToken }) {
                 disabled={page >= totalPages}
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               >
-                Next →
+                <span>Next</span>
+                <span>→</span>
               </button>
             </div>
           </div>

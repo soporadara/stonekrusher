@@ -1096,7 +1096,11 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
             className="cms-btn cms-btn-primary"
             onClick={handleCreateNew}
           >
-            <span>+</span> New Article
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>New Article</span>
           </button>
         </div>
       </div>
@@ -1104,7 +1108,12 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       {/* Filter and Search Bar */}
       <div className="cms-card cms-filter-bar">
         <div className="cms-search-box">
-          <span className="cms-search-icon">🔍</span>
+          <span className="cms-search-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
           <input
             type="text"
             className="cms-search-input"
@@ -1324,22 +1333,24 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           <div className="cms-page-controls">
             <button
               type="button"
-              className="cms-btn cms-btn-secondary cms-btn-sm"
+              className="cms-page-pill-btn"
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
-              Previous
+              <span>←</span>
+              <span>Previous</span>
             </button>
             <span className="cms-page-number">
               Page {page} of {totalPages}
             </span>
             <button
               type="button"
-              className="cms-btn cms-btn-secondary cms-btn-sm"
+              className="cms-page-pill-btn"
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
             >
-              Next
+              <span>Next</span>
+              <span>→</span>
             </button>
           </div>
         </div>
