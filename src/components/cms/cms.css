@@ -4798,3 +4798,147 @@
   font-size: 0.74rem;
   color: var(--cms-text-subtle);
 }
+
+/* ==============================================================================
+   Enlarged Modern Profile & Security Modal (Brand Logo Avatar & Google SSO)
+   ============================================================================== */
+.cms-profile-modal {
+  max-width: 740px !important;
+  width: 95% !important;
+  border-radius: 18px !important;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--cms-card-border);
+  animation: cmsSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cms-profile-hero-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  background: var(--cms-bg, #f8fafc);
+  border: 1px solid var(--cms-card-border, #e2e8f0);
+  border-radius: 14px;
+  margin-bottom: 22px;
+}
+.cms-theme-dark .cms-profile-hero-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.cms-profile-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+.cms-profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #0f4c3a;
+  border: 2.5px solid var(--cms-primary, #15803d);
+  box-shadow: 0 4px 14px rgba(15, 76, 58, 0.2);
+  display: block;
+}
+.cms-profile-avatar-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2.5px solid var(--cms-card-bg, #ffffff);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+}
+.cms-theme-dark .cms-profile-avatar-dot {
+  border-color: #111a22;
+}
+
+.cms-profile-hero-meta {
+  flex: 1;
+  min-width: 0;
+}
+.cms-profile-hero-name {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 850;
+  color: var(--cms-text, #0f172a);
+  letter-spacing: -0.01em;
+}
+.cms-profile-hero-handle {
+  display: inline-block;
+  font-size: 0.82rem;
+  color: var(--cms-text-subtle, #64748b);
+  font-family: monospace;
+  margin-top: 2px;
+}
+.cms-profile-avatar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.cms-btn-xs {
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cms-profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .cms-profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cms-field-help {
+  display: block;
+  font-size: 0.73rem;
+  color: var(--cms-text-subtle, #64748b);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.cms-google-connected-box {
+  padding: 20px;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1.5px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cms-theme-dark .cms-google-connected-box {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.cms-google-unlinked-box {
+  padding: 24px 20px;
+  border-radius: 14px;
+  background: var(--cms-bg, #f8fafc);
+  border: 1px solid var(--cms-card-border, #e2e8f0);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cms-theme-dark .cms-google-unlinked-box {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+

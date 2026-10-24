@@ -107,6 +107,7 @@ function ensure_cms_schema_migrated($pdo) {
             google_id VARCHAR(255) NULL,
             google_email VARCHAR(255) NULL,
             google_linked_at BIGINT NULL,
+            avatar_url VARCHAR(1000) NULL,
             created_at BIGINT NOT NULL,
             updated_at BIGINT NOT NULL
         )");
@@ -128,7 +129,8 @@ function ensure_cms_schema_migrated($pdo) {
         $userColsToAdd = [
             'google_id' => "VARCHAR(255) NULL",
             'google_email' => "VARCHAR(255) NULL",
-            'google_linked_at' => "BIGINT NULL"
+            'google_linked_at' => "BIGINT NULL",
+            'avatar_url' => "VARCHAR(1000) NULL"
         ];
 
         foreach ($userColsToAdd as $col => $definition) {

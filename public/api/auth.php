@@ -217,7 +217,8 @@ switch ($action) {
                 'permissions' => $currentUser['permissions'],
                 'google_email' => $currentUser['google_email'] ?? null,
                 'google_linked_at' => $currentUser['google_linked_at'] ?? null,
-                'is_google_linked' => !empty($currentUser['is_google_linked'])
+                'is_google_linked' => !empty($currentUser['is_google_linked']),
+                'avatar_url' => $currentUser['avatar_url'] ?? null
             ],
             'session_token' => $currentUser['session_id'],
             'token' => $currentUser['session_id'],
@@ -316,8 +317,20 @@ switch ($action) {
         $currentUser = Security::requireAuth();
         Security::validateCsrf($currentUser);
 
+        $newUsername = trim((string)($input['username'] ?? ''));
         $fullName = trim((string)($input['full_name'] ?? ''));
         $email = strtolower(trim((string)($input['email'] ?? '')));
+        $avatarUrl = trim((string)($input['avatar_url'] ?? ''));
+
+        if ($newUsername === '') {
+            $newUsername = $currentUser['username'];
+        }
+
+        if (strlen($newUsername) < 3) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Username must be at least 3 characters long.']);
+            exit;
+        }
 
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
@@ -326,6 +339,19 @@ switch ($action) {
         }
 
         $pdo = get_cms_pdo();
+
+        // Check duplicate username if changing
+        if (strtolower($newUsername) !== strtolower($currentUser['username'])) {
+            $dupUserStmt = $pdo->prepare("SELECT id FROM cms_users WHERE LOWER(username) = LOWER(?) AND id != ?");
+            $dupUserStmt->execute([$newUsername, $currentUser['id']]);
+            if ($dupUserStmt->fetch()) {
+                http_response_code(400);
+                echo json_encode(['error' => "The username '{$newUsername}' is already taken by another account."]);
+                exit;
+            }
+        }
+
+        // Check duplicate email
         $dupStmt = $pdo->prepare("SELECT id FROM cms_users WHERE LOWER(email) = LOWER(?) AND id != ?");
         $dupStmt->execute([$email, $currentUser['id']]);
         if ($dupStmt->fetch()) {
@@ -335,10 +361,11 @@ switch ($action) {
         }
 
         $now = time();
-        $pdo->prepare("UPDATE cms_users SET full_name = ?, email = ?, updated_at = ? WHERE id = ?")
-            ->execute([$fullName, $email, $now, $currentUser['id']]);
+        $pdo->prepare("UPDATE cms_users SET username = ?, full_name = ?, email = ?, avatar_url = ?, updated_at = ? WHERE id = ?")
+            ->execute([$newUsername, $fullName, $email, $avatarUrl ?: null, $now, $currentUser['id']]);
 
         Security::logAudit($currentUser['id'], 'user.profile_updated', 'user', $currentUser['id'], [
+            'username' => $newUsername,
             'email' => $email,
             'full_name' => $fullName
         ]);
@@ -347,8 +374,13 @@ switch ($action) {
             'success' => true,
             'message' => 'Profile details updated successfully.',
             'user' => [
+                'id' => $currentUser['id'],
+                'username' => $newUsername,
                 'full_name' => $fullName,
-                'email' => $email
+                'email' => $email,
+                'avatar_url' => $avatarUrl ?: null,
+                'role' => $currentUser['role'],
+                'role_display' => $currentUser['role_display'] ?? $currentUser['role']
             ]
         ]);
         exit;

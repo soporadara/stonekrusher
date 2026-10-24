@@ -755,7 +755,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             tabIndex={0}
           >
             <div className="cms-sidebar-user-avatar">
-              {userInitials}
+              {currentUser?.avatar_url ? (
+                <img src={currentUser.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = konstructzLogo; }} />
+              ) : (
+                <img src={konstructzLogo} alt="StoneKrusher" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'contain', background: '#0f4c3a', padding: '3px' }} />
+              )}
             </div>
             {!sidebarCollapsed && (
               <div className="cms-sidebar-user-details">
@@ -975,7 +979,11 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
             >
               <div className="cms-donezo-user-avatar-wrap">
                 <div className="cms-donezo-user-avatar">
-                  {userInitials}
+                  {currentUser?.avatar_url ? (
+                    <img src={currentUser.avatar_url} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.target.src = konstructzLogo; }} />
+                  ) : (
+                    <img src={konstructzLogo} alt="StoneKrusher" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'contain', background: '#0f4c3a', padding: '3px' }} />
+                  )}
                 </div>
                 <span className="cms-user-status-dot-indicator" title="Active session" />
               </div>

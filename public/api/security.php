@@ -442,7 +442,7 @@ class Security {
 
         $now = time();
         $stmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status, u.locked_until,
-                                       u.google_id, u.google_email, u.google_linked_at
+                                       u.google_id, u.google_email, u.google_linked_at, u.avatar_url
                                FROM cms_sessions s
                                JOIN cms_users u ON s.user_id = u.id
                                WHERE s.id = ? AND s.is_revoked = 0 AND s.expires_at > ?");
@@ -453,7 +453,7 @@ class Security {
         if (!$row) {
             $csrfSecret = self::getCsrfSecret();
             $activeStmt = $pdo->prepare("SELECT s.*, u.username, u.email, u.full_name, u.role, u.status, u.locked_until,
-                                                u.google_id, u.google_email, u.google_linked_at
+                                                u.google_id, u.google_email, u.google_linked_at, u.avatar_url
                                          FROM cms_sessions s
                                          JOIN cms_users u ON s.user_id = u.id
                                          WHERE s.is_revoked = 0 AND s.expires_at > ?
@@ -512,7 +512,8 @@ class Security {
             'permissions' => $permissions,
             'google_email' => $row['google_email'] ?? null,
             'google_linked_at' => $row['google_linked_at'] ?? null,
-            'is_google_linked' => !empty($row['google_id']) || !empty($row['google_email'])
+            'is_google_linked' => !empty($row['google_id']) || !empty($row['google_email']),
+            'avatar_url' => $row['avatar_url'] ?? null
         ];
     }
 
