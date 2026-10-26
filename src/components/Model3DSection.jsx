@@ -136,16 +136,6 @@ export const GlbViewer = ({
         minHeight: height,
       }}
     >
-      {/* Loading Progress Bar */}
-      {!isLoaded && !loadError && (
-        <div className="glb-loading-overlay">
-          <div className="glb-loading-spinner"></div>
-          <span className="glb-loading-text">Loading 3D Model... {loadProgress > 0 ? `${loadProgress}%` : ''}</span>
-          <div className="glb-progress-track">
-            <div className="glb-progress-fill" style={{ width: `${Math.max(8, loadProgress)}%` }}></div>
-          </div>
-        </div>
-      )}
 
       {/* Error Fallback */}
       {loadError && (
