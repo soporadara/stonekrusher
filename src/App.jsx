@@ -6872,25 +6872,56 @@ export default function App() {
       {/* HEADER / NAVBAR */}
       <header className={`main-header dark-bg ${currentView === 'home' ? 'home-header' : ''}`}>
         <div className="header-content">
-          {/* Mobile Menu Button */}
-          <button 
-            className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle Menu"
-          >
-            <span className="hamburger-line"></span>
-            <span className="hamburger-line"></span>
-            <span className="hamburger-line"></span>
-          </button>
-
-          <nav className="nav-links nav-links-left">
-            <a 
-              href="/"
-              className={currentView === 'home' ? 'active' : ''} 
-              onClick={(e) => { e.preventDefault(); navigate('home'); }}
+          <div className="header-left-col">
+            {/* Mobile Menu Button */}
+            <button 
+              className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle Menu"
             >
-              Home
-            </a>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+              <span className="hamburger-line"></span>
+            </button>
+
+            <div
+              className="header-k1-3d-box"
+              title="TYPHON STONEKRUSHER K1 — 360° 3D Model"
+              onClick={() => {
+                const el = document.querySelector('.stone-crusher-showcase-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <model-viewer
+                src="/k1.glb"
+                alt="TYPHON STONEKRUSHER K1 3D"
+                auto-rotate=""
+                rotation-per-second="24deg"
+                camera-controls=""
+                touch-action="pan-y"
+                interaction-prompt="none"
+                loading="eager"
+                reveal="auto"
+                camera-orbit="45deg 75deg 105%"
+                field-of-view="32deg"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  outline: 'none',
+                  backgroundColor: 'transparent'
+                }}
+              ></model-viewer>
+              <span className="header-k1-badge">K1 3D</span>
+            </div>
+
+            <nav className="nav-links nav-links-left">
+              <a 
+                href="/"
+                className={currentView === 'home' ? 'active' : ''} 
+                onClick={(e) => { e.preventDefault(); navigate('home'); }}
+              >
+                Home
+              </a>
             <div className="nav-item-dropdown">
               <button 
                 className={`nav-dropdown-trigger-btn ${currentView === 'all-products' || currentView === 'product-detail' ? 'active' : ''}`}
@@ -7024,6 +7055,7 @@ export default function App() {
               Blog
             </a>
           </nav>
+        </div>
 
           <a href="/" className="logo" onClick={(e) => { e.preventDefault(); navigate('home'); }}>
             <img src={konstructzLogo} alt="KONSTRUCTZ" className="logo-img" />
@@ -7507,11 +7539,6 @@ export default function App() {
       {/* Stone Crusher Showcase Section */}
       <StoneCrusherInteractiveShowcase onDetail={handleProductDetail} />
 
-      {/* 3D GLB SECTION 1: TYPHON STONEKRUSHER K1 (3D Left, Specs Right) */}
-      <StoneKrusher3DSection onQuoteClick={handleProductDetail} />
-
-      {/* 3D GLB SECTION 2: TYPHON ThunderDump Lift (Specs Left, 3D Right) */}
-      <ThunderDump3DSection onQuoteClick={handleProductDetail} />
 
 
 
@@ -8131,6 +8158,56 @@ export default function App() {
               </article>
             );
           })}
+
+            {/* 4th Card: TYPHON ThunderDump Lift 3D Interactive Model */}
+            <article className="blog-card-white blog-card-3d">
+              <div className="blog-img-placeholder blog-3d-canvas-box">
+                <model-viewer
+                  src="/td.glb"
+                  alt="TYPHON ThunderDump Lift 3D Model"
+                  auto-rotate=""
+                  rotation-per-second="24deg"
+                  camera-controls=""
+                  touch-action="pan-y"
+                  interaction-prompt="none"
+                  loading="eager"
+                  reveal="auto"
+                  camera-orbit="45deg 75deg 105%"
+                  field-of-view="32deg"
+                  shadow-intensity="1.2"
+                  exposure="1.06"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    minHeight: '200px',
+                    outline: 'none',
+                    backgroundColor: '#ffffff'
+                  }}
+                ></model-viewer>
+                <div className="blog-3d-badge">
+                  <span className="blog-3d-dot"></span>
+                  <span>360° 3D MODEL</span>
+                </div>
+              </div>
+              <div className="blog-card-info">
+                <span className="blog-card-cat">INTERACTIVE 3D · DUMPER</span>
+                <h3 className="blog-card-name text-black">TYPHON ThunderDump Lift</h3>
+                <span className="blog-card-date">1,000 kg Payload · Scissor High-Dump</span>
+                <p className="blog-card-desc">
+                  Inspect the hydraulic scissor high-dump mechanism, rubber crawler tracks, and Honda GX390 engine in full 360° 3D.
+                </p>
+                <a
+                  href="?page=all-products&search=ThunderDump"
+                  className="blog-card-link"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('all-products', { search: 'ThunderDump' });
+                  }}
+                >
+                  Explore ThunderDump 3D →
+                </a>
+              </div>
+            </article>
           </div>
         </div>
       </section>

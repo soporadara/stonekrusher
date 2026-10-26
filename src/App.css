@@ -90,6 +90,67 @@ section {
   width: 100%;
 }
 
+.header-left-col {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.2vw, 18px);
+  grid-column: 1;
+}
+
+.header-k1-3d-box {
+  width: 48px;
+  height: 42px;
+  position: relative;
+  border-radius: 12px;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.12) 0%, rgba(12, 16, 12, 0.85) 100%);
+  border: 1px solid rgba(219, 195, 138, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-k1-3d-box:hover {
+  border-color: #dbc38a;
+  box-shadow: 0 0 14px rgba(219, 195, 138, 0.55);
+  transform: scale(1.06);
+}
+
+.header-k1-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #dbc38a;
+  color: #0b0f0b;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  line-height: 1.1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+@media (max-width: 860px) {
+  .header-left-col {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-k1-3d-box {
+    width: 38px;
+    height: 34px;
+    border-radius: 8px;
+  }
+  .header-k1-badge {
+    display: none;
+  }
+}
+
 .logo {
   font-family: var(--font-heading);
   font-size: 26px;
@@ -4430,9 +4491,85 @@ section {
 
 .blog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 360px));
-  gap: 28px;
-  justify-content: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+}
+
+@media (min-width: 1180px) {
+  .blog-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 22px !important;
+  }
+}
+
+@media (max-width: 1179px) and (min-width: 768px) {
+  .blog-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .blog-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}
+
+/* 4th 3D card in Blog Grid */
+.blog-card-3d {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-3d-canvas-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 180px;
+  background-color: #ffffff !important;
+  overflow: hidden;
+}
+
+.blog-3d-canvas-box model-viewer {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  outline: none;
+}
+
+.blog-3d-canvas-box model-viewer:active {
+  cursor: grabbing;
+}
+
+.blog-3d-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(14, 18, 14, 0.85);
+  border: 1px solid rgba(219, 195, 138, 0.4);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #dbc38a;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.blog-3d-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulseBeacon 1.8s infinite alternate;
 }
 
 .blog-card-white {
