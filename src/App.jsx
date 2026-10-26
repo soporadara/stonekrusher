@@ -3125,6 +3125,12 @@ const renderParagraphWithMedia = (text) => {
 };
 
 export default function App() {
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.customElements?.get('model-viewer')) {
+      import('@google/model-viewer').catch(() => {});
+    }
+  }, []);
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [cartItems, setCartItems] = useState([]);
