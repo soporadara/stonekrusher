@@ -162,6 +162,7 @@ export const GlbViewer = ({
         auto-rotate={isRotating ? '' : undefined}
         rotation-per-second="24deg"
         camera-controls=""
+        disable-zoom=""
         touch-action="pan-y"
         shadow-intensity="1.3"
         shadow-softness="0.75"
