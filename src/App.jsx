@@ -6903,10 +6903,6 @@ export default function App() {
                 alt="TYPHON STONEKRUSHER K1 3D"
                 auto-rotate=""
                 rotation-per-second="24deg"
-                camera-controls=""
-                disable-zoom=""
-                disable-pan=""
-                touch-action="pan-y"
                 interaction-prompt="none"
                 loading="eager"
                 reveal="auto"
@@ -6920,7 +6916,8 @@ export default function App() {
                   width: '100%',
                   height: '100%',
                   outline: 'none',
-                  backgroundColor: 'transparent'
+                  backgroundColor: 'transparent',
+                  pointerEvents: 'none'
                 }}
               >
                 <div slot="progress-bar" style={{ display: 'none' }}></div>
@@ -8179,10 +8176,6 @@ export default function App() {
                 alt="TYPHON ThunderDump Lift 3D Model"
                 auto-rotate=""
                 rotation-per-second="24deg"
-                camera-controls=""
-                disable-zoom=""
-                disable-pan=""
-                touch-action="pan-y"
                 interaction-prompt="none"
                 loading="eager"
                 reveal="auto"
@@ -8196,7 +8189,8 @@ export default function App() {
                   width: '100%',
                   height: '100%',
                   outline: 'none',
-                  backgroundColor: 'transparent'
+                  backgroundColor: 'transparent',
+                  pointerEvents: 'none'
                 }}
               >
                 <div slot="progress-bar" style={{ display: 'none' }}></div>

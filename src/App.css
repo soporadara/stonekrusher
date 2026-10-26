@@ -107,7 +107,7 @@ section {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: grab;
+  cursor: pointer;
   flex-shrink: 0;
   transition: transform 0.25s ease;
   overflow: visible;
@@ -124,6 +124,7 @@ section {
   height: 100%;
   background: transparent !important;
   outline: none;
+  pointer-events: none !important;
   --progress-bar-color: transparent;
   --progress-mask: transparent;
 }
@@ -4528,14 +4529,10 @@ section {
   height: 100%;
   min-height: 440px;
   background: transparent !important;
-  cursor: grab;
   outline: none;
+  pointer-events: none !important;
   --progress-bar-color: transparent;
   --progress-mask: transparent;
-}
-
-.blog-pure-3d-wrap model-viewer:active {
-  cursor: grabbing;
 }
 
 @media (max-width: 767px) {
