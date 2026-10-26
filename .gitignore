@@ -48,3 +48,7 @@ public/medialibrary/.trash_index.json
 public/uploads/*
 !public/uploads/.htaccess
 
+# Local untracked media and root GLB duplicates (canonical GLBs live in public/)
+/Media Library/
+/k1.glb
+/td.glb

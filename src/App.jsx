@@ -36,6 +36,7 @@ import kubotaEngineLogoAsset from './assets/engine-logos/kubota.png'
 import briggsStrattonLogoAsset from './assets/engine-logos/briggs-stratton.png'
 import batteryExpressLogoAsset from './assets/engine-logos/battery-express.png'
 import recycleBatteryLogoAsset from './assets/engine-logos/recycle-battery.png'
+import { StoneKrusher3DSection, ThunderDump3DSection, GlbViewer } from './components/Model3DSection'
 
 // Image references
 const heroLoader = stoneCrusherAsset;
@@ -593,6 +594,7 @@ const stoneCrusherData = [
 const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [viewMode, setViewMode] = useState('stage'); // 'stage' | 'compare'
+  const [stageMediaMode, setStageMediaMode] = useState('photo'); // 'photo' | '3d'
   const activeMachine = stoneCrusherData[activeTab];
 
   return (
@@ -644,7 +646,10 @@ const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
                   key={item.id}
                   type="button"
                   className={`crusher-dock-btn ${idx === activeTab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(idx)}
+                  onClick={() => {
+                    setActiveTab(idx);
+                    if (idx !== 0) setStageMediaMode('photo');
+                  }}
                 >
                   <span className="dock-num">0{idx + 1}</span>
                   <div className="dock-title-box">
@@ -661,14 +666,45 @@ const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
               {/* Left Column: Visual Showcase */}
               <div className="stage-visual-col">
                 <div className="stage-image-hero">
-                  <img
-                    src={activeMachine.image}
-                    alt={activeMachine.name}
-                    className="stage-hero-img"
-                    key={activeMachine.id}
-                  />
-                  <div className="stage-image-vignette"></div>
-                  <div className="stage-badge-tag">{activeMachine.badge}</div>
+                  {stageMediaMode === '3d' && activeMachine.id === 'featured-12' ? (
+                    <GlbViewer
+                      src="/k1.glb"
+                      alt={activeMachine.name}
+                      productName="TYPHON STONEKRUSHER K1"
+                      height="460px"
+                      initialBg="#ffffff"
+                    />
+                  ) : (
+                    <>
+                      <img
+                        src={activeMachine.image}
+                        alt={activeMachine.name}
+                        className="stage-hero-img"
+                        key={activeMachine.id}
+                      />
+                      <div className="stage-image-vignette"></div>
+                      <div className="stage-badge-tag">{activeMachine.badge}</div>
+                    </>
+                  )}
+
+                  {activeMachine.id === 'featured-12' && (
+                    <div className="media-toggle-pill">
+                      <button
+                        type="button"
+                        className={`media-toggle-btn ${stageMediaMode === 'photo' ? 'active' : ''}`}
+                        onClick={() => setStageMediaMode('photo')}
+                      >
+                        📷 Photo
+                      </button>
+                      <button
+                        type="button"
+                        className={`media-toggle-btn ${stageMediaMode === '3d' ? 'active' : ''}`}
+                        onClick={() => setStageMediaMode('3d')}
+                      >
+                        🔄 3D View
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="stage-left-info-card">
@@ -7470,6 +7506,12 @@ export default function App() {
 
       {/* Stone Crusher Showcase Section */}
       <StoneCrusherInteractiveShowcase onDetail={handleProductDetail} />
+
+      {/* 3D GLB SECTION 1: TYPHON STONEKRUSHER K1 (3D Left, Specs Right) */}
+      <StoneKrusher3DSection onQuoteClick={handleProductDetail} />
+
+      {/* 3D GLB SECTION 2: TYPHON ThunderDump Lift (Specs Left, 3D Right) */}
+      <ThunderDump3DSection onQuoteClick={handleProductDetail} />
 
 
 
