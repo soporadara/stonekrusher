@@ -6885,7 +6885,7 @@ export default function App() {
             </button>
 
             <div
-              className="header-k1-3d-box"
+              className="header-k1-3d-seamless"
               title="TYPHON STONEKRUSHER K1 — 360° 3D Model"
               onClick={() => {
                 const el = document.querySelector('.stone-crusher-showcase-section');
@@ -6902,16 +6902,21 @@ export default function App() {
                 interaction-prompt="none"
                 loading="eager"
                 reveal="auto"
-                camera-orbit="45deg 75deg 105%"
-                field-of-view="32deg"
+                bounds="tight"
+                environment-image="neutral"
+                exposure="1.25"
+                shadow-intensity="1.2"
+                camera-orbit="45deg 70deg 105%"
+                field-of-view="28deg"
                 style={{
                   width: '100%',
                   height: '100%',
                   outline: 'none',
                   backgroundColor: 'transparent'
                 }}
-              ></model-viewer>
-              <span className="header-k1-badge">K1 3D</span>
+              >
+                <div slot="progress-bar" style={{ display: 'none' }}></div>
+              </model-viewer>
             </div>
 
             <nav className="nav-links nav-links-left">
@@ -8159,55 +8164,34 @@ export default function App() {
             );
           })}
 
-            {/* 4th Card: TYPHON ThunderDump Lift 3D Interactive Model */}
-            <article className="blog-card-white blog-card-3d">
-              <div className="blog-img-placeholder blog-3d-canvas-box">
-                <model-viewer
-                  src="/td.glb"
-                  alt="TYPHON ThunderDump Lift 3D Model"
-                  auto-rotate=""
-                  rotation-per-second="24deg"
-                  camera-controls=""
-                  touch-action="pan-y"
-                  interaction-prompt="none"
-                  loading="eager"
-                  reveal="auto"
-                  camera-orbit="45deg 75deg 105%"
-                  field-of-view="32deg"
-                  shadow-intensity="1.2"
-                  exposure="1.06"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    minHeight: '200px',
-                    outline: 'none',
-                    backgroundColor: '#ffffff'
-                  }}
-                ></model-viewer>
-                <div className="blog-3d-badge">
-                  <span className="blog-3d-dot"></span>
-                  <span>360° 3D MODEL</span>
-                </div>
-              </div>
-              <div className="blog-card-info">
-                <span className="blog-card-cat">INTERACTIVE 3D · DUMPER</span>
-                <h3 className="blog-card-name text-black">TYPHON ThunderDump Lift</h3>
-                <span className="blog-card-date">1,000 kg Payload · Scissor High-Dump</span>
-                <p className="blog-card-desc">
-                  Inspect the hydraulic scissor high-dump mechanism, rubber crawler tracks, and Honda GX390 engine in full 360° 3D.
-                </p>
-                <a
-                  href="?page=all-products&search=ThunderDump"
-                  className="blog-card-link"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigate('all-products', { search: 'ThunderDump' });
-                  }}
-                >
-                  Explore ThunderDump 3D →
-                </a>
-              </div>
-            </article>
+            {/* 4th Column: Pure 3D Auto-Rotating TYPHON ThunderDump Model (Frameless, Textless) */}
+            <div className="blog-pure-3d-wrap" title="TYPHON ThunderDump Lift — 360° 3D Model">
+              <model-viewer
+                src="/td.glb"
+                alt="TYPHON ThunderDump Lift 3D Model"
+                auto-rotate=""
+                rotation-per-second="24deg"
+                camera-controls=""
+                touch-action="pan-y"
+                interaction-prompt="none"
+                loading="eager"
+                reveal="auto"
+                bounds="tight"
+                environment-image="neutral"
+                exposure="1.2"
+                shadow-intensity="1.3"
+                shadow-softness="0.75"
+                camera-orbit="45deg 70deg 105%"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  outline: 'none',
+                  backgroundColor: 'transparent'
+                }}
+              >
+                <div slot="progress-bar" style={{ display: 'none' }}></div>
+              </model-viewer>
+            </div>
           </div>
         </div>
       </section>
