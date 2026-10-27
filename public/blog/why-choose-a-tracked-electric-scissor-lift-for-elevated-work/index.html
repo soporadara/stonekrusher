@@ -120,5 +120,22 @@
         </div>
       </div>
     </footer>
+    <script>
+      (function() {
+        try {
+          var slug = "why-choose-a-tracked-electric-scissor-lift-for-elevated-work";
+          var key = 'sk_read_' + slug;
+          if (!sessionStorage.getItem(key)) {
+            sessionStorage.setItem(key, '1');
+            var endpoint = '/api/blog-posts.php?action=track_view&slug=' + encodeURIComponent(slug);
+            if (navigator.sendBeacon) {
+              navigator.sendBeacon(endpoint);
+            } else {
+              fetch(endpoint, { method: 'POST', keepalive: true }).catch(function(){});
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
 </body>
 </html>
