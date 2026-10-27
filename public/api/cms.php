@@ -532,24 +532,11 @@ switch ($action) {
         Security::requirePermission($currentUser, 'posts.edit');
         Security::validateCsrf($currentUser);
 
-        $postId = $input['post_id'] ?? ($input['id'] ?? null);
-        $views = isset($input['views']) ? max(0, (int)$input['views']) : null;
-
-        if (!$postId || $views === null) {
-            echo json_encode(['success' => false, 'error' => 'Post ID and valid non-negative views required']);
-            exit;
-        }
-
-        $stmt = $pdo->prepare("UPDATE blog_posts SET views = ? WHERE id = ?");
-        $stmt->execute([$views, $postId]);
-
-        Security::logAudit($currentUser['id'], 'post.update_views', "Updated views for post ID {$postId} to {$views}");
-
+        // Manual view manipulation is disabled. Views must come from genuine real user reading sessions.
+        http_response_code(400);
         echo json_encode([
-            'success' => true,
-            'id' => $postId,
-            'views' => $views,
-            'message' => 'Blog view count updated successfully'
+            'success' => false,
+            'error' => 'Manual view editing is disabled. Article views are automatically recorded from verified site visitors.'
         ]);
         exit;
 

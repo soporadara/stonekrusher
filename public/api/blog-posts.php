@@ -101,19 +101,54 @@ if ($method === 'GET') {
     send_json(200, ['posts' => $filtered]);
 }
 
-// Public Action: Track View (Increment genuine blog post reader views in database with session deduplication)
-if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'track_view') {
+// Public Action: Track View (Increment genuine blog post reader views in database from verified real users)
+if (($method === 'POST' || $method === 'GET') && isset($_GET['action']) && $_GET['action'] === 'track_view') {
     $slug = trim($_GET['slug'] ?? '');
-    if (!empty($slug) && $pdo) {
+    
+    // Ignore automated bots, scrapers, and crawlers
+    $ua = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $isBot = empty($ua);
+    if (!$isBot) {
+        $botPatterns = [
+            'bot', 'crawler', 'spider', 'slurp', 'mediapartners', 'adsbot',
+            'curl', 'wget', 'python', 'headlesschrome', 'lighthouse',
+            'semrush', 'ahrefs', 'mj12bot', 'dotbot', 'petalbot', 'yandex',
+            'bingpreview', 'facebookexternalhit', 'whatsapp', 'slackbot',
+            'telegrambot', 'twitterbot', 'pinterest', 'googlebot', 'bingbot',
+            'duckduckbot', 'baiduspider', 'bytespider', 'screaming frog'
+        ];
+        foreach ($botPatterns as $pattern) {
+            if (strpos($ua, $pattern) !== false) {
+                $isBot = true;
+                break;
+            }
+        }
+    }
+
+    if (!empty($slug) && $pdo && !$isBot) {
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             @session_start();
         }
-        $sessionKey = 'stonekrusher_view_' . md5($slug);
-        $lastViewTime = $_SESSION[$sessionKey] ?? 0;
         
-        // Count 1 real view per 15 minutes per unique visitor session
-        if (time() - $lastViewTime >= 900) {
+        $sessionKey = 'stonekrusher_view_' . md5($slug);
+        $cookieKey = 'sk_read_' . substr(md5($slug), 0, 12);
+        $lastViewTime = max(
+            (int)($_SESSION[$sessionKey] ?? 0),
+            (int)($_COOKIE[$cookieKey] ?? 0)
+        );
+
+        // 4-hour window per unique real user to prevent reload spamming while capturing genuine readership
+        $fourHours = 4 * 3600;
+        if ((time() - $lastViewTime) >= $fourHours) {
             $_SESSION[$sessionKey] = time();
+            @setcookie($cookieKey, (string)time(), [
+                'expires' => time() + (86400 * 30),
+                'path' => '/',
+                'secure' => true,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+
             try {
                 $stmt = $pdo->prepare("UPDATE blog_posts SET views = COALESCE(views, 0) + 1 WHERE slug = ? OR id = ?");
                 $stmt->execute([$slug, $slug]);
@@ -122,16 +157,32 @@ if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'track_v
                 $stmtV->execute([$slug, $slug]);
                 $realViews = (int)$stmtV->fetchColumn();
 
-                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => true]);
+                // Invalidate short dashboard cache so CMS sees genuine user counts immediately
+                $cacheFile = __DIR__ . '/.dashboard_cache.json';
+                if (file_exists($cacheFile)) {
+                    @unlink($cacheFile);
+                }
+
+                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => true, 'is_real_user' => true]);
             } catch (Exception $e) {}
         } else {
             try {
                 $stmtV = $pdo->prepare("SELECT views FROM blog_posts WHERE slug = ? OR id = ? LIMIT 1");
                 $stmtV->execute([$slug, $slug]);
                 $realViews = (int)$stmtV->fetchColumn();
-                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => false]);
+                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => false, 'is_real_user' => true]);
             } catch (Exception $e) {}
         }
+    }
+    
+    // For bots or empty requests, return current views without incrementing
+    if (!empty($slug) && $pdo) {
+        try {
+            $stmtV = $pdo->prepare("SELECT views FROM blog_posts WHERE slug = ? OR id = ? LIMIT 1");
+            $stmtV->execute([$slug, $slug]);
+            $realViews = (int)$stmtV->fetchColumn();
+            send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => false, 'is_real_user' => false]);
+        } catch (Exception $e) {}
     }
     send_json(200, ['success' => false]);
 }

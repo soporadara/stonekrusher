@@ -38,9 +38,6 @@ export default function CmsDashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [rankLimit, setRankLimit] = useState(20);
   const [customInput, setCustomInput] = useState('20');
-  const [editingViewsPostId, setEditingViewsPostId] = useState(null);
-  const [editingViewsValue, setEditingViewsValue] = useState('');
-  const [savingViews, setSavingViews] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState('');
 
   // Date Range Filter state ('YYYY-MM-DD')
@@ -144,46 +141,6 @@ export default function CmsDashboard({
       setTimeout(() => setActionError(''), 5000);
     } finally {
       setActionLoading(false);
-    }
-  };
-
-  // Save updated view count (CMS Only)
-  const handleSaveCustomViews = async (postId) => {
-    const num = parseInt(editingViewsValue, 10);
-    if (isNaN(num) || num < 0) {
-      setActionError('Please enter a valid non-negative integer for views.');
-      setTimeout(() => setActionError(''), 4000);
-      return;
-    }
-
-    try {
-      setSavingViews(true);
-      const res = await fetch('/api/cms.php?action=update_blog_views', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
-        },
-        body: JSON.stringify({
-          post_id: postId,
-          views: num,
-          csrf_token: csrfToken
-        })
-      });
-      const json = await res.json();
-      if (res.ok && json.success) {
-        setActionNotice(`✔ Updated private view count for article to ${num.toLocaleString()}`);
-        setEditingViewsPostId(null);
-        fetchMetrics(true);
-      } else {
-        setActionError(json.error || 'Failed to update blog views');
-      }
-      setTimeout(() => { setActionNotice(''); setActionError(''); }, 4500);
-    } catch (err) {
-      setActionError('Failed to update views: ' + err.message);
-      setTimeout(() => setActionError(''), 4500);
-    } finally {
-      setSavingViews(false);
     }
   };
 
@@ -1012,7 +969,7 @@ export default function CmsDashboard({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>Blog Reader Views</span>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--cms-text)' }}>Real Reader Views</span>
                   <span style={{
                     fontSize: '0.65rem',
                     fontWeight: 800,
@@ -1021,7 +978,7 @@ export default function CmsDashboard({
                     background: '#0f4c3a',
                     color: '#ffffff'
                   }}>
-                    CMS ONLY
+                    REAL USERS
                   </span>
                 </div>
                 <span className="cms-donezo-arrow-btn">↗</span>
@@ -1031,10 +988,9 @@ export default function CmsDashboard({
               </div>
               <div style={{ fontSize: '0.8rem', marginTop: '16px', color: 'var(--cms-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
-                <span>Private to CMS &bull; Hidden on live site</span>
+                <span>Tracked from real visitors &bull; Zero manual numbers</span>
               </div>
             </div>
 
@@ -1993,82 +1949,18 @@ export default function CmsDashboard({
                             </span>
                           </td>
 
-                          {/* CMS-Only Views (With Inline Edit) */}
+                          {/* Genuine Verified Real Reader Views */}
                           <td className="cms-col-views" style={{ padding: '14px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            {isEditingViews ? (
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                  type="number"
-                                  value={editingViewsValue}
-                                  onChange={(e) => setEditingViewsValue(e.target.value)}
-                                  style={{
-                                    width: '80px',
-                                    padding: '4px 8px',
-                                    borderRadius: '6px',
-                                    border: '1px solid #0f4c3a',
-                                    fontSize: '0.82rem',
-                                    textAlign: 'right'
-                                  }}
-                                  autoFocus
-                                />
-                                <button
-                                  onClick={() => handleSaveCustomViews(post.id)}
-                                  disabled={savingViews}
-                                  style={{
-                                    padding: '4px 8px',
-                                    background: '#0f4c3a',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem'
-                                  }}
-                                >
-                                  {savingViews ? '...' : '✔'}
-                                </button>
-                                <button
-                                  onClick={() => setEditingViewsPostId(null)}
-                                  style={{
-                                    padding: '4px 6px',
-                                    background: '#e2e8f0',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75rem'
-                                  }}
-                                >
-                                  ✕
-                                </button>
+                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span className="cms-views-pill" title="Verified real user visits">
+                                  👁️ {views.toLocaleString()}
+                                </span>
                               </div>
-                            ) : (
-                              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span className="cms-views-pill">
-                                    {views.toLocaleString()}
-                                  </span>
-                                  <button
-                                    onClick={() => {
-                                      setEditingViewsPostId(post.id);
-                                      setEditingViewsValue(String(views));
-                                    }}
-                                    title="Edit private view count"
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: 'var(--cms-text-muted)',
-                                      cursor: 'pointer',
-                                      fontSize: '0.78rem',
-                                      padding: '2px'
-                                    }}
-                                  >
-                                    ✏️
-                                  </button>
-                                </div>
-                                <div className="cms-views-bar-wrap" style={{ width: '100px' }}>
-                                  <div className="cms-views-bar-fill" style={{ width: `${pctOfMax}%` }} />
-                                </div>
+                              <div className="cms-views-bar-wrap" style={{ width: '100px' }}>
+                                <div className="cms-views-bar-fill" style={{ width: `${pctOfMax}%` }} />
                               </div>
-                            )}
+                            </div>
                           </td>
 
                           {/* Quick Actions */}
