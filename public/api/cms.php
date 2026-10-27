@@ -47,16 +47,44 @@ function sanitize_cms_html($html) {
     return $clean;
 }
 
+function invalidate_cms_dashboard_cache() {
+    $cacheFile = __DIR__ . '/.dashboard_cache.json';
+    if (file_exists($cacheFile)) {
+        @unlink($cacheFile);
+    }
+}
+
 function sync_blog_posts_to_json($pdo) {
+    invalidate_cms_dashboard_cache();
     $dataDir = dirname(__DIR__, 2) . '/data';
     $publicApiDir = __DIR__;
     try {
-        $stmt = $pdo->query("SELECT data_json FROM blog_posts WHERE status = 'Published' ORDER BY updated_at DESC");
-        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $stmt = $pdo->query("SELECT id, slug, title, category, author, featured_image, excerpt, content, status, published_date, views, data_json FROM blog_posts WHERE status = 'Published' ORDER BY updated_at DESC");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $posts = [];
         foreach ($rows as $r) {
-            $dec = json_decode($r, true);
-            if ($dec) $posts[] = $dec;
+            $dec = !empty($r['data_json']) ? json_decode($r['data_json'], true) : null;
+            if (!is_array($dec)) {
+                $dec = [
+                    'id' => $r['id'] ?: $r['slug'],
+                    'slug' => $r['slug'],
+                    'title' => $r['title'],
+                    'category' => $r['category'] ?: 'Guide',
+                    'author' => $r['author'] ?: 'Admin KONSTRUCTZ',
+                    'image' => $r['featured_image'],
+                    'featuredImage' => $r['featured_image'],
+                    'desc' => $r['excerpt'],
+                    'excerpt' => $r['excerpt'],
+                    'content' => $r['content'],
+                    'publishedDate' => $r['published_date'],
+                    'date' => $r['published_date'],
+                    'status' => $r['status'] ?: 'Published',
+                    'views' => (int)($r['views'] ?? 0)
+                ];
+            }
+            if (!empty($dec['id']) || !empty($dec['slug']) || !empty($dec['title'])) {
+                $posts[] = $dec;
+            }
         }
         $jsonContent = json_encode($posts, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
         @file_put_contents($dataDir . '/blog-posts.json', $jsonContent);
@@ -105,10 +133,23 @@ function sync_products_to_catalog($pdo) {
 function convert_html_to_sections($html) {
     if (empty(trim((string)$html))) return [];
 
-    // Convert <img> tags to isolated image URLs with newlines
-    $normalized = preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\'][^>]*\/?>/i', function($m) {
-        return "\n\n" . $m[1] . "\n\n";
+    // Convert <figure class="article-image"><img ... /><figcaption>...</figcaption></figure> to markdown with alt and caption
+    $normalized = preg_replace_callback('/<figure[^>]*>\s*<img[^>]+src=["\']([^"\']+)["\'](?:\s+[^>]*?alt=["\']([^"\']*)["\'])?[^>]*\/?>\s*(?:<figcaption[^>]*>(.*?)<\/figcaption>)?\s*<\/figure>/is', function($m) {
+        $src = $m[1];
+        $alt = !empty($m[2]) ? trim($m[2]) : 'StoneKrusher equipment';
+        $caption = !empty($m[3]) ? trim(strip_tags($m[3])) : '';
+        if (!empty($caption)) {
+            return "\n\n![" . $alt . "](" . $src . " \"" . $caption . "\")\n\n";
+        }
+        return "\n\n![" . $alt . "](" . $src . ")\n\n";
     }, (string)$html);
+
+    // Convert remaining <img> tags with alt preserved
+    $normalized = preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\'](?:\s+[^>]*?alt=["\']([^"\']*)["\'])?[^>]*\/?>/i', function($m) {
+        $src = $m[1];
+        $alt = !empty($m[2]) ? trim($m[2]) : 'StoneKrusher equipment';
+        return "\n\n![" . $alt . "](" . $src . ")\n\n";
+    }, $normalized);
 
     // Convert <br> and </p> to newlines
     $normalized = preg_replace('/<br\s*\/?>/i', "\n", $normalized);
@@ -156,74 +197,110 @@ switch ($action) {
     case 'dashboard_metrics':
         Security::requirePermission($currentUser, 'posts.view');
 
-        // Blog counts
-        $postCounts = [
-            'total' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status != 'Trash'")->fetchColumn(),
-            'published' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Published'")->fetchColumn(),
-            'draft' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Draft'")->fetchColumn(),
-            'scheduled' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Scheduled'")->fetchColumn(),
-            'archived' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Archived'")->fetchColumn(),
-            'trash' => (int)$pdo->query("SELECT COUNT(*) FROM blog_posts WHERE status = 'Trash'")->fetchColumn(),
-        ];
+        // Optional short server cache (15s) for instant response
+        $cacheFile = __DIR__ . '/.dashboard_cache.json';
+        $noCache = isset($_GET['nocache']) || isset($_GET['refresh']);
+        if (!$noCache && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 15)) {
+            $cachedContent = @file_get_contents($cacheFile);
+            if ($cachedContent) {
+                header('X-CMS-Cache: HIT');
+                echo $cachedContent;
+                exit;
+            }
+        }
 
-        // Catalog & Media counts
-        $productCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE status != 'Archived'")->fetchColumn();
-        $productPublishedCount = (int)$pdo->query("SELECT COUNT(*) FROM products WHERE status = 'Published'")->fetchColumn();
-        $productCategoriesCount = (int)$pdo->query("SELECT COUNT(DISTINCT category) FROM products WHERE category IS NOT NULL AND category != ''")->fetchColumn();
+        // Consolidated single-query Blog metrics (Counts + Views in 1 round-trip)
+        $blogAgg = $pdo->query("SELECT 
+            COUNT(CASE WHEN status != 'Trash' THEN 1 END) AS total,
+            COUNT(CASE WHEN status = 'Published' THEN 1 END) AS published,
+            COUNT(CASE WHEN status = 'Draft' THEN 1 END) AS draft,
+            COUNT(CASE WHEN status = 'Scheduled' THEN 1 END) AS scheduled,
+            COUNT(CASE WHEN status = 'Archived' THEN 1 END) AS archived,
+            COUNT(CASE WHEN status = 'Trash' THEN 1 END) AS trash,
+            COALESCE(SUM(CASE WHEN status = 'Published' THEN views ELSE 0 END), 0) AS total_views
+        FROM blog_posts")->fetch() ?: [];
+
+        $postCounts = [
+            'total' => (int)($blogAgg['total'] ?? 0),
+            'published' => (int)($blogAgg['published'] ?? 0),
+            'draft' => (int)($blogAgg['draft'] ?? 0),
+            'scheduled' => (int)($blogAgg['scheduled'] ?? 0),
+            'archived' => (int)($blogAgg['archived'] ?? 0),
+            'trash' => (int)($blogAgg['trash'] ?? 0),
+        ];
+        $totalBlogViews = (int)($blogAgg['total_views'] ?? 0);
+
+        // Consolidated Products count in 1 query
+        $prodAgg = $pdo->query("SELECT 
+            COUNT(CASE WHEN status != 'Archived' THEN 1 END) AS total,
+            COUNT(CASE WHEN status = 'Published' THEN 1 END) AS published,
+            COUNT(DISTINCT CASE WHEN category IS NOT NULL AND category != '' THEN category END) AS cat_count
+        FROM products")->fetch() ?: [];
+
+        $productCount = (int)($prodAgg['total'] ?? 0);
+        $productPublishedCount = (int)($prodAgg['published'] ?? 0);
+        $productCategoriesCount = (int)($prodAgg['cat_count'] ?? 0);
         $blogCategoryCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_categories")->fetchColumn();
         
-        $mediaCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_media")->fetchColumn();
-        $mediaSizeBytes = (int)$pdo->query("SELECT COALESCE(SUM(file_size), 0) FROM cms_media")->fetchColumn();
+        // Media count & size in 1 query
+        $mediaAgg = $pdo->query("SELECT COUNT(*) AS total, COALESCE(SUM(file_size), 0) AS total_bytes FROM cms_media")->fetch() ?: [];
+        $mediaCount = (int)($mediaAgg['total'] ?? 0);
+        $mediaSizeBytes = (int)($mediaAgg['total_bytes'] ?? 0);
 
-        // CRM & Inquiries counts
-        $inquiriesCount = 0;
-        $inquiriesNew = 0;
-        $inquiriesContacted = 0;
-        $inquiriesQuoted = 0;
-        $inquiriesWon = 0;
-        $inquiriesLost = 0;
-        $pipelineValue = 0.0;
+        // Consolidated CRM & Inquiries in 1 query
+        $inqAgg = [];
         try {
-            $inquiriesCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries")->fetchColumn();
-            $inquiriesNew = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'New'")->fetchColumn();
-            $inquiriesContacted = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Contacted'")->fetchColumn();
-            $inquiriesQuoted = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Quoted'")->fetchColumn();
-            $inquiriesWon = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Won'")->fetchColumn();
-            $inquiriesLost = (int)$pdo->query("SELECT COUNT(*) FROM cms_inquiries WHERE status = 'Lost'")->fetchColumn();
-            $pipelineValue = (float)$pdo->query("SELECT COALESCE(SUM(estimated_value), 0) FROM cms_inquiries WHERE status NOT IN ('Lost')")->fetchColumn();
+            $inqAgg = $pdo->query("SELECT 
+                COUNT(*) AS total,
+                COUNT(CASE WHEN status = 'New' THEN 1 END) AS new_cnt,
+                COUNT(CASE WHEN status = 'Contacted' THEN 1 END) AS contacted_cnt,
+                COUNT(CASE WHEN status = 'Quoted' THEN 1 END) AS quoted_cnt,
+                COUNT(CASE WHEN status = 'Won' THEN 1 END) AS won_cnt,
+                COUNT(CASE WHEN status = 'Lost' THEN 1 END) AS lost_cnt,
+                COALESCE(SUM(CASE WHEN status NOT IN ('Lost') THEN estimated_value ELSE 0 END), 0) AS pipeline_val
+            FROM cms_inquiries")->fetch() ?: [];
         } catch (Exception $e) {}
 
-        // Support Tickets counts
-        $ticketsCount = 0;
-        $ticketsOpen = 0;
-        $ticketsInProgress = 0;
-        $ticketsResolved = 0;
-        $ticketsHighPriority = 0;
+        $inquiriesCount = (int)($inqAgg['total'] ?? 0);
+        $inquiriesNew = (int)($inqAgg['new_cnt'] ?? 0);
+        $inquiriesContacted = (int)($inqAgg['contacted_cnt'] ?? 0);
+        $inquiriesQuoted = (int)($inqAgg['quoted_cnt'] ?? 0);
+        $inquiriesWon = (int)($inqAgg['won_cnt'] ?? 0);
+        $inquiriesLost = (int)($inqAgg['lost_cnt'] ?? 0);
+        $pipelineValue = (float)($inqAgg['pipeline_val'] ?? 0.0);
+
+        // Consolidated Support Tickets in 1 query
+        $ticketAgg = [];
         try {
-            $ticketsCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets")->fetchColumn();
-            $ticketsOpen = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'Open'")->fetchColumn();
-            $ticketsInProgress = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'In Progress'")->fetchColumn();
-            $ticketsResolved = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE status = 'Resolved'")->fetchColumn();
-            $ticketsHighPriority = (int)$pdo->query("SELECT COUNT(*) FROM cms_support_tickets WHERE priority = 'High' AND status != 'Resolved'")->fetchColumn();
+            $ticketAgg = $pdo->query("SELECT 
+                COUNT(*) AS total,
+                COUNT(CASE WHEN status = 'Open' THEN 1 END) AS open_cnt,
+                COUNT(CASE WHEN status = 'In Progress' THEN 1 END) AS in_prog_cnt,
+                COUNT(CASE WHEN status = 'Resolved' THEN 1 END) AS resolved_cnt,
+                COUNT(CASE WHEN priority = 'High' AND status != 'Resolved' THEN 1 END) AS high_pri_cnt
+            FROM cms_support_tickets")->fetch() ?: [];
         } catch (Exception $e) {}
 
+        $ticketsCount = (int)($ticketAgg['total'] ?? 0);
+        $ticketsOpen = (int)($ticketAgg['open_cnt'] ?? 0);
+        $ticketsInProgress = (int)($ticketAgg['in_prog_cnt'] ?? 0);
+        $ticketsResolved = (int)($ticketAgg['resolved_cnt'] ?? 0);
+        $ticketsHighPriority = (int)($ticketAgg['high_pri_cnt'] ?? 0);
         $resolutionRate = $ticketsCount > 0 ? round(($ticketsResolved / $ticketsCount) * 100) : 0;
 
-        // Comments counts (Total, Approved, Pending)
-        $commentsCount = 0;
-        $commentsApproved = 0;
-        $commentsPending = 0;
+        // Consolidated Comments counts in 1 query
+        $commentsAgg = [];
         try {
-            $commentsCount = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments")->fetchColumn();
-            $commentsApproved = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments WHERE status = 'approved'")->fetchColumn();
-            $commentsPending = (int)$pdo->query("SELECT COUNT(*) FROM blog_comments WHERE status = 'pending'")->fetchColumn();
+            $commentsAgg = $pdo->query("SELECT 
+                COUNT(*) AS total,
+                COUNT(CASE WHEN status = 'approved' OR moderation_status = 'Approved' THEN 1 END) AS approved_cnt,
+                COUNT(CASE WHEN status = 'pending' OR moderation_status = 'Pending' THEN 1 END) AS pending_cnt
+            FROM blog_comments")->fetch() ?: [];
         } catch (Exception $e) {}
 
-        // Total Blog Views (CMS Only metric)
-        $totalBlogViews = 0;
-        try {
-            $totalBlogViews = (int)$pdo->query("SELECT COALESCE(SUM(views), 0) FROM blog_posts WHERE status = 'Published'")->fetchColumn();
-        } catch (Exception $e) {}
+        $commentsCount = (int)($commentsAgg['total'] ?? 0);
+        $commentsApproved = (int)($commentsAgg['approved_cnt'] ?? 0);
+        $commentsPending = (int)($commentsAgg['pending_cnt'] ?? 0);
 
         // Product Categories breakdown
         $productBreakdown = [];
@@ -231,13 +308,13 @@ switch ($action) {
             $productBreakdown = $pdo->query("SELECT category, COUNT(*) as count FROM products WHERE category IS NOT NULL AND category != '' GROUP BY category ORDER BY count DESC LIMIT 10")->fetchAll();
         } catch (Exception $e) {}
 
-        // Top Blogs (All published posts ranked by views DESC - private to CMS)
+        // Top Blogs (Optimized with LIMIT)
         $topBlogs = [];
         try {
-            $topBlogs = $pdo->query("SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, views, updated_at FROM blog_posts WHERE status = 'Published' ORDER BY views DESC, updated_at DESC")->fetchAll();
+            $topBlogs = $pdo->query("SELECT id, slug, title, category, author, featured_image, excerpt, status, published_date, views, updated_at FROM blog_posts WHERE status = 'Published' ORDER BY views DESC, updated_at DESC LIMIT 50")->fetchAll();
         } catch (Exception $e) {}
 
-        // Security counts
+        // Security counts (Indexed)
         $activeBlocksCount = (int)$pdo->query("SELECT COUNT(*) FROM cms_security_blocks WHERE expires_at IS NULL OR expires_at > {$now}")->fetchColumn();
         $failedLogins24h = (int)$pdo->query("SELECT COUNT(*) FROM cms_login_attempts WHERE success = 0 AND created_at > " . ($now - 86400))->fetchColumn();
         $activeLockouts = (int)$pdo->query("SELECT COUNT(*) FROM cms_users WHERE locked_until > {$now}")->fetchColumn();
@@ -254,7 +331,7 @@ switch ($action) {
         }
         $opcacheActive = function_exists('opcache_get_status') && !empty(opcache_get_status()['opcache_enabled']);
 
-        // External Analytics Integrations Status (Honest reporting)
+        // External Analytics Integrations Status
         $ga4Id = Security::getSetting('ga4_measurement_id', '');
         $gscUrl = Security::getSetting('gsc_site_url', '');
         $analyticsIntegrations = [
@@ -272,31 +349,39 @@ switch ($action) {
             ]
         ];
 
-        // Real 7-day activity tracking from persisted timestamps
+        // Real 7-day activity tracking (Consolidated into 2 fast queries instead of 14)
+        $sevenDaysAgo = strtotime("today -6 days 00:00:00");
+        $inqByDay = [];
+        try {
+            $inqStmt = $pdo->prepare("SELECT created_at FROM cms_inquiries WHERE created_at >= ?");
+            $inqStmt->execute([$sevenDaysAgo]);
+            while ($ts = $inqStmt->fetchColumn()) {
+                $d = date('Y-m-d', (int)$ts);
+                $inqByDay[$d] = ($inqByDay[$d] ?? 0) + 1;
+            }
+        } catch (Exception $e) {}
+
+        $auditByDay = [];
+        try {
+            $auditStmt = $pdo->prepare("SELECT created_at FROM cms_audit_logs WHERE created_at >= ?");
+            $auditStmt->execute([$sevenDaysAgo]);
+            while ($ts = $auditStmt->fetchColumn()) {
+                $d = date('Y-m-d', (int)$ts);
+                $auditByDay[$d] = ($auditByDay[$d] ?? 0) + 1;
+            }
+        } catch (Exception $e) {}
+
         $activity7d = [];
         for ($dayOffset = 6; $dayOffset >= 0; $dayOffset--) {
             $dayStart = strtotime("today -{$dayOffset} days 00:00:00");
-            $dayEnd = strtotime("today -{$dayOffset} days 23:59:59");
-            $dayLabel = date('D', $dayStart);
             $dateStr = date('Y-m-d', $dayStart);
-
-            $inqDay = 0;
-            $updatesDay = 0;
-            try {
-                $inqStmt = $pdo->prepare("SELECT COUNT(*) FROM cms_inquiries WHERE created_at BETWEEN ? AND ?");
-                $inqStmt->execute([$dayStart, $dayEnd]);
-                $inqDay = (int)$inqStmt->fetchColumn();
-
-                $auditStmt = $pdo->prepare("SELECT COUNT(*) FROM cms_audit_logs WHERE created_at BETWEEN ? AND ?");
-                $auditStmt->execute([$dayStart, $dayEnd]);
-                $updatesDay = (int)$auditStmt->fetchColumn();
-            } catch (Exception $e) {}
+            $dayLabel = date('D', $dayStart);
 
             $activity7d[] = [
                 'date' => $dateStr,
                 'day' => $dayLabel,
-                'inquiries' => $inqDay,
-                'activity' => $updatesDay
+                'inquiries' => $inqByDay[$dateStr] ?? 0,
+                'activity' => $auditByDay[$dateStr] ?? 0
             ];
         }
 
@@ -318,7 +403,7 @@ switch ($action) {
             $recentTickets = $pdo->query("SELECT id, ticket_number, customer_name, subject, priority, status, created_at FROM cms_support_tickets ORDER BY created_at DESC LIMIT 5")->fetchAll();
         } catch (Exception $e) {}
 
-        echo json_encode([
+        $responseData = [
             'success' => true,
             'metrics' => [
                 'posts' => $postCounts,
@@ -383,7 +468,12 @@ switch ($action) {
             'recent_activity' => $recentActivity,
             'recent_inquiries' => $recentInquiries,
             'recent_tickets' => $recentTickets
-        ]);
+        ];
+
+        $jsonPayload = json_encode($responseData);
+        @file_put_contents($cacheFile, $jsonPayload);
+        header('X-CMS-Cache: MISS');
+        echo $jsonPayload;
         exit;
 
     // =========================================================
@@ -1995,6 +2085,8 @@ switch ($action) {
     case 'cache_purge':
         Security::requirePermission($currentUser, 'settings.manage');
 
+        invalidate_cms_dashboard_cache();
+
         if (function_exists('opcache_reset')) {
             @opcache_reset();
         }
@@ -2008,6 +2100,7 @@ switch ($action) {
             'success' => true,
             'message' => 'LiteSpeed Web Server Cache and PHP OPcache flushed successfully.'
         ]);
+        exit;
     case 'seo_stats':
         Security::requirePermission($currentUser, 'posts.view');
 

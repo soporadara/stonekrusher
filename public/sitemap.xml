@@ -2,8 +2,8 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
-    <loc>https://stonekrusher.com</loc>
-    <lastmod>2026-10-26</lastmod>
+    <loc>https://stonekrusher.com/</loc>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -14,7 +14,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -25,7 +25,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/attachments/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -36,7 +36,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/blog/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -47,7 +47,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -58,43 +58,43 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Machines</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Buying%20%26%20pricing</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Delivery</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Warranty</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Service%20%26%20parts</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/topics/?topic-category=Financing</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/konstructz/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
@@ -105,7 +105,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/cwqv/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
     <image:image>
@@ -116,7 +116,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/konstuctz/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -127,7 +127,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/about/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -138,7 +138,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/contact/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -149,7 +149,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/support/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -160,31 +160,31 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/terms-of-service/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/privacy-policy/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/ai.txt</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/llms.txt</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/mini-excavators/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -195,7 +195,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/skid-steers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -206,7 +206,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/wheel-loaders/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -217,7 +217,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/forklifts/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -228,7 +228,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/road-rollers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -239,7 +239,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/scissor-lifts/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -250,7 +250,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/stone-crushers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -261,7 +261,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/mini-dumpers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -272,7 +272,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/trenchers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -283,7 +283,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/backhoes/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -294,7 +294,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/attachments/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -305,7 +305,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -316,51 +316,95 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/backhoe-loader/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/dumper/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/towable-excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/stone-crusher/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/trenchers/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/wheel-loader/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
   </url>
   <url>
     <loc>https://stonekrusher.com/equipment/konstructz/skid-steer/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/blog/how-trenchers-improve-underground-utility-installation/</loc>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/3rdOct/Trencher-01.webp</image:loc>
+      <image:title>KONSTRUCTZ How Trenchers Improve Underground Utility Installation</image:title>
+      <image:caption>Official KONSTRUCTZ image for How Trenchers Improve Underground Utility Installation, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/blog/boost-utility-installation-speed-with-continuous-trenching/</loc>
+    <lastmod>2026-10-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/3rdOct/Trencher-01.webp</image:loc>
+      <image:title>KONSTRUCTZ Boost Utility Installation Speed With Continuous Trenching</image:title>
+      <image:caption>Official KONSTRUCTZ image for Boost Utility Installation Speed With Continuous Trenching, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/blog/road-roller-vs-skid-steer-operating-weight/</loc>
+    <lastmod>2026-09-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/19thSep/RoadrollerSkidsteer-01.webp</image:loc>
+      <image:title>KONSTRUCTZ Road roller vs. skid steer operating weight</image:title>
+      <image:caption>Official KONSTRUCTZ image for Road roller vs. skid steer operating weight, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/blog/why-choose-a-tracked-electric-scissor-lift-for-elevated-work/</loc>
+    <lastmod>2026-09-17</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/17thSep/ScissorLift-01.webp</image:loc>
+      <image:title>KONSTRUCTZ Why Choose a Tracked Electric Scissor Lift for Elevated Work?</image:title>
+      <image:caption>Official KONSTRUCTZ image for Why Choose a Tracked Electric Scissor Lift for Elevated Work?, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://stonekrusher.com/blog/skid-steer-horsepower-vs-hydraulic-flow-for-attachment-performance/</loc>
@@ -374,6 +418,17 @@
     </image:image>
   </url>
   <url>
+    <loc>https://stonekrusher.com/blog/why-wheel-loader-engine-power-matters-for-breakout-force/</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/12thSep/WheelLoader-01.webp</image:loc>
+      <image:title>KONSTRUCTZ Why Wheel Loader Engine Power Matters for Breakout Force</image:title>
+      <image:caption>Official KONSTRUCTZ image for Why Wheel Loader Engine Power Matters for Breakout Force, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
+  </url>
+  <url>
     <loc>https://stonekrusher.com/blog/how-workload-affects-mini-excavator-fuel-efficiency/</loc>
     <lastmod>2026-09-10</lastmod>
     <changefreq>monthly</changefreq>
@@ -382,6 +437,17 @@
       <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/10thSep/Mini-Excavator-01.webp</image:loc>
       <image:title>KONSTRUCTZ How Workload Affects Mini Excavator Fuel Efficiency</image:title>
       <image:caption>Official KONSTRUCTZ image for How Workload Affects Mini Excavator Fuel Efficiency, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://stonekrusher.com/blog/choosing-forklift-engine-power-for-heavy-duty-material-handling/</loc>
+    <lastmod>2026-09-10</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+    <image:image>
+      <image:loc>https://img.miniexcavator.org/ebay/Blog/class5/10thSep/Forklift-01.webp</image:loc>
+      <image:title>KONSTRUCTZ Choosing Forklift Engine Power for Heavy-Duty Material Handling</image:title>
+      <image:caption>Official KONSTRUCTZ image for Choosing Forklift Engine Power for Heavy-Duty Material Handling, compact construction equipment, machinery, attachments, and jobsite support. KONSTUCTZ search typo maps to KONSTRUCTZ. Official image source: stonekrusher.com.</image:caption>
     </image:image>
   </url>
   <url>
@@ -419,7 +485,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/kuvuo-2-7-series-mini-excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -450,7 +516,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-groundripper-grx1-compact-track-trencher/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -461,7 +527,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skoop-ii-wheel-loader-compact-wheel-loader/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -472,7 +538,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/spider-one-towable-excavator-mini-excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -483,7 +549,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-v950-mini-track-loader-1-5-ton-compact-track-loader/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -494,7 +560,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/stone-krusher-k3-compact-stone-crusher/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -505,7 +571,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/stomp-v980-compact-track-loader-0-98-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -516,7 +582,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunderdump-lift-compact-dumper/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -527,7 +593,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-scoopydig-heavy-backhoe-loader-1-5-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -538,7 +604,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/kuvuo-2-5-mini-excavator-2-5-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -549,7 +615,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunderdump-180-power-barrow-1-8-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -560,7 +626,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/stonekrusher-k1-compact-stone-crusher-1-0-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -571,7 +637,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stone-krusher-k2-compact-stone-crusher-2-2-ton/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -582,7 +648,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2026-typhon-vigor-3-0-blue-electric-forklift-3-ton-lifter-lift-truck-jitney-hi-lo-typh-0614b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -613,7 +679,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2026-typhon-vigor-2-5-blue-electric-forklift-2-5-ton-lifter-lift-truck-jitney-hi-lo-typh-0613b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -644,7 +710,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2026-typhon-vigor-2-blue-electric-forklift-2-ton-lifter-lift-truck-jitney-hi-lo-typh-0612b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -675,7 +741,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2026-typhon-vigor-1-5-blue-electric-forklift-1-5-ton-lifter-lift-truck-jitney-hi-lo-typh-0611b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -706,7 +772,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/auger-attachment-7-9in-auger-bit-earth-drilling-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2507/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -737,7 +803,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/heavy-duty-hedge-trimmer-attachment-tool-fit-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-usa-typh-2515/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -768,7 +834,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/pallet-fork-attachment-adjustable-stabilizer-bar-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2511/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -799,7 +865,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/800mm-tilting-bucket-attachment-hydraulic-digging-bucket-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2510/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -830,7 +896,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/compact-grapple-attachment-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-wide-opening-wood-grab-usa-typh-2506/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -861,7 +927,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/tree-digging-blade-attachment-root-cutting-digging-blade-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2514/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -892,7 +958,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-ripper-hook-attachment-ripper-tooth-attachment-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2505/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -923,7 +989,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/quick-hitch-attachment-mechanical-quick-coupler-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2501/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -954,7 +1020,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/1000mm-leveling-bucket-attachment-digging-bucket-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2503/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -985,7 +1051,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/narrow-bucket-attachment-trenching-bucket-300mm-usa-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-typh-2502/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1016,7 +1082,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-hammer-attachment-hydraulic-breaker-hammer-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-usa-typh-2513/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1047,7 +1113,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-rake-compact-attachment-general-for-for-terror-xxv-and-other-2-1-3-ton-mini-excavators-usa-typh-2504/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1078,7 +1144,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/all-in-one-12-pcs-attachment-set-tool-fits-2-3-ton-mini-excavator-terror-xxv-typh-pa03/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1149,7 +1215,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/ultimate-10-in-1-attachment-for-typhon-terror-x2-pro-and-x2-max-mini-excavator-typh-pa-x2ten-bundle/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1215,7 +1281,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/excavator-attachment-1000mm-tilt-bucket-39-hydraulic-tilting-bucket-heavy-duty-usa-terror-x2-pro-typh-2030b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1246,7 +1312,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-mini-excavator-attachment-hydraulic-hammer-top-type-rock-breaker-generic-terror-x2-pro-typh-2033/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1272,7 +1338,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/excavator-attachment-tilt-bucket-47-hydraulic-tilting-bucket-1200mm-heavy-duty-for-terror-x2-pro-typh-2030c/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1303,7 +1369,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-excavator-attachment-hydraulic-tilt-bucket-800mm-tilting-bucket-31-inch-terror-x2-pro-typh-2030a/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1334,7 +1400,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-excavator-attachment-hydraulic-earth-auger-post-hole-digger-8inch-diameter-terror-x2-pro-typh-2027/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1365,7 +1431,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-attachment-grapple-wide-opening-grabber-for-2-to-3-5-ton-diggers-for-terror-x2-pro-typh-2026/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1391,7 +1457,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-mini-excavator-attachment-ripper-single-shank-typhon-digger-attachment-terror-x2-pro-typh-2025/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1422,7 +1488,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-attachment-rake-22-wide-typhon-attachments-for-2-3-5-ton-diggers-for-terror-x2-pro-typh-2024/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1453,7 +1519,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-2-5-ton-mini-excavator-attachment-plain-bucket-800mm-31-mud-bucket-for-terror-x2-pro-typh-2023/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1484,7 +1550,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2ton-excavator-attachment-1000-mm-rock-bucket-heavy-duty-trenching-bucket-39-inch-terror-x2-pro-typh-2022d/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1510,7 +1576,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-3-5-ton-mini-excavator-attachment-600mm-teeth-bucket-trenching-buckets-23-inch-for-terror-x2-pro-typh-2022c/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1541,7 +1607,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-3-5-ton-mini-excavator-attachment-550mm-teeth-bucket-trenching-buckets-21-inch-for-terror-x2-pro-typh-2022b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1572,7 +1638,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-2-5-ton-mini-excavator-attachment-mechanical-quick-hitch-quick-coupler-for-terror-x2-pro-typh-2021/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1603,7 +1669,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunder-vi-23hp-epa-b-and-s-engine-wheel-loader-usa-typh-406/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1634,7 +1700,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-telescopic-wheel-loader-with-kubota-d1105-engine-25-hp-1-ton-load-usa-typh-0801/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1665,7 +1731,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunder-iv-electric-wheel-loader-usa-typh-0401/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1696,7 +1762,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-v1000-24hp-kubota-d1105-water-cooled-diesel-skid-steer-pilot-control-typh-v1000/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1727,7 +1793,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/3040lbs-typhon-stomp-x1300-25hp-kubota-d1105-epa-diesel-mini-skid-steer-loader-typh-x1300/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1758,7 +1824,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-509-25hp-kubota-d1105-1-4-ton-epa-skid-steer-loader-brand-new-usa-typh-0509/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1789,7 +1855,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-tracked-22-1-hp-honda-epa-gasoline-engine-for-gardens-farming-typh-0502g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1820,7 +1886,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-wheeled-22-1-hp-honda-epa-gasoline-engine-for-gardens-farming-typh-0503g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1851,7 +1917,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-507-1-760lbs-mini-skid-steer-13-5hp-gas-epa-engine-usa-typh-0507/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1882,7 +1948,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-2-000lbs-mini-skid-steer-23-5hp-gas-epa-engine-usa-typh-0501y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1913,7 +1979,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1-760lbs-mini-skid-steer-13-5hp-gas-epa-engine-usa-typh-0505/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1944,7 +2010,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-skidsteer-loader-track-wheel-honda-epa-gas-22-1-hp-engine-new-typh-0503r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -1975,7 +2041,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1-800lbs-mini-skid-steer-23-5hp-wheel-gas-epa-b-and-s-engine-usa-typh-0504/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2006,7 +2072,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-tracked-22-1-hp-honda-epa-gasoline-engine-for-gardens-farming-typh-0502r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2037,7 +2103,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1-800lbs-mini-skid-steer-23-5hp-gas-epa-engine-usa-typh-0501/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2068,7 +2134,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/heavy-duty-lever-attachment-for-typhon-x1300-and-stomp-509-1200mm-working-width-84kg-industrial-tool-typh-5110/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2099,7 +2165,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/angle-snow-sweeper-attachment-compatible-with-x1300-and-stomp-509-typh-5114/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2130,7 +2196,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-angle-dozer-blade-30-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-heavy-duty-grading-and-snow-attachment-typh-5124/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2161,7 +2227,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/heavy-duty-3-blade-hydraulic-brush-mower-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5123/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2192,7 +2258,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-swing-stump-grinder-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5122/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2223,7 +2289,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/landscaping-skeleton-rock-bucket-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5121/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2254,7 +2320,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/360-hydraulic-rotary-wood-grabber-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5120/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2285,7 +2351,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/800mm-hydraulic-chain-trencher-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5117/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2316,7 +2382,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/1100mm-hydraulic-snow-blower-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5116/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2347,7 +2413,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-rock-and-concrete-breaker-hammer-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steer-loader-typh-5113/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2378,7 +2444,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-pickup-sweeper-broom-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5112/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2409,7 +2475,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/heavy-duty-solid-bottom-grapple-bucket-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5111/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2440,7 +2506,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/1000mm-pallet-fork-and-hay-frame-attachment-for-typhon-stomp-x1300-and-stomp-509-mini-skid-steers-typh-5105/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2471,7 +2537,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-stomp-x1300-and-stomp-509-mini-skid-steer-forestry-mulcher-attachment-typh-5126/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2502,7 +2568,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-digger-attachment-for-mini-skid-steer-stomp-x1300-and-stomp-509-typh-5125/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2533,7 +2599,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-skid-steer-rotary-tiller-attachment-for-typhon-stomp-x1300-typhon-stomp-509-typh-5115/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2564,7 +2630,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-x1300-and-stomp-509-mini-skid-steer-auger-attachment-200mm-hydraulic-typh-5109/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2595,7 +2661,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-stomp-x1300-and-stomp-509-mini-skid-steer-ripper-attachment-3-tooth-typh-5108/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2626,7 +2692,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-wood-grabber-attachment-mini-skid-steer-typhon-stomp-x1300-and-stomp-509-typh-5107/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2657,7 +2723,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/4-in-1-bucket-combo-mini-skid-steer-attachment-for-typhon-stomp-x1300-and-stomp-509-typh-5106/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2688,7 +2754,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/1450mm-heavy-duty-flail-mower-attachment-19-teeth-for-typhon-mini-skid-steer-typh-5027/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2719,7 +2785,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-mulcher-typh-5026/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2750,7 +2816,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-backhoe-digger-skid-steer-loader-attachments-for-typhon-stomp-skidsteer-typh-5025m/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2781,7 +2847,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-rock-bucket-usa-typh-5021/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2812,7 +2878,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-lawn-mower-attachment-usa-typh-5023/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2843,7 +2909,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-stump-grinder-attachment-usa-typh-5022/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2874,7 +2940,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-hydraulic-hammer-concrete-breaker-attachment-usa-typh-5013/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2905,7 +2971,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-bull-dozer-attachment-usa-typh-5024/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2936,7 +3002,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-lawn-scarifier-usa-typh-5019/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2962,7 +3028,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-trench-filler-usa-typh-5018/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -2993,7 +3059,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skid-steer-loader-trencher-attachment-usa-typh-5017/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3019,7 +3085,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skid-steer-loader-snow-blower-attachment-usa-typh-5016/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3050,7 +3116,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-rotary-plow-tiller-attachment-usa-typh-5015/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3081,7 +3147,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-sweeper-attachment-usa-typh-5014/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3112,7 +3178,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-4-in-one-bucket-attachment-usa-typh-5006/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3143,7 +3209,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-earth-auger-attachment-usa-typh-5009/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3174,7 +3240,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-fork-pallet-attachment-usa-typh-5005/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3205,7 +3271,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-grappler-grapple-grabber-attachment-usa-typh-5007/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3236,7 +3302,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-land-leveler-attachment-usa-typh-5010/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3267,7 +3333,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-ripper-attachment-usa-typh-5008/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3298,7 +3364,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4065w-walk-behind-scissor-lift-2-7-ton-with-assisted-walking-manual-outriggers-of-40-ft-lifting-height-and-110v-electric-xflex-4065w/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3329,7 +3395,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-2037w-walk-behind-scissor-lift-comes-with-20ft-working-height-and-manual-outriggers-1102-lbs-load-capacity-110v-electric-xflex-2037w/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3360,7 +3426,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-2031em-1-2-ton-electric-mini-scissor-lift-with-20ft-max-platform-height-and-19-7-platform-extend-xflex-2031em/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3391,7 +3457,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4046ew-electric-wheel-scissor-lift-2-6-ton-operating-weight-and-40ft-platform-height-with-705lbs-load-capacity-xflex-4046ew/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3422,7 +3488,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4068et-electric-rubber-track-scissor-lift-3-2-ton-with-5-4hp-hydraulic-pump-motor-drive-and-hydraulic-lifting-cylinder-40-ft-max-lifting-height-xflex-4068et/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3453,7 +3519,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-10-mini-road-roller-1ton-hydraulic-oil-b-and-s-13-5hp-gas-usa-air-cooled-typh-0901n/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3484,7 +3550,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-15-mini-road-roller-1-5ton-13-5-hp-b-and-s-gas-engine-hydraulic-steering-typh-0902n/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3515,7 +3581,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-20-mini-road-roller-2ton-hydraulic-oil-vibratory-b-and-s-23hp-usa-engine-typh-0903/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3546,7 +3612,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-hydraulic-wood-splitter-drill-attachment-150mm-typhon-compatible-typh-2017/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3577,7 +3643,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-compatible-hydraulic-plate-compactor-attachment-for-mini-excavators-1-ton-to-2-ton-typh-2016/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3608,7 +3674,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/10-in-1-mini-excavator-attachment-bundle-essential-tools-combo-kit-for-worksites-typh-pa05/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3674,7 +3740,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/11-in-1-mini-excavator-attachment-combo-kit-all-essential-tools-for-worksites-typh-pa01/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3720,7 +3786,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/5-in-1-0-8-2-ton-excavator-attachments-quick-coupler-bucket-ripper-auger-hammer-typh-pa02/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3756,7 +3822,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-generic-attachment-hydraulic-thumb-clip-for-mini-excavators-typh-2008n/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3787,7 +3853,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/budget-style-hydraulic-thumb-clip-attachment-for-mini-excavators-digger-track-crawler-typh-2008p/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3818,7 +3884,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/500mm-trenching-bucket-general-purpose-w-teeth-for-mini-excavator-usa-typh-2003t/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3849,7 +3915,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/pallet-fork-attachment-for-typhon-mini-excavators-usa-typh-2011/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3870,7 +3936,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/600mm-tilting-bucket-attachment-for-typhon-mini-excavators-usa-typh-2010/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3901,7 +3967,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/screening-skeleton-bucket-attachment-600mm-typhon-mini-excavators-usa-typh-2009/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3932,7 +3998,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/ripper-attachment-for-typhon-mini-excavators-usa-typh-2005/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3958,7 +4024,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/rake-mini-excavator-attachment-for-grading-leveling-loosening-removing-soil-usa-typh-2004/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -3989,7 +4055,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/quick-hitch-attachment-for-typhon-mini-excavators-usa-typh-2001/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4010,7 +4076,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/500mm-plain-mud-bucket-attachment-for-typhon-mini-excavators-usa-typh-2003/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4041,7 +4107,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-hydraulic-thumb-clip-attachment-for-mini-excavators-usa-typh-2008/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4067,7 +4133,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-auger-drill-attachment-for-mini-excavators-machinery-usa-typh-2007/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4098,7 +4164,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-hydraulic-break-hammer-attachment-for-mini-digger-usa-typh-2013/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4129,7 +4195,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-grapple-attachment-for-mini-excavators-grabber-usa-typh-2006/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4160,7 +4226,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/200mm-narrow-bucket-attachment-for-typhon-mini-excavators-usa-typh-2002/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4191,7 +4257,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-max-canopy-mini-excavator-powerful-2-5-ton-compact-machine-with-yanmar-engine-advanced-hydraulic-system-typh-x201-max/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4227,7 +4293,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-max-2-7-ton-mini-excavator-powerful-yanmar-engine-cabin-with-a-c-and-heater-pilot-control-boom-swing-typh-x202-max/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4258,7 +4324,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-tyrant-x-1-ton-mini-excavator-with-13-5hp-briggs-and-stratton-engine-hydraulic-oil-cooler-and-thumb-clip-typh-0115/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4289,7 +4355,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-naga-4-0-mini-excavator-with-4-ton-24-4hp-yanmar-diesel-engine-metal-track-iso-sae-control-switch-ac-heater-cabin-2-travel-speed-typh-naga4/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4320,7 +4386,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-kuvuo-4-0-four-ton-cabin-mini-excavator-w-kubota-d1703-diesel-engine-metal-tracks-boom-swing-ac-heater-hydraulic-control-typh-kuvuo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4351,7 +4417,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-lxv-6-6-ton-excavator-kubota-v2607-56-9hp-ac-heater-cabin-boom-swing-typh-lxv/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4382,7 +4448,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xxv-diesel-mini-excavator-2-7-ton-25-1-hp-kubota-d1105-retractabletracks-ac-cabin-typh-xx52g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4413,7 +4479,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-one-storm-1-ton-mini-excavator-trench-digger-with-hydraulic-oil-cooler-canopy-and-wide-bucket-ideal-for-garden-farm-park-and-road-work-digging-drilling-bull-dozing-typh-0113/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4444,7 +4510,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/3800lbs-tyrant-17-diesel-mini-excavator-kubota-d902-engine-side-swing-w-12-attachments-typh-0701r-flex/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4475,7 +4541,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/terror-xi-mini-excavator-digger-13-5hp-gas-b-and-s-epa-engine-with-13-attachments-typh-0121flex/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4506,7 +4572,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xiii-pro-mini-excavator-1-3-ton-trench-digger-with-canopy-hydraulic-thumb-clip-22-1hp-honda-engine-usa-typh-1301-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4537,7 +4603,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xxv-2-5-ton-mini-excavator-kubota-diesel-engine-usa-typh-xx51g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4568,7 +4634,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-diesel-engine-usa-typh-1802g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4599,7 +4665,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x-storm-mini-excavator-1-ton-trench-digger-with-canopy-hydraulic-thumb-clip-bucket-usa-typh-0101g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4630,7 +4696,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-18-flex-pro-1-8-ton-mini-excavator-usa-with-12-attachments-typh-0702pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4661,7 +4727,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xv-storm-mini-excavator-1-05-ton-trench-digger-13-5hp-b-and-s-epa-engine-usa-typh-1501g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4692,7 +4758,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xiii-mini-excavator-1-3-ton-trench-digger-with-canopy-hydraulic-thumb-clip-13-5hp-b-and-s-engine-usa-typh-1301g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4723,7 +4789,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xx-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-typh-xx01-g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4754,7 +4820,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xi-storm-mini-excavator-1-1-ton-trench-digger-with-boom-swing-hydraulic-thumb-clip-bucket-usa-typh-0121/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4785,7 +4851,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xx-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-typh-xx01y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4816,7 +4882,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xx-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-typh-xx01r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4847,7 +4913,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xviii-mini-excavator-rubber-track-with-kubota-diesel-engine-usa-typh-1801g/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4878,7 +4944,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-storm-mini-excavator-2-5-ton-diesel-kubota-v1505-engine-usa-typh-x201pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4909,7 +4975,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-mini-excavator-2-7-ton-epa-diesel-kubota-v1505-engine-usa-typh-x202-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4940,7 +5006,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-diesel-engine-usa-typh-1802y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -4971,7 +5037,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-diesel-engine-usa-typh-1802r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5002,7 +5068,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-mini-excavator-4000lbs-digger-with-0-035-cbm-bucket-usa-typh-1801y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5033,7 +5099,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-4-000-lb-typhon-lux-mini-excavator-rubber-track-with-kubota-diesel-engine-usa-typh-1801r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5064,7 +5130,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x-storm-mini-excavator-1-ton-trench-digger-with-canopy-hydraulic-thumb-clip-bucket-usa-typh-0101y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5095,7 +5161,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xvii-cabin-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-typh-1702b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5126,7 +5192,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-3-800-lb-typhon-terror-xvii-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-typh-1701b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5157,7 +5223,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xix-prestige-ac-heater-cabin-mini-excavator-4200lbs-20-4-hp-kubota-d902-with-boom-swing-retractable-tracks-typh-1902/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5188,7 +5254,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xix-storm-mini-excavator-4000lbs-trench-digger-with-boom-swing-canopy-retractable-tracks-typh-1901-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5219,7 +5285,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xvii-pro-3800-lbs-mini-excavator-kubota-diesel-hydraulic-thumb-dozer-blade-and-boom-swing-typh-1701r-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5255,7 +5321,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xvii-pro-3800-lb-mini-excavator-kubota-d902-diesel-hydraulic-thumb-pilot-controls-14kn-dig-force-typh-1701y-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5286,7 +5352,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-terror-xvii-pro-3800-lb-mini-excavator-kubota-diesel-premium-hydraulics-14kn-dig-force-boom-swing-typh-1701b-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5317,7 +5383,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xvii-pro-prestige-edition-mini-excavator-4000lb-kubota-d902-diesel-enclosed-cab-with-ac-heat-hydraulic-thumb-typh-1702y-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5463,7 +5529,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xvii-pro-prestige-edition-4000-lb-enclosed-mini-excavator-with-kubota-power-and-advanced-hydraulics-typh-1702r-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5644,7 +5710,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xvii-pro-prestige-edition-enclosed-mini-excavator-with-ac-heater-and-ergonomic-comfort-typh-1702b-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -5820,7 +5886,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-v900-1-4-ton-compact-track-loader-with-25hp-kubota-diesel-engine-1-102-lb-max-load-typh-v900y/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6031,7 +6097,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-v900-1-4-ton-mini-track-loader-featuring-dual-auxiliary-hydraulics-and-kubota-d1105-25hp-usa-engine-typh-v900r/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6232,7 +6298,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-v900-mini-track-loader-kubota-d1105-25hp-diesel-stand-on-skid-steer-epa-eu-stage-v-typh-v900b/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6443,7 +6509,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skoop-heavy-duty-wheel-loader-log-grapple-295-lbs-robust-log-and-brush-handler-with-6-4-tine-grip-typh-8007/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6474,7 +6540,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skoop-hydraulic-pallet-fork-attachment-for-wheel-loader-43-inch-11-1-gpm-typh-8005/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6505,7 +6571,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunderdump-lift-compact-site-dumper-typh-0901d/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6541,7 +6607,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunderdump-180-power-barrow-compact-site-dumper-typh-0902d/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6572,7 +6638,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-scoopydig-heavy-backhoe-loader-typh-0903d/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6583,7 +6649,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2024-typhon-2-ton-rated-capacity-electric-forklift-lifter-lift-truck-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6624,7 +6690,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-1-5-blue-electric-forklift-1-5-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6680,7 +6746,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-1-5-electric-forklift-1-5-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6721,7 +6787,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-2-blue-electric-forklift-2-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6757,7 +6823,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-2-electric-forklift-2-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6803,7 +6869,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-2-5-blue-electric-forklift-2-5-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6849,7 +6915,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-2025-typhon-vigor-3-0-blue-electric-forklift-3-ton-lifter-lift-truck-jitney-hi-lo/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6900,7 +6966,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/10-in-1-mini-excavator-attachment-bundle-essential-tools-combo-kit-for-worksites/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -6961,7 +7027,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/1000mm-leveling-bucket-attachment-for-2-3-ton-mini-excavator-digging-bucket/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7017,7 +7083,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/11-in-1-mini-excavator-attachment-combo-kit-all-essential-tools-for-worksites/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7093,7 +7159,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-3-5-ton-mini-excavator-attachment-550mm-teeth-bucket-trenching-buckets-21-inch-for-terror-x2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7144,7 +7210,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-3-5-ton-mini-excavator-attachment-600mm-teeth-bucket-trenching-buckets-23-inch-for-terror-x2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7190,7 +7256,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-3-5-tons-excavator-attachment-250mm-narrow-bucket-trenching-buckets-9-8-inch-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7221,7 +7287,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-excavator-attachment-hydraulic-tilt-bucket-800mm-tilting-bucket-31-inch-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7257,7 +7323,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-mini-excavator-attachment-ripper-single-shank-typhon-digger-attachment-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7293,7 +7359,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-excavator-attachment-hydraulic-earth-auger-post-hole-digger-8inch-diameter-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7329,7 +7395,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2-5-ton-mini-excavator-attachment-hydraulic-hammer-top-type-rock-breaker-generic-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7370,7 +7436,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/200mm-narrow-bucket-attachment-for-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7421,7 +7487,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2ton-excavator-attachment-1000mm-rock-bucket-heavy-duty-trenching-bucket-39-inch-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7452,7 +7518,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/5-in-1-0-8-2-ton-excavator-attachments-quick-coupler-bucket-ripper-auger-hammer/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7503,7 +7569,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/500mm-plain-mud-bucket-attachment-for-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7559,7 +7625,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/500mm-trenching-bucket-general-purpose-w-teeth-for-mini-excavator-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7590,7 +7656,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/600mm-tilting-bucket-attachment-for-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7631,7 +7697,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/800mm-tilting-bucket-attachment-for-2-3-ton-mini-excavator-hyd-digging-bucket/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7672,7 +7738,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/all-in-one-12-pcs-attachment-set-tool-fits-2-3-ton-mini-excavator-terror-xxv/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7743,7 +7809,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/auger-attachment-for-2-3-ton-mini-excavator-7-9in-auger-bit-earth-drilling/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7794,7 +7860,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/budget-style-hydraulic-thumb-clip-attachment-for-mini-excavators-digger-track-crawler/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7845,7 +7911,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/compact-grapple-attachment-for-2-3-ton-mini-excavator-wide-opening-wood-grab/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7896,7 +7962,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/excavator-attachment-tilt-bucket-39-hydraulic-tilting-bucket-1000mm-heavy-duty-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7932,7 +7998,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/excavator-attachment-tilt-bucket-47-hydraulic-tilting-bucket-1200mm-heavy-duty-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7968,7 +8034,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/heavy-duty-hedge-trimmer-attachment-2-3-ton-mini-excavator-tool-fit-terror-xxv/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -7994,7 +8060,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-hammer-attachment-hydraulic-breaker-hammer-for-2-5-3-5-ton-excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8045,7 +8111,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-attachment-grapple-wide-opening-grabber-for-2-to-3-5-ton-diggers-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8091,7 +8157,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-attachment-rake-22-wide-typhon-attachments-for-2-3-5-ton-diggers-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8132,7 +8198,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-excavator-rake-compact-attachment-general-for-2-3-ton-small-digger/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8188,7 +8254,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/narrow-bucket-attachment-for-2-3-ton-mini-excavator-trenching-bucket-300mm/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8239,7 +8305,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-generic-attachment-hydraulic-thumb-clip-for-mini-excavators/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8290,7 +8356,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/pallet-fork-attachment-for-2-5-3-ton-mini-excavator-adjustable-stabilizer-bar/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8331,7 +8397,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/quick-hitch-attachment-for-2-3-ton-mini-excavator-mechanical-quick-coupler/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8372,7 +8438,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/quick-hitch-attachment-for-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8403,7 +8469,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/rake-mini-excavator-attachment-for-grading-leveling-loosening-removing-soil-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8419,7 +8485,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/ripper-attachment-for-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8450,7 +8516,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/screening-skeleton-bucket-attachment-600mm-typhon-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8496,7 +8562,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-2-5-ton-mini-excavator-attachment-mechanical-quick-hitch-quick-coupler-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8542,7 +8608,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-2-5-ton-mini-excavator-attachment-plain-bucket-800mm-31-mud-bucket-for-terror-x2-pro/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8593,7 +8659,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-auger-drill-attachment-for-mini-excavators-machinery-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8639,7 +8705,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-grapple-attachment-for-mini-excavators-grabber-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8690,7 +8756,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-hydraulic-break-hammer-attachment-for-mini-digger-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8756,7 +8822,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-attachments-hydraulic-thumb-clip-attachment-for-mini-excavators-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8807,7 +8873,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-ripper-hook-attachment-for-2-3-ton-mini-excavator-ripper-tooth-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8858,7 +8924,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/tree-digging-blade-attachment-root-cutting-digging-blade-for-2-3-ton-excavator/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8909,7 +8975,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-3800-lb-typhon-terror-xvii-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -8975,7 +9041,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xx-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9011,7 +9077,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4-000-lb-typhon-terror-xx-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa-2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9047,7 +9113,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4000-lb-typhon-terror-xvii-cabin-mini-excavator-rubber-track-with-kubota-d902-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9108,7 +9174,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/2025-4000-lb-typhon-terror-xviii-mini-excavator-rubber-track-with-kubota-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9174,7 +9240,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/3800lbs-tyrant-17-diesel-mini-excavator-kubota-d902-engine-side-swing-w-12-attachments/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9265,7 +9331,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-terror-3-ton-mini-excavator-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9316,7 +9382,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-terror-viii-800kg-mini-excavator-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9362,7 +9428,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/green-typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9423,7 +9489,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-4-000-lb-typhon-lux-mini-excavator-rubber-track-with-kubota-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9434,7 +9500,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/terror-xi-mini-excavator-digger-13-5hp-gas-b-s-epa-engine-with-13-attachments/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9530,7 +9596,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-18-flex-1-8-ton-mini-excavator-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9586,7 +9652,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-18-flex-pro-1-8-ton-mini-excavator-usa-with-12-attachments/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9637,7 +9703,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-kuvuo-4-0-four-ton-cabin-mini-excavator-w-kubota-d1703-diesel-engine-metal-tracks-boom-swing-ac-heater-hydraulic-control/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9773,7 +9839,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-naga-4-0-mini-excavator-w-4-ton-24-4hp-yanmar-diesel-engine-metal-track-iso-sae-control-switch-ac-heater-cabin-2-travel-speed/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9929,7 +9995,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-one-mini-excavator-1-1-ton-trench-digger-with-cabin-hydraulic-thumb-clip-hydraulic-oil-cooler-13-5hp-b-s-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -9985,7 +10051,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-one-storm-1-ton-mini-excavator-trench-digger-with-hydraulic-oil-cooler-canopy-wide-bucket-ideal-for-garden-farm-park-road-work-digging-drilling-bull-dozing/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10111,7 +10177,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-one-storm-mini-excavator-1-ton-trench-digger-with-canopy-hydraulic-thumb-clip-hydraulic-oil-cooler-13-5hp-b-s-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10167,7 +10233,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-on-tracks-viii-800kg-mini-excavator-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10203,7 +10269,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x-storm-mini-excavator-1-ton-trench-digger-with-canopy-hydraulic-thumb-clip-bucket-usa-2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10244,7 +10310,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x-storm-mini-excavator-1-ton-trench-digger-with-canopy-hydraulic-thumb-clip-bucket-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10290,7 +10356,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-max-2-7-ton-mini-excavator-powerful-yanmar-engine-cabin-with-a-c-heater-pilot-control-boom-swing/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10301,7 +10367,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-max-canopy-mini-excavator-powerful-2-5-ton-compact-machine-with-yanmar-engine-advanced-hydraulic-system/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10312,7 +10378,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-mini-excavator-2-7-ton-epa-diesel-kubota-v1505-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10368,7 +10434,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-mini-excavator-2-7-ton-epa-diesel-perkins-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10439,7 +10505,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-storm-mini-excavator-2-5-ton-diesel-kubota-v1505-25hp-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10485,7 +10551,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x2-storm-mini-excavator-2-5-ton-diesel-perkins-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10526,7 +10592,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xi-storm-mini-excavator-1-1-ton-trench-digger-with-boom-swing-hydraulic-thumb-clip-bucket-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10577,7 +10643,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xiii-pro-storm-mini-excavator-1-3-ton-trench-digger-with-canopy-hydraulic-thumb-clip-22-1hp-honda-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10733,7 +10799,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xix-storm-mini-excavator-1-8-ton-trench-digger-with-boom-swing-canopy/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10769,7 +10835,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-mini-excavator-4000lbs-epa-certified-usa-kubota-d902-engine/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10810,7 +10876,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-d902-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10851,7 +10917,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xviii-prestige-2-ton-mini-excavator-kubota-d902-diesel-engine-usa-2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10897,7 +10963,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-xxv-2-5-ton-mini-excavator-kubota-diesel-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10923,7 +10989,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-terror-x-mini-excavator-2-500lb-trench-digger-w-cabin-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10934,7 +11000,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-tyrant-x-1-ton-mini-excavator-with-13-5hp-briggs-stratton-engine-hydraulic-oil-cooler-thumb-clip/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10945,7 +11011,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-1-ton-vibratory-compactor-asphalt-roller-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -10996,7 +11062,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-1-5-ton-vibratory-compactor-asphalt-roller-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11047,7 +11113,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-15-mini-road-roller-1-5ton-13-5-hp-b-s-gas-engine-hydraulic-steering/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11208,7 +11274,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-20-mini-road-roller-2ton-hydraulic-oil-vibratory-b-s-23hp-usa-engine/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11364,7 +11430,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-fury-10-mini-road-roller-1ton-hydraulic-oil-b-s-13-5hp-gas-usa-air-cooled/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11520,7 +11586,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/4-in-1-bucket-combo-mini-skid-steer-attachment-for-typhon-stomp-x1300-stomp-509/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11576,7 +11642,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/hydraulic-wood-grabber-attachment-mini-skid-steer-typhon-stomp-x1300-stomp-509/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11632,7 +11698,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-skid-steer-rotary-tiller-attachment-for-typhon-stomp-x1300-typhon-stomp-509/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11678,7 +11744,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-backhoe-digger-skid-steer-loader-attachments-for-typhon-stomp-skidsteer/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11724,7 +11790,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-stomp-x1300-stomp-509-mini-skid-steer-ripper-attachment-3-tooth/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11795,7 +11861,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-stomp-x1300-stomp-509-mini-skid-steer-forestry-mulcher-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11851,7 +11917,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-4-in-one-bucket-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11902,7 +11968,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-lawn-scarifier-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -11943,7 +12009,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-rock-bucket-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12009,7 +12075,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-attachment-trench-filler-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12045,7 +12111,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-bull-dozer-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12096,7 +12162,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-earth-auger-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12142,7 +12208,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-fork-pallet-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12178,7 +12244,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-grappler-grapple-grabber-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12214,7 +12280,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-hydraulic-hammer-concrete-breaker-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12255,7 +12321,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-land-leveler-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12366,7 +12432,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-land-leveler-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12407,7 +12473,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-lawn-mower-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12453,7 +12519,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-mulcher/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12534,7 +12600,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-ripper-attachment/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12605,7 +12671,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-rotary-plow-tiller-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12646,7 +12712,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-stump-grinder-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12677,7 +12743,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-sweeper-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12708,7 +12774,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-digger-attachment-for-mini-skid-steer-stomp-x1300-stomp-509/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12769,7 +12835,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-x1300-stomp-509-mini-skid-steer-auger-attachment-200mm-hydraulic/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12835,7 +12901,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skid-steer-loader-snow-blower-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12876,7 +12942,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-skid-steer-loader-trencher-attachment-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12912,7 +12978,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1-600lbs-mini-skid-steer-13-5hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12923,7 +12989,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1-800lbs-mini-skid-steer-23hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12934,7 +13000,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1760lbs-mini-skid-steer-13-5hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12945,7 +13011,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-1800lbs-mini-skid-steer-loader-23hp-wheel-gas-epa-b-s-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12956,7 +13022,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-2000lbs-mini-skid-steer-23hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12967,7 +13033,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-2000lbs-mini-skid-steer-loader-23hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -12978,7 +13044,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-507-1-760lbs-mini-skid-steer-13-5hp-gas-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13024,7 +13090,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-mini-skid-steer-kubota-d1105-diesel-epa-engine-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13140,7 +13206,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-stomp-x1300-25hp-kubota-diesel-mini-skid-steer-loader/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13231,7 +13297,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/mini-skid-steer-loader-track-wheel-honda-epa-gas-22-1-hp-engine-new/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13272,7 +13338,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/skid-steer-loader-tracked-22-1-hp-honda-epa-gasoline-engine-for-gardens-farming/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13308,7 +13374,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-stomp-v1000-24hp-kubota-d1105-water-cooled-diesel-skid-steer-pilot-control/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13454,7 +13520,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/brand-new-typhon-terror-4wd-backhoe-loader-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13480,7 +13546,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/new-typhon-telescopic-wheel-loader-with-kubota-d1105-engine-25-hp-1-ton-load-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13581,7 +13647,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-thunder-vi-23hp-epa-b-s-engine-wheel-loader-usa/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13632,7 +13698,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4068et-electric-rubber-track-scissor-lift-3-2-ton-with-5-4hp-hydraulic-pump-motor-drive-and-hydraulic-lifting-cylinder-40-ft-max-lifting-height/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13643,7 +13709,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4065w-walk-behind-scissor-lift-2-7-ton-with-assisted-walking-manual-outriggers-of-40-ft-lifting-height-110v-electric/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13654,7 +13720,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-4046ew-electric-wheel-scissor-lift-2-6-ton-operating-weight-and-40ft-platform-height-with-705lbs-load-capacity/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13665,7 +13731,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-2037w-walk-behind-scissor-lift-comes-with-20ft-working-height-and-manual-outriggers-1102-lbs-load-capacity-110v-electric/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13676,7 +13742,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/typhon-xflex-2031em-1-2-ton-electric-mini-scissor-lift-with-20ft-max-platform-height-and-19-7-platform-extend/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image>
@@ -13687,7 +13753,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-1/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13698,7 +13764,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-2/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13709,7 +13775,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-3/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13720,7 +13786,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-4/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13731,7 +13797,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-5/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13742,7 +13808,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-6/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13753,7 +13819,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-7/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13764,7 +13830,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-8/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13775,7 +13841,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-9/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13786,7 +13852,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-10/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13797,7 +13863,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-11/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13808,7 +13874,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-12/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13819,7 +13885,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/featured-13/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.75</priority>
     <image:image>
@@ -13830,7 +13896,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18070/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13841,7 +13907,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18071/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13852,7 +13918,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18072/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13863,7 +13929,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18073/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13874,7 +13940,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18074/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13885,7 +13951,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18075/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13896,7 +13962,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18583/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13907,7 +13973,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18596/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13918,7 +13984,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18607/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13929,7 +13995,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18615/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13940,7 +14006,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18625/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13951,7 +14017,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18634/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13962,7 +14028,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18643/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13973,7 +14039,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18652/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13984,7 +14050,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18661/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -13995,7 +14061,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18668/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14006,7 +14072,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18678/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14017,7 +14083,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18709/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14028,7 +14094,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18718/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14039,7 +14105,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18727/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14050,7 +14116,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18735/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14061,7 +14127,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18744/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14072,7 +14138,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18753/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14083,7 +14149,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18764/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14094,7 +14160,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18774/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14105,7 +14171,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18784/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14116,7 +14182,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18796/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14127,7 +14193,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18800/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14138,7 +14204,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18817/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14149,7 +14215,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18829/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14160,7 +14226,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18837/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14171,7 +14237,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18848/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14182,7 +14248,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18863/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14193,7 +14259,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18873/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14204,7 +14270,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18885/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14215,7 +14281,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18897/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14226,7 +14292,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18908/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14237,7 +14303,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18920/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14248,7 +14314,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18931/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14259,7 +14325,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18943/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14270,7 +14336,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18951/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14281,7 +14347,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18964/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14292,7 +14358,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18972/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14303,7 +14369,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18985/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14314,7 +14380,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-18997/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14325,7 +14391,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-19005/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14336,7 +14402,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-21104/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14347,7 +14413,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25045/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14358,7 +14424,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25056/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14369,7 +14435,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25063/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14380,7 +14446,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25073/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14391,7 +14457,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25083/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14402,7 +14468,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25095/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14413,7 +14479,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25107/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14424,7 +14490,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25119/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14435,7 +14501,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25130/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14446,7 +14512,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25143/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14457,7 +14523,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25154/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14468,7 +14534,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25166/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14479,7 +14545,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25179/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14490,7 +14556,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25211/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14501,7 +14567,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25228/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14512,7 +14578,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-25667/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14523,7 +14589,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-26181/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14534,7 +14600,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28897/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14545,7 +14611,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28912/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14556,7 +14622,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28926/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14567,7 +14633,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28939/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14578,7 +14644,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28955/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14589,7 +14655,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28967/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>
@@ -14600,7 +14666,7 @@
   </url>
   <url>
     <loc>https://stonekrusher.com/products/imported-2-28981/</loc>
-    <lastmod>2026-10-26</lastmod>
+    <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.65</priority>
     <image:image>

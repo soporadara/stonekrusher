@@ -54,3 +54,6 @@ if (!defined('DB_PASS')) {
 if (!defined('DB_FILE')) {
     define('DB_FILE', getenv('DB_FILE') ?: 'data/site.db');
 }
+if (!defined('GOOGLE_CLIENT_ID')) {
+    define('GOOGLE_CLIENT_ID', getenv('GOOGLE_CLIENT_ID') ?: '716874405106-k2np0hhjut85nqncv5m7f3fs2ma6oiii.apps.googleusercontent.com');
+}

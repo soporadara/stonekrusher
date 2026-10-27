@@ -70,9 +70,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
   const [attempts, setAttempts] = useState(null);
   const [blocked, setBlocked] = useState(null);
   const [now, setNow] = useState(() => Date.now());
-  const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotStatus, setForgotStatus] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
   const googleButtonRef = useRef(null);
@@ -233,22 +230,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
     }
   };
 
-  const handleForgotSubmit = async (e) => {
-    e.preventDefault();
-    setForgotStatus('Submitting...');
-    try {
-      const res = await fetch('/api/auth.php?action=forgot_password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail.trim() })
-      });
-      const data = await res.json();
-      setForgotStatus(data.message || 'If that email exists, reset instructions have been issued.');
-    } catch {
-      setForgotStatus('Error processing reset request.');
-    }
-  };
-
   const isCritical = attempts && attempts.remaining <= 3;
   const secondsLeft = blocked && blocked.until ? Math.max(0, Math.ceil((blocked.until - now) / 1000)) : null;
 
@@ -374,9 +355,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
                   </span>
                   <span>Remember Me</span>
                 </label>
-                <button type="button" className="cms-login-link" onClick={() => setShowForgot(true)}>
-                  Forgot Password?
-                </button>
               </div>
 
               <button type="submit" className="cms-login-submit" disabled={loading}>
@@ -436,57 +414,6 @@ export default function CmsLogin({ onLoginSuccess, onBackToSite }) {
           </p>
         </div>
       </main>
-
-      {showForgot && (
-        <div className="cms-modal-backdrop" style={{ zIndex: 120 }}>
-          <div className="cms-modal" style={{ maxWidth: '400px' }}>
-            <div className="cms-modal-header">
-              <h3>Reset Password</h3>
-              <button
-                className="cms-btn-icon cms-btn-secondary"
-                onClick={() => setShowForgot(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleForgotSubmit}>
-              <div className="cms-modal-body">
-                <p style={{ fontSize: '0.86rem', color: 'var(--cms-text-muted)', marginTop: 0 }}>
-                  Enter your administrative email address to generate a single-use password reset authorization token.
-                </p>
-                <div className="cms-form-group">
-                  <label>Administrator Email</label>
-                  <input
-                    type="email"
-                    className="cms-input"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    required
-                    placeholder="you@example.com"
-                  />
-                </div>
-                {forgotStatus && (
-                  <div style={{ padding: '10px 12px', background: 'var(--cms-info-bg)', color: 'var(--cms-info)', borderRadius: 'var(--cms-radius-md)', fontSize: '0.82rem' }}>
-                    {forgotStatus}
-                  </div>
-                )}
-              </div>
-              <div className="cms-modal-footer">
-                <button
-                  type="button"
-                  className="cms-btn cms-btn-secondary"
-                  onClick={() => setShowForgot(false)}
-                >
-                  Close
-                </button>
-                <button type="submit" className="cms-btn cms-btn-primary">
-                  Request Reset Token
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

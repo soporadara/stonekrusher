@@ -49,8 +49,14 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('cms_theme') || 'light');
   const [editingPostId, setEditingPostId] = useState(null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [headerSearch, setHeaderSearch] = useState('');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileModalTab, setProfileModalTab] = useState('profile');
+
+  const openProfileModal = (tab = 'profile') => {
+    setProfileModalTab(tab || 'profile');
+    setShowProfileModal(true);
+  };
   const [tooltipPos, setTooltipPos] = useState(null); // { left: number, top: number, text: string }
 
   const [expandedMenus, setExpandedMenus] = useState(() => ({
@@ -747,7 +753,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
           {/* User Account Card (Rafelblog Style) */}
           <div
             className="cms-sidebar-user-card"
-            onClick={() => setShowProfileModal(true)}
+            onClick={() => openProfileModal('profile')}
             onMouseEnter={e => showTooltip(e, `${userDisplayName} (Account & Security)`)}
             onMouseLeave={hideTooltip}
             title={sidebarCollapsed ? `${userDisplayName} (Account & Security)` : undefined}
@@ -965,17 +971,40 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
               <span className="cms-donezo-icon-dot" />
             </button>
 
+            {/* Google Single Sign-On Status & Link Button */}
+            {currentUser && (
+              <button
+                type="button"
+                className={`cms-topbar-google-badge ${currentUser.is_google_linked ? 'linked' : 'unlinked'}`}
+                onClick={() => openProfileModal('google')}
+                title={currentUser.is_google_linked
+                  ? `Google 1-Click Login Active: ${currentUser.google_email}. Click to view or manage.`
+                  : 'Link your Google account for secure 1-click login without typing password'
+                }
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.57H1.25C.45 8.16 0 9.94 0 12s.45 3.84 1.25 5.43l4.03-3.14z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.57l4.03 3.14c.95-2.83 3.6-4.96 6.72-4.96z" />
+                </svg>
+                <span className="cms-topbar-google-text">
+                  {currentUser.is_google_linked ? 'Google Linked' : 'Link Google'}
+                </span>
+              </button>
+            )}
+
             {/* Vertical Divider */}
             <div className="cms-topbar-divider" />
 
             {/* User Profile Capsule */}
             <div
               className="cms-donezo-user-capsule"
-              onClick={() => setShowProfileModal(true)}
+              onClick={() => openProfileModal('profile')}
               title="View Profile & Security"
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setShowProfileModal(true); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openProfileModal('profile'); }}
             >
               <div className="cms-donezo-user-avatar-wrap">
                 <div className="cms-donezo-user-avatar">
@@ -1015,6 +1044,8 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
                 initialSubView={activeTab === 'topblogs' ? 'topBlogs' : 'overview'}
                 onNavigateTab={handleNavigate}
                 onSelectPost={handleSelectPostFromDashboard}
+                currentUser={currentUser}
+                onOpenProfile={openProfileModal}
               />
             )}
 
@@ -1087,6 +1118,7 @@ export default function CmsApp({ onBackToSite, initialTab = 'overview' }) {
       {/* Profile & Google Account Modal */}
       <CmsProfileModal
         isOpen={showProfileModal}
+        initialTab={profileModalTab}
         onClose={() => setShowProfileModal(false)}
         currentUser={currentUser}
         onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}

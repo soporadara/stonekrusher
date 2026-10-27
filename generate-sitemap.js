@@ -67,7 +67,7 @@ const withOfficialImageSource = (caption) => {
 
 // 1. Core pages
 const pages = [
-  { path: '', priority: '1.0', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ compact construction equipment', caption: 'Official KONSTRUCTZ compact construction equipment, mini excavators, wheel loaders, skid steers, and attachments.' } },
+  { path: '/', priority: '1.0', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ compact construction equipment', caption: 'Official KONSTRUCTZ compact construction equipment, mini excavators, wheel loaders, skid steers, and attachments.' } },
   { path: '/equipment/', priority: '0.9', changefreq: 'weekly', image: { loc: defaultImage, title: 'KONSTRUCTZ machinery inventory', caption: 'Official KONSTRUCTZ machinery inventory with compact construction equipment for sale.' } },
   { path: '/attachments/', priority: '0.9', changefreq: 'weekly', image: { loc: `${baseUrl}/system-attachments/kuvuo-excavator.png`, title: 'KONSTRUCTZ mini excavator and skid steer attachments', caption: 'Official KONSTRUCTZ mini excavator attachments, skid steer attachments, buckets, augers, hammers, and grading tools.' } },
   { path: '/blog/', priority: '0.8', changefreq: 'weekly', image: { loc: `${baseUrl}/blog-hero-panorama-poster.png`, title: 'KONSTRUCTZ machinery guides and news', caption: 'Official KONSTRUCTZ machinery guides, equipment tips, safety advice, and jobsite news.' } },

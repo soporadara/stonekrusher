@@ -39,13 +39,32 @@ if ($method === 'GET') {
     if ($pdo) {
         try {
             // Only expose published posts to the public. Never expose drafts, scheduled, or trash!
-            $stmt = $pdo->prepare("SELECT data_json FROM blog_posts WHERE status = 'Published' AND (scheduled_at IS NULL OR scheduled_at <= ?) ORDER BY updated_at DESC");
+            $stmt = $pdo->prepare("SELECT id, slug, title, category, author, featured_image, excerpt, content, status, published_date, views, data_json FROM blog_posts WHERE status = 'Published' AND (scheduled_at IS NULL OR scheduled_at <= ?) ORDER BY updated_at DESC");
             $stmt->execute([$now]);
             $dbRows = $stmt->fetchAll();
             if (!empty($dbRows)) {
                 $posts = array_map(function($r) { 
-                    $p = json_decode($r['data_json'], true);
-                    if (is_array($p)) { unset($p['views']); }
+                    $p = json_decode($r['data_json'] ?? '', true);
+                    if (!is_array($p)) {
+                        $p = [
+                            'id' => $r['id'] ?: $r['slug'],
+                            'slug' => $r['slug'],
+                            'title' => $r['title'],
+                            'category' => $r['category'] ?: 'Guide',
+                            'image' => $r['featured_image'],
+                            'desc' => $r['excerpt'],
+                            'excerpt' => $r['excerpt'],
+                            'content' => $r['content'],
+                            'publishedDate' => $r['published_date'],
+                            'date' => $r['published_date'],
+                            'status' => $r['status'] ?: 'Published',
+                            'author' => $r['author'] ?: 'StoneKrusher Editorial Team'
+                        ];
+                    }
+                    $p['views'] = max(0, (int)($r['views'] ?? ($p['views'] ?? 0)));
+                    if (empty($p['author']) || strpos($p['author'], 'KONSTRUCTZ') !== false) {
+                        $p['author'] = !empty($r['author']) && strpos($r['author'], 'KONSTRUCTZ') === false ? $r['author'] : 'StoneKrusher Editorial Team';
+                    }
                     return $p; 
                 }, $dbRows);
                 send_json(200, ['posts' => array_values(array_filter($posts))]);
@@ -71,21 +90,48 @@ if ($method === 'GET') {
         return strcasecmp($s, 'Published') === 0;
     }));
     foreach ($filtered as &$fp) {
-        if (is_array($fp)) { unset($fp['views']); }
+        if (is_array($fp)) {
+            $fp['views'] = max(0, (int)($fp['views'] ?? 0));
+            if (empty($fp['author']) || strpos($fp['author'], 'KONSTRUCTZ') !== false) {
+                $fp['author'] = 'StoneKrusher Editorial Team';
+            }
+        }
     }
 
     send_json(200, ['posts' => $filtered]);
 }
 
-// Public Action: Track View (Increment blog post reader views in database)
+// Public Action: Track View (Increment genuine blog post reader views in database with session deduplication)
 if ($method === 'POST' && isset($_GET['action']) && $_GET['action'] === 'track_view') {
     $slug = trim($_GET['slug'] ?? '');
     if (!empty($slug) && $pdo) {
-        try {
-            $stmt = $pdo->prepare("UPDATE blog_posts SET views = COALESCE(views, 0) + 1 WHERE slug = ? OR id = ?");
-            $stmt->execute([$slug, $slug]);
-            send_json(200, ['success' => true, 'slug' => $slug]);
-        } catch (Exception $e) {}
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            @session_start();
+        }
+        $sessionKey = 'stonekrusher_view_' . md5($slug);
+        $lastViewTime = $_SESSION[$sessionKey] ?? 0;
+        
+        // Count 1 real view per 15 minutes per unique visitor session
+        if (time() - $lastViewTime >= 900) {
+            $_SESSION[$sessionKey] = time();
+            try {
+                $stmt = $pdo->prepare("UPDATE blog_posts SET views = COALESCE(views, 0) + 1 WHERE slug = ? OR id = ?");
+                $stmt->execute([$slug, $slug]);
+
+                $stmtV = $pdo->prepare("SELECT views FROM blog_posts WHERE slug = ? OR id = ? LIMIT 1");
+                $stmtV->execute([$slug, $slug]);
+                $realViews = (int)$stmtV->fetchColumn();
+
+                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => true]);
+            } catch (Exception $e) {}
+        } else {
+            try {
+                $stmtV = $pdo->prepare("SELECT views FROM blog_posts WHERE slug = ? OR id = ? LIMIT 1");
+                $stmtV->execute([$slug, $slug]);
+                $realViews = (int)$stmtV->fetchColumn();
+                send_json(200, ['success' => true, 'slug' => $slug, 'views' => $realViews, 'counted' => false]);
+            } catch (Exception $e) {}
+        }
     }
     send_json(200, ['success' => false]);
 }
@@ -137,7 +183,7 @@ if ($pdo) {
             $id = (string)($post['id'] ?? $slug);
             $title = $post['title'] ?? '';
             $cat = $post['category'] ?? 'Guide';
-            $author = $post['author'] ?? 'Admin KONSTRUCTZ';
+            $author = !empty($post['author']) && strpos($post['author'], 'KONSTRUCTZ') === false ? $post['author'] : 'StoneKrusher Editorial Team';
             $img = $post['image'] ?? ($post['featuredImage'] ?? '');
             $excerpt = $post['desc'] ?? ($post['excerpt'] ?? '');
             $status = $post['status'] ?? 'Published';

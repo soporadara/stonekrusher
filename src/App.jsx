@@ -36,7 +36,6 @@ import kubotaEngineLogoAsset from './assets/engine-logos/kubota.png'
 import briggsStrattonLogoAsset from './assets/engine-logos/briggs-stratton.png'
 import batteryExpressLogoAsset from './assets/engine-logos/battery-express.png'
 import recycleBatteryLogoAsset from './assets/engine-logos/recycle-battery.png'
-import { StoneKrusher3DSection, ThunderDump3DSection, GlbViewer } from './components/Model3DSection'
 
 // Image references
 const heroLoader = stoneCrusherAsset;
@@ -86,6 +85,8 @@ const loaderCarryingGravel = 'https://skidsteers.org/wp-content/uploads/2026/09/
 const trackLoaderFarm = 'https://skidsteers.org/wp-content/uploads/2026/09/Gemini_Generated_Image_p05airp05airp05a-scaled.jpeg';
 const dumperConstruction = 'https://skidsteers.org/wp-content/uploads/2026/09/Gemini_Generated_Image_x58ts4x58ts4x58t-scaled.jpeg';
 const konstructzLogo = konstructzLogoAsset;
+
+
 const supportHero = supportHeroAsset;
 const supportCallCenter = supportCallCenterAsset;
 const kuvuoProduct = kuvuoProductAsset;
@@ -191,6 +192,11 @@ const sanitizeProductDescription = (html = '') => String(html)
   .replace(/\\n/g, '\n')
   .replace(/<script[\s\S]*?<\/script>/gi, '')
   .replace(/<(?:iframe|object|embed)[\s\S]*?<\/(?:iframe|object|embed)>/gi, '')
+  .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '')
+  .replace(/\s(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, '');
+
+const sanitizeArticleHtml = (html = '') => String(html)
+  .replace(/<script[\s\S]*?<\/script>/gi, '')
   .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '')
   .replace(/\s(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, '');
 
@@ -594,7 +600,6 @@ const stoneCrusherData = [
 const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [viewMode, setViewMode] = useState('stage'); // 'stage' | 'compare'
-  const [stageMediaMode, setStageMediaMode] = useState('photo'); // 'photo' | '3d'
   const activeMachine = stoneCrusherData[activeTab];
 
   return (
@@ -648,7 +653,6 @@ const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
                   className={`crusher-dock-btn ${idx === activeTab ? 'active' : ''}`}
                   onClick={() => {
                     setActiveTab(idx);
-                    if (idx !== 0) setStageMediaMode('photo');
                   }}
                 >
                   <span className="dock-num">0{idx + 1}</span>
@@ -666,45 +670,14 @@ const StoneCrusherInteractiveShowcase = ({ onDetail }) => {
               {/* Left Column: Visual Showcase */}
               <div className="stage-visual-col">
                 <div className="stage-image-hero">
-                  {stageMediaMode === '3d' && activeMachine.id === 'featured-12' ? (
-                    <GlbViewer
-                      src="/k1.glb"
-                      alt={activeMachine.name}
-                      productName="TYPHON STONEKRUSHER K1"
-                      height="460px"
-                      initialBg="#ffffff"
-                    />
-                  ) : (
-                    <>
-                      <img
-                        src={activeMachine.image}
-                        alt={activeMachine.name}
-                        className="stage-hero-img"
-                        key={activeMachine.id}
-                      />
-                      <div className="stage-image-vignette"></div>
-                      <div className="stage-badge-tag">{activeMachine.badge}</div>
-                    </>
-                  )}
-
-                  {activeMachine.id === 'featured-12' && (
-                    <div className="media-toggle-pill">
-                      <button
-                        type="button"
-                        className={`media-toggle-btn ${stageMediaMode === 'photo' ? 'active' : ''}`}
-                        onClick={() => setStageMediaMode('photo')}
-                      >
-                        📷 Photo
-                      </button>
-                      <button
-                        type="button"
-                        className={`media-toggle-btn ${stageMediaMode === '3d' ? 'active' : ''}`}
-                        onClick={() => setStageMediaMode('3d')}
-                      >
-                        🔄 3D View
-                      </button>
-                    </div>
-                  )}
+                  <img
+                    src={activeMachine.image}
+                    alt={activeMachine.name}
+                    className="stage-hero-img"
+                    key={activeMachine.id}
+                  />
+                  <div className="stage-image-vignette"></div>
+                  <div className="stage-badge-tag">{activeMachine.badge}</div>
                 </div>
 
                 <div className="stage-left-info-card">
@@ -1348,7 +1321,7 @@ const CreativeStoneKrusherStudio = ({ onNavigate }) => {
               transition: 'all 0.3s ease'
             }}
           >
-            🎴 3D CARDS DECK
+            🎴 CARDS DECK
           </button>
           <button
             type="button"
@@ -1370,9 +1343,9 @@ const CreativeStoneKrusherStudio = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* VIEW MODE 1: CREATIVE 3D CARDS DECK */}
+      {/* VIEW MODE 1: CREATIVE CARDS DECK */}
       {viewMode === 'cards' && (
-        <div className="creative-3d-deck-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', paddingTop: '20px' }}>
+        <div className="creative-deck-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px', paddingTop: '20px' }}>
           {models.map((m, idx) => (
             <div
               key={m.id}
@@ -2885,6 +2858,18 @@ const getBlogDisplayData = (post) => {
   };
 };
 
+const calculateReadingTime = (post) => {
+  if (!post) return 3;
+  let text = (post.desc || '') + ' ' + (post.title || '') + ' ';
+  if (Array.isArray(post.sections)) {
+    post.sections.forEach(s => {
+      text += (s.h2 || '') + ' ' + (s.body || '') + ' ' + (s.h3 || '') + ' ' + (s.h3Body || '') + ' ';
+    });
+  }
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(2, Math.ceil(words / 190));
+};
+
 const parseFormattedTextWithLinks = (content = '') => {
   if (!content) return content;
 
@@ -2966,38 +2951,95 @@ const renderParagraphWithMedia = (text) => {
     const trimmed = line.trim();
     if (!trimmed) return <br key={lineIdx} />;
 
-    // Markdown Image ![alt](url)
-    const imgMarkdownMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
-    if (imgMarkdownMatch) {
+    // HTML Figure with image & caption, or HTML Anchor wrapping image/figure
+    if (trimmed.startsWith('<figure') || trimmed.startsWith('<div class="article-image"') || (trimmed.startsWith('<a') && (trimmed.includes('<img') || trimmed.includes('<figure')))) {
       return (
-        <div key={lineIdx} className="blog-body-media-wrapper blog-body-image" style={{ margin: '24px 0', textAlign: 'center' }}>
+        <div
+          key={lineIdx}
+          className="blog-body-media-wrapper blog-body-figure-wrapper"
+          dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(trimmed) }}
+        />
+      );
+    }
+
+    // Linked Markdown Image: [![alt](imgUrl "caption")](destUrl) or [![alt](imgUrl)](destUrl)
+    const linkedImgMarkdownMatch = trimmed.match(/^\[!\[(.*?)\]\((https?:\/\/[^\s\)]+)(?:\s+"(.*?)")?\)\]\(([^\s\)]+)\)$/i);
+    if (linkedImgMarkdownMatch) {
+      const altText = linkedImgMarkdownMatch[1] || 'StoneKrusher equipment article image';
+      const imgSrc = linkedImgMarkdownMatch[2];
+      const captionText = linkedImgMarkdownMatch[3] || altText;
+      const destUrl = linkedImgMarkdownMatch[4];
+      const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
+      return (
+        <figure key={lineIdx} className="article-image blog-body-media-wrapper blog-body-image" style={{ margin: '28px 0', textAlign: 'center' }}>
+          <a
+            href={destUrl}
+            target={isExternal ? '_blank' : undefined}
+            rel={isExternal ? 'noopener noreferrer' : undefined}
+            style={{ display: 'inline-block', textDecoration: 'none' }}
+          >
+            <img
+              src={imgSrc}
+              alt={altText}
+              className="blog-body-inserted-image"
+              style={{ maxWidth: '100%', height: 'auto', borderRadius: '12px' }}
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          {captionText && (
+            <figcaption className="blog-image-caption" style={{ fontSize: '0.9rem', color: '#666', marginTop: '8px', fontStyle: 'italic', textAlign: 'center' }}>
+              {captionText}
+            </figcaption>
+          )}
+        </figure>
+      );
+    }
+
+    // Markdown Image with optional caption: ![alt](url "caption") or ![alt](url)
+    const imgMarkdownMatch = trimmed.match(/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)(?:\s+"(.*?)")?\)$/i);
+    if (imgMarkdownMatch) {
+      const altText = imgMarkdownMatch[1] || 'StoneKrusher equipment article image';
+      const imgSrc = imgMarkdownMatch[2];
+      const captionText = imgMarkdownMatch[3] || altText;
+      return (
+        <figure key={lineIdx} className="article-image blog-body-media-wrapper blog-body-image" style={{ margin: '28px 0', textAlign: 'center' }}>
           <img
-            src={imgMarkdownMatch[2]}
-            alt={imgMarkdownMatch[1] || 'KONSTRUCTZ equipment article image'}
+            src={imgSrc}
+            alt={altText}
             className="blog-body-inserted-image"
-            style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+            style={{ maxWidth: '100%', height: 'auto', borderRadius: '12px' }}
             loading="lazy"
             decoding="async"
           />
-        </div>
+          {captionText && (
+            <figcaption className="blog-image-caption" style={{ fontSize: '0.9rem', color: '#666', marginTop: '8px', fontStyle: 'italic', textAlign: 'center' }}>
+              {captionText}
+            </figcaption>
+          )}
+        </figure>
       );
     }
 
     const isBase64Image = trimmed.startsWith('data:image/');
     const imageUrlRegex = /^(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif|\.svg))$/i;
-    const isImageUrl = imageUrlRegex.test(trimmed);
+    const isMiniExcavatorUrl = /^https?:\/\/img\.miniexcavator\.org\//i.test(trimmed);
+    const isImageUrl = imageUrlRegex.test(trimmed) || isMiniExcavatorUrl;
 
     if (isBase64Image || isImageUrl) {
       return (
-        <div key={lineIdx} className="blog-body-media-wrapper blog-body-image">
+        <figure key={lineIdx} className="article-image blog-body-media-wrapper blog-body-image" style={{ margin: '28px 0', textAlign: 'center' }}>
           <img
             src={trimmed}
-            alt="KONSTRUCTZ construction equipment article image"
+            alt="StoneKrusher construction equipment article image"
             className="blog-body-inserted-image"
             loading="lazy"
             decoding="async"
           />
-        </div>
+          <figcaption className="blog-image-caption" style={{ fontSize: '0.9rem', color: '#666', marginTop: '8px', fontStyle: 'italic', textAlign: 'center' }}>
+            StoneKrusher Machinery Field Inspection
+          </figcaption>
+        </figure>
       );
     }
 
@@ -3125,11 +3167,6 @@ const renderParagraphWithMedia = (text) => {
 };
 
 export default function App() {
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !window.customElements?.get('model-viewer')) {
-      import('@google/model-viewer').catch(() => {});
-    }
-  }, []);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -3492,6 +3529,15 @@ export default function App() {
         if (Array.isArray(apiPosts)) {
           const cleanedApiPosts = removeRetiredDefaultBlogPosts(apiPosts);
           setBlogPosts(cleanedApiPosts);
+          const liveViews = {};
+          cleanedApiPosts.forEach(p => {
+            if (p.slug && typeof p.views === 'number') {
+              liveViews[p.slug] = p.views;
+            }
+          });
+          if (Object.keys(liveViews).length > 0) {
+            setBlogPostViews(prev => ({ ...prev, ...liveViews }));
+          }
           saveJsonBackup(BLOG_POSTS_STORAGE_KEY, cleanedApiPosts);
           writePersistentContent(BLOG_POSTS_STORAGE_KEY, cleanedApiPosts).catch(() => {});
         } else if (Array.isArray(savedPosts)) {
@@ -3534,6 +3580,15 @@ export default function App() {
 
         blogPostsRef.current = cleanedPosts;
         setBlogPosts(cleanedPosts);
+        const liveViews = {};
+        cleanedPosts.forEach(p => {
+          if (p.slug && typeof p.views === 'number') {
+            liveViews[p.slug] = p.views;
+          }
+        });
+        if (Object.keys(liveViews).length > 0) {
+          setBlogPostViews(prev => ({ ...prev, ...liveViews }));
+        }
         saveJsonBackup(BLOG_POSTS_STORAGE_KEY, cleanedPosts);
         try {
           localStorage.setItem(BLOG_POSTS_UPDATED_STORAGE_KEY, String(Date.now()));
@@ -4680,6 +4735,29 @@ export default function App() {
         return;
       }
 
+      // Check linked image [![alt](img)](dest)
+      const linkedImgMatch = trimmed.match(/^\[!\[(.*?)\]\((.*?)\)\]\((.*?)\)$/);
+      if (linkedImgMatch) {
+        flushList();
+        const alt = linkedImgMatch[1] || 'Preview image';
+        const src = linkedImgMatch[2];
+        const dest = linkedImgMatch[3];
+        const isExternal = dest.startsWith('http') && !dest.includes('stonekrusher.com');
+        elements.push(
+          <div key={idx} style={{ margin: '20px 0', textAlign: 'center' }}>
+            <a href={dest} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noopener noreferrer' : undefined} style={{ display: 'inline-block', textDecoration: 'none' }}>
+              <img
+                src={src}
+                alt={alt}
+                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            </a>
+          </div>
+        );
+        return;
+      }
+
       const imgMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/) || trimmed.match(/^(https?:\/\/\S+\.(?:webp|png|jpg|jpeg|gif|svg)(\?\S*)?)$/i);
       if (imgMatch) {
         flushList();
@@ -4791,29 +4869,54 @@ export default function App() {
 
   useEffect(() => {
     if (currentView !== 'blog-post' || !selectedBlogPost) return undefined;
+    const slug = selectedBlogPost.slug;
+    if (!slug) return undefined;
 
     const timer = window.setTimeout(() => {
       try {
-        const savedViews = localStorage.getItem('konstructzBlogPostViews');
-        const views = savedViews ? JSON.parse(savedViews) : {};
-        const slug = selectedBlogPost.slug;
-        views[slug] = (views[slug] || 0) + 1;
-        setBlogPostViews(views);
-        localStorage.setItem('konstructzBlogPostViews', JSON.stringify(views));
-
-        // Asynchronously notify backend to record view in database
-        if (slug) {
-          fetch(`/api/blog-posts.php?action=track_view&slug=${encodeURIComponent(slug)}`, {
-            method: 'POST'
-          }).catch(() => {});
+        // Prevent artificial inflation: record 1 view per article per browser session
+        let viewed = [];
+        try {
+          const stored = sessionStorage.getItem('stonekrusher_viewed_articles');
+          viewed = stored ? JSON.parse(stored) : [];
+        } catch {
+          viewed = [];
         }
+
+        const isNewInSession = !viewed.includes(slug);
+        if (isNewInSession) {
+          viewed.push(slug);
+          try {
+            sessionStorage.setItem('stonekrusher_viewed_articles', JSON.stringify(viewed));
+          } catch {}
+        }
+
+        // Asynchronously notify backend to record genuine view in database
+        fetch(`/api/blog-posts.php?action=track_view&slug=${encodeURIComponent(slug)}`, {
+          method: 'POST'
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && typeof data.views === 'number') {
+              const realCount = data.views;
+              setBlogPostViews(prev => {
+                const next = { ...prev, [slug]: realCount };
+                try {
+                  localStorage.setItem('stonekrusherBlogPostViews', JSON.stringify(next));
+                } catch {}
+                return next;
+              });
+              setSelectedBlogPost(prev => prev && prev.slug === slug ? { ...prev, views: realCount } : prev);
+            }
+          })
+          .catch(() => {});
       } catch (err) {
         console.error('Failed to update blog post views:', err);
       }
-    }, 300);
+    }, 400);
 
     return () => window.clearTimeout(timer);
-  }, [currentView, selectedBlogPost]);
+  }, [currentView, selectedBlogPost?.slug]);
 
   useEffect(() => {
     if (window.location.hash && currentView === 'home') {
@@ -5525,6 +5628,40 @@ export default function App() {
       setActiveKonstructzSubcategory(additionalParams.subcategory);
     }
     window.scrollTo(0, 0);
+  };
+
+  const handleArticleContentClick = (e) => {
+    const anchor = e.target.closest('a');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+
+    // Internal navigation via ?page=
+    if (href.startsWith('?page=')) {
+      e.preventDefault();
+      const pageName = href.replace('?page=', '').split('&')[0];
+      navigate(pageName);
+      return;
+    }
+
+    // Internal navigation via /blog/<slug>
+    if (href.startsWith('/blog/')) {
+      const slug = href.replace('/blog/', '').replace(/\/$/, '');
+      if (slug) {
+        e.preventDefault();
+        navigate('blog-post', { id: slug });
+        return;
+      }
+    }
+
+    // External link: ensure target="_blank" and secure rel
+    if (href.startsWith('http://') || href.startsWith('https://')) {
+      const isExternal = !href.includes('stonekrusher.com') && !href.includes(window.location.hostname);
+      if (isExternal && !anchor.getAttribute('target')) {
+        anchor.setAttribute('target', '_blank');
+        anchor.setAttribute('rel', 'noopener noreferrer');
+      }
+    }
   };
 
   const getAiAssistantReply = (question) => {
@@ -6890,40 +7027,6 @@ export default function App() {
               <span className="hamburger-line"></span>
             </button>
 
-            <div
-              className="header-k1-3d-seamless"
-              title="TYPHON STONEKRUSHER K1 — 360° 3D Model"
-              onClick={() => {
-                const el = document.querySelector('.stone-crusher-showcase-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-            >
-              <model-viewer
-                src="/k1.glb"
-                alt="TYPHON STONEKRUSHER K1 3D"
-                auto-rotate=""
-                rotation-per-second="24deg"
-                interaction-prompt="none"
-                loading="eager"
-                reveal="auto"
-                bounds="tight"
-                environment-image="neutral"
-                exposure="1.25"
-                shadow-intensity="1.2"
-                camera-orbit="45deg 70deg 105%"
-                field-of-view="28deg"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  pointerEvents: 'none'
-                }}
-              >
-                <div slot="progress-bar" style={{ display: 'none' }}></div>
-              </model-viewer>
-            </div>
-
             <nav className="nav-links nav-links-left">
               <a 
                 href="/"
@@ -8129,73 +8232,56 @@ export default function App() {
         <div className="section-content">
           <div className="blog-section-header">
             <div className="blog-head-left">
-              <span className="blog-section-tag text-black">KONSTRUCTZ Blog</span>
-              <h2 className="blog-section-title text-black">Trusted by those who build every day</h2>
+              <span className="blog-section-tag text-black">STONEKRUSHER FIELD NOTES</span>
+              <h2 className="blog-section-title text-black">Heavy Machinery Guides, Field Insights & Operating Tips</h2>
             </div>
-            <a href="?page=blog" className="view-all-blog-link" onClick={(e) => { e.preventDefault(); navigate('blog'); }}>View all Blog</a>
+            <a href="?page=blog" className="view-all-blog-link" onClick={(e) => { e.preventDefault(); navigate('blog'); }}>View All Articles →</a>
           </div>
 
           <div className="blog-grid">
-            {getVisibleBlogPosts(blogPosts).slice(0, 3).map((post) => {
+            {getVisibleBlogPosts(blogPosts).slice(0, 4).map((post) => {
               const { displayImage, displayDesc } = getBlogDisplayData(post);
+              const readTime = calculateReadingTime(post);
+              const postViews = blogPostViews[post.slug] ?? post.views ?? 0;
 
               return (
                 <article key={post.slug} className="blog-card-white">
                   <div className="blog-img-placeholder">
                     <BlogImage 
                       src={displayImage} 
-                      alt={post.title} 
+                      alt={`${post.title} StoneKrusher machinery guide`} 
                       className="blog-card-img"
                     />
+                    <span className="blog-card-read-badge">⏱️ {readTime} min read</span>
                   </div>
                   <div className="blog-card-info">
-                    <span className="blog-card-cat">{post.category}</span>
+                    <div className="blog-card-meta-top">
+                      <span className="blog-card-cat">{post.category}</span>
+                      {postViews > 0 && (
+                        <span className="blog-card-view-count" title="Verified reader views">
+                          👁️ {postViews.toLocaleString()} views
+                        </span>
+                      )}
+                    </div>
                     <h3 className="blog-card-name text-black">{post.title}</h3>
-                    <span className="blog-card-date">Published {post.date} · Updated {post.updatedDate}</span>
+                    <span className="blog-card-date">Published {post.date} · StoneKrusher Team</span>
                     <p className="blog-card-desc">{displayDesc}</p>
-                  <a
-                    href={getBlogPostPath(post.slug)}
-                    className="blog-card-link"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setSelectedBlogPost(post);
-                      navigate('blog-post', { id: post.slug });
-                    }}
-                  >
-                    Read More →
-                  </a>
-                </div>
-              </article>
-            );
-          })}
+                    <a
+                      href={getBlogPostPath(post.slug)}
+                      className="blog-card-link"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setSelectedBlogPost(post);
+                        navigate('blog-post', { id: post.slug });
+                      }}
+                    >
+                      Read Field Guide →
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
 
-            {/* 4th Column: Pure 3D Auto-Rotating TYPHON ThunderDump Model (Frameless, Textless) */}
-            <div className="blog-pure-3d-wrap" title="TYPHON ThunderDump Lift — 360° 3D Model">
-              <model-viewer
-                src="/td.glb"
-                alt="TYPHON ThunderDump Lift 3D Model"
-                auto-rotate=""
-                rotation-per-second="24deg"
-                interaction-prompt="none"
-                loading="eager"
-                reveal="auto"
-                bounds="tight"
-                environment-image="neutral"
-                exposure="1.2"
-                shadow-intensity="1.3"
-                shadow-softness="0.75"
-                camera-orbit="45deg 70deg 105%"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  pointerEvents: 'none'
-                }}
-              >
-                <div slot="progress-bar" style={{ display: 'none' }}></div>
-              </model-viewer>
-            </div>
           </div>
         </div>
       </section>
@@ -9657,7 +9743,7 @@ export default function App() {
           <section className="blog-page-hero" style={{ backgroundImage: `linear-gradient(180deg, rgba(15, 17, 14, 0.18) 0%, rgba(15, 17, 14, 0.42) 100%), url(${blogHeroPoster})`, backgroundSize: 'cover', backgroundPosition: 'center top' }}>
             <img
               src={blogHeroPoster}
-              alt="KONSTRUCTZ machinery guides blog hero image for construction equipment tips"
+              alt="STONEKRUSHER machinery guides and engineering field reports"
               className="seo-background-image"
               loading="eager"
               decoding="async"
@@ -9665,8 +9751,8 @@ export default function App() {
             />
             <div className="blog-page-hero-overlay"></div>
             <div className="section-content blog-page-hero-content">
-              <h1>KONSTRUCTZ Blog</h1>
-              <p>Industry news, machine guides, and expert tips straight from the field.</p>
+              <h1>STONEKRUSHER Field Notes & Machinery Guides</h1>
+              <p>Engineering insights, machine operating tips, and jobsite performance comparisons for heavy equipment professionals.</p>
             </div>
           </section>
 
@@ -9675,8 +9761,8 @@ export default function App() {
               <div className="blog-page-main">
                 <div className="blog-page-heading-row">
                   <div>
-                    <span className="blog-page-eyebrow">Field Notes</span>
-                    <h2 className="blog-page-kicker text-black">Choose the categories you like</h2>
+                    <span className="blog-page-eyebrow">StoneKrusher Knowledge Base</span>
+                    <h2 className="blog-page-kicker text-black">Explore Machinery Guides by Category</h2>
                   </div>
                   <span className="blog-page-count">{filteredBlogPosts.length} of {visibleBlogPosts.length} posts</span>
                 </div>
@@ -9691,6 +9777,8 @@ export default function App() {
                 <div className="blog-page-grid">
                   {filteredBlogPosts.map((post) => {
                     const { displayImage, displayDesc } = getBlogDisplayData(post);
+                    const readTime = calculateReadingTime(post);
+                    const postViews = blogPostViews[post.slug] ?? post.views ?? 0;
 
                     return (
                       <article key={post.slug} className="blog-page-card">
@@ -9705,7 +9793,7 @@ export default function App() {
                         >
                           <BlogImage
                             src={displayImage}
-                            alt={`${post.title} KONSTRUCTZ construction equipment blog image`}
+                            alt={`${post.title} StoneKrusher construction equipment guide`}
                             className={displayImage ? 'blog-page-custom-image' : 'blog-page-fallback-image'}
                           />
                           <span
@@ -9736,8 +9824,14 @@ export default function App() {
                             >
                               {post.category}
                             </button>
-                            <time dateTime={post.updatedDate}>{post.updatedDate}</time>
-                            <span>KONSTRUCTZ</span>
+                            <time dateTime={post.publishedDate || post.date}>{post.date || post.publishedDate}</time>
+                            <span className="blog-read-time-pill">⏱️ {readTime} min read</span>
+                            {postViews > 0 && (
+                              <span className="blog-views-pill" title="Verified reader views">
+                                👁️ {postViews.toLocaleString()} views
+                              </span>
+                            )}
+                            <span className="blog-card-author-tag">{post.author || 'StoneKrusher Team'}</span>
                           </div>
                           <h3>{post.title}</h3>
                           <p>{displayDesc}</p>
@@ -9837,14 +9931,49 @@ export default function App() {
                   navigate('blog');
                 }}
               >
-                Back to Blog
+                ← Back to StoneKrusher Journal
               </a>
-              <span className="blog-post-category">{selectedBlogPost.category}</span>
+              <div className="blog-post-hero-badge-wrap">
+                <span className="blog-post-category">{selectedBlogPost.category}</span>
+                <span className="blog-post-field-verified-badge">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Field Verified
+                </span>
+              </div>
               <h1>{selectedBlogPost.title}</h1>
               <p>{selectedBlogPost.desc}</p>
-              <div className="blog-post-dates">
-                <time dateTime={selectedBlogPost.publishedDate}>Published {selectedBlogPost.date}</time>
-                <time dateTime={selectedBlogPost.updatedDate}>Updated {selectedBlogPost.updatedDate}</time>
+              
+              <div className="blog-post-meta-strip">
+                <div className="blog-post-author-chip">
+                  <span className="blog-author-avatar">SK</span>
+                  <span className="blog-author-name">{selectedBlogPost.author || 'StoneKrusher Editorial Team'}</span>
+                </div>
+                <span className="blog-meta-divider">&bull;</span>
+                <time dateTime={selectedBlogPost.publishedDate || selectedBlogPost.date}>
+                  Published {selectedBlogPost.date || selectedBlogPost.publishedDate}
+                </time>
+                <span className="blog-meta-divider">&bull;</span>
+                <span className="blog-reading-time">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {calculateReadingTime(selectedBlogPost)} min read
+                </span>
+                {((blogPostViews[selectedBlogPost.slug] ?? selectedBlogPost.views ?? 0) > 0) && (
+                  <>
+                    <span className="blog-meta-divider">&bull;</span>
+                    <span className="blog-views-counter">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '5px' }}>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {(blogPostViews[selectedBlogPost.slug] ?? selectedBlogPost.views ?? 0).toLocaleString()} views
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </section>
@@ -9857,7 +9986,7 @@ export default function App() {
                   return (
                     <BlogImage
                       src={displayImage}
-                      alt={`${selectedBlogPost.title} KONSTRUCTZ machinery guide featured image`}
+                      alt={`${selectedBlogPost.title} StoneKrusher machinery guide featured image`}
                       className={displayImage ? 'blog-post-custom-image' : 'blog-post-fallback-image'}
                       loading="eager"
                       fetchPriority="high"
@@ -9869,8 +9998,16 @@ export default function App() {
               <div className="blog-post-shell">
                 <div className="blog-post-main-column">
                   <div className="blog-post-summary-card">
-                    <span>Field guide</span>
-                    <h2>Article overview</h2>
+                    <div className="blog-summary-badge-row">
+                      <span className="blog-summary-badge">STONEKRUSHER FIELD DIGEST</span>
+                      <span className="blog-verified-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Technical Takeaways
+                      </span>
+                    </div>
+                    <h2>Key Operational Takeaways</h2>
                     <p>{(() => {
                       let displayDesc = selectedBlogPost.seoDescription || selectedBlogPost.desc || '';
                       const urlRegex = /(https?:\/\/[^\s]+(?:\.webp|\.png|\.jpg|\.jpeg|\.gif))/i;
@@ -9878,30 +10015,57 @@ export default function App() {
                     })()}</p>
                   </div>
 
-                  <div className="blog-post-body">
-                    {selectedBlogPost.sections.map((section, index) => (
-                      <section key={section.h2} id={`article-section-${index + 1}`}>
-                        <span className="blog-post-section-label">Step {String(index + 1).padStart(2, '0')}</span>
-                        <h2>{section.h2}</h2>
-                        <div className="blog-section-body-text">
-                          {renderParagraphWithMedia(section.body)}
-                        </div>
-                        {section.h3 && (
-                          <>
-                            <h3>{section.h3}</h3>
+                  <div className="blog-post-body" onClick={handleArticleContentClick}>
+                    {selectedBlogPost.content && selectedBlogPost.content.trim().length > 20 ? (
+                      <div
+                        className="article-content blog-rich-content"
+                        dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(selectedBlogPost.content) }}
+                      />
+                    ) : (
+                      (selectedBlogPost.sections || []).map((section, index) => {
+                        const isExplicitStep = /^step\s*\d+/i.test(section.h2 || '');
+                        const sectionLabel = isExplicitStep
+                          ? section.h2.match(/^step\s*\d+/i)[0].toUpperCase()
+                          : `Part ${String(index + 1).padStart(2, '0')}`;
+
+                        return (
+                          <section key={section.h2 || index} id={`article-section-${index + 1}`}>
+                            <span className="blog-post-section-label">{sectionLabel}</span>
+                            <h2>{section.h2}</h2>
                             <div className="blog-section-body-text">
-                              {renderParagraphWithMedia(section.h3Body)}
+                              {renderParagraphWithMedia(section.body)}
                             </div>
-                          </>
-                        )}
-                      </section>
-                    ))}
+                            {section.h3 && (
+                              <>
+                                <h3>{section.h3}</h3>
+                                <div className="blog-section-body-text">
+                                  {renderParagraphWithMedia(section.h3Body)}
+                                </div>
+                              </>
+                            )}
+                          </section>
+                        );
+                      })
+                    )}
+
+                    <div className="blog-author-bio-card">
+                      <div className="author-bio-avatar">
+                        <span>SK</span>
+                      </div>
+                      <div className="author-bio-details">
+                        <h4>StoneKrusher Heavy Equipment Editorial Team</h4>
+                        <p className="author-bio-role">Commercial Earthmoving & Jobsite Machinery Specialists</p>
+                        <p className="author-bio-text">
+                          Our technical editorial team compiles verified equipment specs, field testing observations, and operating guidelines to help contractors and fleet operators optimize machine safety, fuel efficiency, and productivity.
+                        </p>
+                      </div>
+                    </div>
 
                     <div className="blog-post-cta-panel">
-                      <span>Need the right machine?</span>
-                      <h3>Talk with KONSTRUCTZ before you buy.</h3>
-                      <p>Send us your jobsite, material, and budget details. We can help match the equipment to the work instead of guessing.</p>
-                      <a href="?page=contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }}>Request guidance</a>
+                      <span>Jobsite Equipment Advisory</span>
+                      <h3>Need the right machine for your project?</h3>
+                      <p>Send us your jobsite conditions, material volume, and timeline. Our equipment specialists will help match the right machine to your site instead of guessing.</p>
+                      <a href="?page=contact" onClick={(e) => { e.preventDefault(); navigate('contact'); }}>Request Machine Guidance →</a>
                     </div>
                   </div>
                 </div>
@@ -9924,8 +10088,14 @@ export default function App() {
                       </div>
                       <div>
                         <dt>Author</dt>
-                        <dd>KONSTRUCTZ Team</dd>
+                        <dd>{selectedBlogPost.author || 'StoneKrusher Editorial Team'}</dd>
                       </div>
+                      {((blogPostViews[selectedBlogPost.slug] ?? selectedBlogPost.views ?? 0) > 0) && (
+                        <div>
+                          <dt>Reader Views</dt>
+                          <dd>{(blogPostViews[selectedBlogPost.slug] ?? selectedBlogPost.views ?? 0).toLocaleString()} verified</dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
 
@@ -9955,7 +10125,7 @@ export default function App() {
               <div className="blog-related-posts">
                 <div className="blog-related-header">
                   <span>Keep reading</span>
-                  <h2>More KONSTRUCTZ guides</h2>
+                  <h2>More StoneKrusher Guides & Technical Field Notes</h2>
                 </div>
                 <div className="blog-related-grid">
                   {getVisibleBlogPosts(blogPosts)
@@ -13622,7 +13792,7 @@ export default function App() {
               <img src={konstructzLogo} alt="KONSTRUCTZ" className="logo-img" />
             </a>
             <p className="footer-site-summary">
-              stonekrusher.com is the official KONSTRUCTZ compact construction machinery and attachments website.
+              stonekrusher.com is the official compact construction machinery, rock crushers, and attachments platform.
             </p>
             <p className="footer-address">
               <span>2522 S Malt Ave.</span>

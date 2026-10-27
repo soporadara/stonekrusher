@@ -1171,6 +1171,63 @@
   transform: translateY(1px);
 }
 
+/* Topbar Google Login Status & Link Badge */
+.cms-topbar-google-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--cms-card-border);
+  background: var(--cms-card-bg);
+  color: var(--cms-text);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.cms-topbar-google-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.cms-topbar-google-badge.unlinked {
+  border-color: rgba(21, 128, 61, 0.35);
+  background: rgba(21, 128, 61, 0.06);
+  color: var(--cms-primary, #15803d);
+}
+
+.cms-topbar-google-badge.unlinked:hover {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: var(--cms-primary, #15803d);
+}
+
+.cms-topbar-google-badge.linked {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+}
+
+.cms-topbar-google-badge.linked:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.cms-google-link-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.12);
+}
+
+@media (max-width: 768px) {
+  .cms-topbar-google-badge .cms-topbar-google-text {
+    display: none;
+  }
+  .cms-topbar-google-badge {
+    padding: 6px 8px;
+  }
+}
+
 /* Sidebar Promo Card (Donezo bottom card) */
 .cms-donezo-sidebar-card {
   margin: 12px 10px;
@@ -2312,6 +2369,94 @@
   border-radius: var(--cms-radius-md);
   margin: 16px auto;
   display: block;
+}
+
+.cms-visual-editor figure.article-image {
+  margin: 24px auto;
+  text-align: center;
+  position: relative;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  padding: 10px;
+  border-radius: var(--cms-radius-md);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.cms-visual-editor figure.article-image:hover {
+  border-color: var(--cms-primary);
+  background: rgba(34, 197, 94, 0.04);
+}
+.cms-visual-editor figure.article-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--cms-radius-md);
+  margin: 0 auto;
+  display: block;
+}
+.cms-visual-editor figure.article-image figcaption {
+  font-size: 0.85rem;
+  color: var(--cms-text-muted);
+  margin-top: 8px;
+  font-style: italic;
+  display: block;
+  cursor: text;
+  outline: none;
+  min-height: 1.4em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+.cms-visual-editor figure.article-image figcaption:focus {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px var(--cms-primary);
+  color: var(--cms-text);
+}
+.cms-visual-editor figure.article-image figcaption:empty:before {
+  content: 'Click here to add image caption...';
+  color: var(--cms-text-muted);
+  opacity: 0.6;
+}
+
+.cms-visual-editor figure.article-image a {
+  display: inline-block;
+  cursor: pointer;
+  position: relative;
+  text-decoration: none;
+}
+.cms-visual-editor figure.article-image a:hover img {
+  outline: 2px solid var(--cms-primary, #22c55e);
+}
+.cms-visual-editor a {
+  color: var(--cms-primary, #22c55e);
+  text-decoration: underline;
+}
+
+/* Preview reader image & figcaption styles */
+.cms-article-preview-reader figure.article-image {
+  margin: 24px auto;
+  text-align: center;
+}
+.cms-article-preview-reader figure.article-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--cms-radius-md);
+  display: block;
+  margin: 0 auto;
+}
+.cms-article-preview-reader figure.article-image figcaption {
+  font-size: 0.85rem;
+  color: var(--cms-text-muted);
+  margin-top: 8px;
+  font-style: italic;
+  display: block;
+}
+.cms-article-preview-reader figure.article-image a {
+  display: inline-block;
+  text-decoration: none;
+  cursor: pointer;
+}
+.cms-article-preview-reader a {
+  color: #ef4444;
+  text-decoration: underline;
 }
 
 .cms-source-editor {

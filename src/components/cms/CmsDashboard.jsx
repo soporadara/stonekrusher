@@ -4,12 +4,29 @@ export default function CmsDashboard({
   onNavigateTab,
   onSelectPost,
   csrfToken,
-  initialSubView = 'overview'
+  initialSubView = 'overview',
+  currentUser,
+  onOpenProfile
 }) {
   // Navigation subview: 'overview' | 'topBlogs'
   const [subView, setSubView] = useState(initialSubView);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  // Stale-While-Revalidate caching: render instantly from sessionStorage if available
+  const [data, setData] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('stonekrusher_cms_dash_metrics');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem('stonekrusher_cms_dash_metrics');
+    } catch {
+      return true;
+    }
+  });
   const [error, setError] = useState('');
   const [actionNotice, setActionNotice] = useState('');
   const [actionError, setActionError] = useState('');
@@ -38,19 +55,29 @@ export default function CmsDashboard({
     }
   }, [initialSubView]);
 
-  // Fetch authoritative metrics from CMS backend
-  const fetchMetrics = async () => {
+  // Fetch authoritative metrics from CMS backend (supports silent revalidation and force bypass)
+  const fetchMetrics = async (forceRefresh = false) => {
     try {
-      setLoading(true);
+      if (!data && !forceRefresh) {
+        setLoading(true);
+      }
       setError('');
-      const res = await fetch('/api/cms.php?action=dashboard_metrics');
+      const url = forceRefresh 
+        ? '/api/cms.php?action=dashboard_metrics&nocache=1' 
+        : '/api/cms.php?action=dashboard_metrics';
+      const res = await fetch(url);
       const json = await res.json();
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to fetch dashboard metrics');
       }
       setData(json);
+      try {
+        sessionStorage.setItem('stonekrusher_cms_dash_metrics', JSON.stringify(json));
+      } catch {}
     } catch (err) {
-      setError(err.message || 'Error connecting to StoneKrusher CMS backend API');
+      if (!data) {
+        setError(err.message || 'Error connecting to StoneKrusher CMS backend API');
+      }
     } finally {
       setLoading(false);
     }
@@ -77,6 +104,7 @@ export default function CmsDashboard({
       const json = await res.json();
       if (res.ok && json.success) {
         setActionNotice('⚡ OPcache & LiteSpeed Web Server cache flushed successfully!');
+        fetchMetrics(true);
       } else {
         setActionError(json.error || 'Server rejected cache flush request');
       }
@@ -106,7 +134,7 @@ export default function CmsDashboard({
       const json = await res.json();
       if (res.ok && json.success) {
         setActionNotice(`✔ Live catalog synchronized! (${json.products_synced || 0} products, ${json.blog_posts_synced || 0} posts synced).`);
-        fetchMetrics();
+        fetchMetrics(true);
       } else {
         setActionError(json.error || 'Catalog publishing failed');
       }
@@ -146,7 +174,7 @@ export default function CmsDashboard({
       if (res.ok && json.success) {
         setActionNotice(`✔ Updated private view count for article to ${num.toLocaleString()}`);
         setEditingViewsPostId(null);
-        fetchMetrics();
+        fetchMetrics(true);
       } else {
         setActionError(json.error || 'Failed to update blog views');
       }
@@ -193,8 +221,8 @@ export default function CmsDashboard({
   // Total Published Blog Posts
   const publishedBlogsCount = posts.published || 6;
 
-  // Total CMS-only Blog Views
-  const totalBlogViewsCount = blogViews.total || 9040;
+  // Total CMS-only Blog Views (Accurate real metrics)
+  const totalBlogViewsCount = typeof blogViews.total === 'number' ? blogViews.total : (Number(blogViews.total) || 0);
 
   // Inquiries / Pipeline Value
   const totalInquiriesCount = inquiries.total || 4;
@@ -625,7 +653,7 @@ export default function CmsDashboard({
                     </td>
                     <td class="title-info">
                       <strong>${post.title}</strong>
-                      <span>Author: ${post.author || 'KONSTRUCTZ Editorial'}</span>
+                      <span>Author: ${post.author || 'StoneKrusher Editorial Team'}</span>
                     </td>
                     <td>
                       <span class="category-tag">${post.category || 'Guide'}</span>
@@ -829,6 +857,100 @@ export default function CmsDashboard({
          ========================================================= */}
       {subView === 'overview' && (
         <>
+          {/* GOOGLE SINGLE SIGN-ON PROMPT / STATUS BANNER */}
+          {currentUser && !currentUser.is_google_linked && onOpenProfile && (
+            <div
+              className="cms-google-link-banner"
+              onClick={() => onOpenProfile('google')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 20px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, rgba(21, 128, 61, 0.12) 0%, rgba(15, 76, 58, 0.05) 100%)',
+                border: '1px solid rgba(21, 128, 61, 0.3)',
+                cursor: 'pointer',
+                marginBottom: '20px',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}
+              title="Click to link your Google account in Profile Settings"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  background: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  flexShrink: 0
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.57H1.25C.45 8.16 0 9.94 0 12s.45 3.84 1.25 5.43l4.03-3.14z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.57l4.03 3.14c.95-2.83 3.6-4.96 6.72-4.96z" />
+                  </svg>
+                </div>
+                <div>
+                  <strong style={{ fontSize: '0.96rem', color: 'var(--cms-text)', display: 'block', letterSpacing: '-0.01em' }}>
+                    Enable Google 1-Click Login for @{currentUser.username}
+                  </strong>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--cms-text-subtle)' }}>
+                    Link your Google account here to sign in next time without needing to type a password.
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="cms-btn cms-btn-primary cms-btn-sm"
+                style={{ flexShrink: 0, padding: '8px 16px', fontWeight: 700 }}
+              >
+                <span>Link Google Account →</span>
+              </button>
+            </div>
+          )}
+
+          {currentUser && currentUser.is_google_linked && onOpenProfile && (
+            <div
+              className="cms-google-link-banner linked"
+              onClick={() => onOpenProfile('google')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 18px',
+                borderRadius: '12px',
+                background: 'rgba(21, 128, 61, 0.08)',
+                border: '1px solid rgba(21, 128, 61, 0.22)',
+                cursor: 'pointer',
+                marginBottom: '20px',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}
+              title="Click to view or manage your linked Google account"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.57H1.25C.45 8.16 0 9.94 0 12s.45 3.84 1.25 5.43l4.03-3.14z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.57l4.03 3.14c.95-2.83 3.6-4.96 6.72-4.96z" />
+                </svg>
+                <span style={{ fontSize: '0.84rem', color: 'var(--cms-text)' }}>
+                  Google 1-Click Login Active &bull; <strong style={{ color: 'var(--cms-primary)' }}>{currentUser.google_email}</strong>
+                </span>
+              </div>
+              <span style={{ fontSize: '0.78rem', color: 'var(--cms-text-subtle)', textDecoration: 'underline' }}>
+                Manage in Profile Settings →
+              </span>
+            </div>
+          )}
+
           {/* 4 PRIMARY FLEET KPI CARDS */}
           <div style={{
             display: 'grid',
@@ -1826,7 +1948,7 @@ export default function CmsDashboard({
                               {post.title}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.74rem', color: 'var(--cms-text-muted)' }}>
-                              <span>Author: <strong>{post.author || 'KONSTRUCTZ'}</strong></span>
+                              <span>Author: <strong>{post.author || 'StoneKrusher Editorial Team'}</strong></span>
                               <span>&bull;</span>
                               <a
                                 href={publicUrl}

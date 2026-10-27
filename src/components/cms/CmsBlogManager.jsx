@@ -57,17 +57,19 @@ function convertSectionsToHtml(sections) {
               parts.push(`<p>${renderedLines.join('<br />')}</p>`);
               renderedLines.length = 0;
             }
-            parts.push(`<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(imgMatch[1])}" alt="${escapeHtml(sec.h2 || 'StoneKrusher machinery')}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>`);
+            parts.push(`<figure class="article-image"><img src="${escapeHtml(imgMatch[1])}" alt="${escapeHtml(sec.h2 || 'StoneKrusher machinery')}" loading="lazy" /><figcaption>${escapeHtml(sec.h2 || 'StoneKrusher machinery')}</figcaption></figure>`);
             return;
           }
-          // Markdown image ![alt](url)
-          const mdImgMatch = lTrim.match(/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)\)$/);
+          // Markdown image ![alt](url "caption") or ![alt](url)
+          const mdImgMatch = lTrim.match(/^!\[(.*?)\]\((https?:\/\/[^\s\)]+)(?:\s+"(.*?)")?\)$/);
           if (mdImgMatch) {
             if (renderedLines.length > 0) {
               parts.push(`<p>${renderedLines.join('<br />')}</p>`);
               renderedLines.length = 0;
             }
-            parts.push(`<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(mdImgMatch[2])}" alt="${escapeHtml(mdImgMatch[1] || sec.h2 || 'StoneKrusher machinery')}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p>`);
+            const alt = mdImgMatch[1] || sec.h2 || 'StoneKrusher machinery';
+            const caption = mdImgMatch[3] || alt;
+            parts.push(`<figure class="article-image"><img src="${escapeHtml(mdImgMatch[2])}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>`);
             return;
           }
           // Markdown links [text](url)
@@ -89,6 +91,213 @@ function convertSectionsToHtml(sections) {
     }
   });
   return parts.join('\n');
+}
+
+function makeReadableCaption(rawLabel, url, fallbackTitle) {
+  if (rawLabel && !rawLabel.startsWith('http') && rawLabel.trim().length > 1) {
+    return rawLabel.trim();
+  }
+  try {
+    const pathname = new URL(url).pathname;
+    const filename = pathname.split('/').pop().replace(/\.[a-zA-Z0-9]+$/, '');
+    const readable = filename.replace(/[-_]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+    if (readable.length > 2) {
+      return readable.charAt(0).toUpperCase() + readable.slice(1);
+    }
+  } catch {
+    // URL parsing fallback
+  }
+  return fallbackTitle || 'StoneKrusher Heavy Equipment';
+}
+
+function processSmartBlogContent(rawText, currentForm = {}) {
+  if (!rawText || typeof rawText !== 'string') return null;
+
+  let text = rawText.trim();
+  let extractedTitle = '';
+  let extractedFeaturedImage = '';
+  let extractedCoverAlt = '';
+  let imagesConvertedCount = 0;
+
+  // 1. EXTRACT FIRST TITLE
+  // Markdown # Title, ## Title, <h1>Title</h1>, <h2>Title</h2>, or first short line
+  const h1MdMatch = text.match(/^#+\s+([^\n\r]+)/m);
+  const h1HtmlMatch = text.match(/<h[12][^>]*>(.*?)<\/h[12]>/i);
+
+  if (h1MdMatch && text.indexOf(h1MdMatch[0]) < 250) {
+    extractedTitle = h1MdMatch[1].trim();
+    text = text.replace(h1MdMatch[0], '').trim();
+  } else if (h1HtmlMatch && text.indexOf(h1HtmlMatch[0]) < 250) {
+    extractedTitle = h1HtmlMatch[1].replace(/<[^>]+>/g, '').trim();
+    text = text.replace(h1HtmlMatch[0], '').trim();
+  } else {
+    const lines = text.split('\n');
+    const firstIdx = lines.findIndex(l => l.trim().length > 0);
+    if (firstIdx !== -1) {
+      const candidate = lines[firstIdx].trim();
+      const isUrl = /^https?:\/\//i.test(candidate);
+      const isImg = /miniexcavator\.org|\.(webp|png|jpg|jpeg|gif|svg)/i.test(candidate);
+      const isLink = /^!?\[.*\]\(.*\)/.test(candidate);
+      if (!isUrl && !isImg && !isLink && candidate.length > 4 && candidate.length < 140) {
+        extractedTitle = candidate.replace(/^[\*\#\-\s]+/, '').trim();
+        lines.splice(firstIdx, 1);
+        text = lines.join('\n').trim();
+      }
+    }
+  }
+
+  // 2. EXTRACT FIRST IMAGE AS FEATURED COVER IMAGE
+  // Look for any image link (especially img.miniexcavator.org or image extensions)
+  const mdLinkRegex = /!?\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)/i;
+  const htmlImgRegex = /<img[^>]+src=["'](https?:\/\/(?:img\.miniexcavator\.org\/[^"']+|[^"']+\.(?:webp|png|jpg|jpeg|gif|svg)[^"']*))["'][^>]*>/i;
+  const htmlAnchorRegex = /<a[^>]+href=["'](https?:\/\/(?:img\.miniexcavator\.org\/[^"']+|[^"']+\.(?:webp|png|jpg|jpeg|gif|svg)[^"']*))["'][^>]*>(.*?)<\/a>/i;
+  const bareUrlRegex = /(https?:\/\/(?:img\.miniexcavator\.org\/[^\s\<\>"\']+|[^\s\<\>"\']+\.(?:webp|png|jpg|jpeg|gif|svg)))/i;
+
+  let firstMatch = null;
+  let firstMatchPos = Infinity;
+  let firstMatchType = '';
+
+  const m1 = text.match(mdLinkRegex);
+  if (m1 && m1.index < firstMatchPos) {
+    firstMatchPos = m1.index;
+    firstMatch = m1;
+    firstMatchType = 'md';
+  }
+  const m2 = text.match(htmlImgRegex);
+  if (m2 && m2.index < firstMatchPos) {
+    firstMatchPos = m2.index;
+    firstMatch = m2;
+    firstMatchType = 'htmlImg';
+  }
+  const m3 = text.match(htmlAnchorRegex);
+  if (m3 && m3.index < firstMatchPos) {
+    firstMatchPos = m3.index;
+    firstMatch = m3;
+    firstMatchType = 'htmlAnchor';
+  }
+  const m4 = text.match(bareUrlRegex);
+  if (m4 && m4.index < firstMatchPos) {
+    firstMatchPos = m4.index;
+    firstMatch = m4;
+    firstMatchType = 'bare';
+  }
+
+  if (firstMatch) {
+    if (firstMatchType === 'md') {
+      extractedFeaturedImage = firstMatch[2];
+      extractedCoverAlt = firstMatch[1] && !firstMatch[1].startsWith('http') ? firstMatch[1] : '';
+    } else if (firstMatchType === 'htmlImg') {
+      extractedFeaturedImage = firstMatch[1];
+    } else if (firstMatchType === 'htmlAnchor') {
+      extractedFeaturedImage = firstMatch[1];
+      extractedCoverAlt = firstMatch[2] && !firstMatch[2].startsWith('http') ? firstMatch[2].replace(/<[^>]+>/g, '') : '';
+    } else if (firstMatchType === 'bare') {
+      extractedFeaturedImage = firstMatch[1];
+    }
+
+    // REMOVE this first image match from the article content body completely!
+    text = text.slice(0, firstMatchPos) + text.slice(firstMatchPos + firstMatch[0].length);
+    text = text.trim();
+  }
+
+  const activeTitle = extractedTitle || currentForm.title || '';
+
+  // 3. CONVERT ALL REMAINING IMAGE LINKS / URLS INTO <figure class="article-image">
+  // A. Markdown image with link: [![alt](img_url)](dest_url)
+  text = text.replace(/\[!\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\?[^\s\)]+)\)/gi, (match, label, imgUrl, destUrl) => {
+    imagesConvertedCount++;
+    const caption = makeReadableCaption(label, imgUrl, activeTitle);
+    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
+    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+  });
+
+  // B. Standard Markdown images / image links: [url](url), ![alt](url), [caption](url)
+  text = text.replace(/!?\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)/gi, (match, label, url) => {
+    imagesConvertedCount++;
+    const caption = makeReadableCaption(label, url, activeTitle);
+    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+  });
+
+  // C. HTML anchor links pointing to images: <a href="dest"><img src="img" /></a>
+  text = text.replace(/<a[^>]+href=["'](https?:\/\/[^"']+|\/[^"']+|\?[^"']+)["'][^>]*>\s*<img[^>]+src=["'](https?:\/\/[^"']+)["'][^>]*alt=["']?([^"'>]*)["']?[^>]*\/?>\s*<\/a>/gi, (match, destUrl, imgUrl, rawAlt) => {
+    imagesConvertedCount++;
+    const caption = makeReadableCaption(rawAlt, imgUrl, activeTitle);
+    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
+    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+  });
+
+  // D. HTML anchor links with URL as label: <a href="url">url</a>
+  text = text.replace(/<a[^>]+href=["'](https?:\/\/(?:img\.miniexcavator\.org\/[^"']+|[^"']+\.(?:webp|png|jpg|jpeg|gif|svg)[^"']*))["'][^>]*>(.*?)<\/a>/gi, (match, url, label) => {
+    imagesConvertedCount++;
+    const cleanLabel = label.replace(/<[^>]+>/g, '').trim();
+    const caption = makeReadableCaption(cleanLabel, url, activeTitle);
+    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+  });
+
+  // E. Bare URLs to img.miniexcavator.org or image extensions
+  text = text.replace(/(?:^|\n)(https?:\/\/(?:img\.miniexcavator\.org\/[^\s\<\>"\']+|[^\s\<\>"\']+\.(?:webp|png|jpg|jpeg|gif|svg)))(?:\r?\n|$)/gi, (match, url) => {
+    imagesConvertedCount++;
+    const caption = makeReadableCaption('', url, activeTitle);
+    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+  });
+
+  // 4. PARSE MARKDOWN TO HTML (IF MARKDOWN)
+  const blocks = text.split(/\n\n+/);
+  const htmlBlocks = blocks.map(block => {
+    block = block.trim();
+    if (!block) return '';
+    if (/^<(figure|div|p|h[1-6]|ul|ol|table|blockquote)/i.test(block)) {
+      return block;
+    }
+    if (block.startsWith('## ')) {
+      return `<h2>${block.replace(/^##\s+/, '')}</h2>`;
+    }
+    if (block.startsWith('### ')) {
+      return `<h3>${block.replace(/^###\s+/, '')}</h3>`;
+    }
+    if (block.startsWith('#### ')) {
+      return `<h4>${block.replace(/^####\s+/, '')}</h4>`;
+    }
+    if (block.startsWith('- ') || block.startsWith('* ')) {
+      const items = block.split(/\n[\-\*]\s+/).map(it => {
+        let clean = it.replace(/^[\-\*]\s+/, '').trim();
+        clean = clean
+          .replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\?[^\s\)]+)\)/g, (m, label, link) => {
+            const isExternal = link.startsWith('http') && !link.includes('stonekrusher.com');
+            return `<a href="${link}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''}>${label}</a>`;
+          })
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        return `<li>${clean}</li>`;
+      }).filter(Boolean);
+      return `<ul>${items.join('')}</ul>`;
+    }
+    let formatted = block
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\?[^\s\)]+)\)/g, (m, label, link) => {
+        const isExternal = link.startsWith('http') && !link.includes('stonekrusher.com');
+        return `<a href="${link}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''}>${label}</a>`;
+      })
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br />');
+    return `<p>${formatted}</p>`;
+  });
+
+  const finalHtml = htmlBlocks.filter(Boolean).join('\n\n');
+
+  return {
+    title: extractedTitle || currentForm.title || '',
+    slug: extractedTitle ? extractedTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : currentForm.slug || '',
+    featured_image: extractedFeaturedImage || currentForm.featured_image || '',
+    cover_image_alt: extractedCoverAlt || (extractedTitle ? `${extractedTitle} featured equipment photo` : currentForm.cover_image_alt || ''),
+    content: finalHtml,
+    imagesConvertedCount
+  };
 }
 
 export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditingId, initialStatusFilter = '' }) {
@@ -119,6 +328,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   const [mediaPickerTarget, setMediaPickerTarget] = useState('featured'); // 'featured' | 'editor'
   const [revisions, setRevisions] = useState([]);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [showSmartImportModal, setShowSmartImportModal] = useState(false);
+  const [smartImportText, setSmartImportText] = useState('');
+  const [selectedImageModal, setSelectedImageModal] = useState(null);
+  const [selectedImageSrc, setSelectedImageSrc] = useState('');
+  const [selectedImageAlt, setSelectedImageAlt] = useState('');
+  const [selectedImageCaption, setSelectedImageCaption] = useState('');
+  const [selectedImageLink, setSelectedImageLink] = useState('');
+  const [selectedImageNewTab, setSelectedImageNewTab] = useState(true);
   const visualEditorRef = useRef(null);
 
   function getEmptyForm() {
@@ -127,7 +344,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       title: '',
       slug: '',
       category: 'Guide',
-      author: 'Admin KONSTRUCTZ',
+      author: 'StoneKrusher Editorial Team',
       featured_image: '',
       cover_image_alt: '',
       excerpt: '',
@@ -209,11 +426,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
   // Synchronize visual editor DOM when entering visual mode or loading an article
   useEffect(() => {
     if (view === 'editor' && editorTab === 'visual' && visualEditorRef.current) {
-      if (document.activeElement !== visualEditorRef.current && visualEditorRef.current.innerHTML !== (form.content || '')) {
-        visualEditorRef.current.innerHTML = form.content || '';
+      // Do NOT overwrite innerHTML if user has active focus/caret inside the editor (prevents caret jumping)
+      if (!visualEditorRef.current.contains(document.activeElement)) {
+        if (visualEditorRef.current.innerHTML !== (form.content || '')) {
+          visualEditorRef.current.innerHTML = form.content || '';
+        }
       }
     }
-  }, [view, editorTab, form.id, form.content]);
+  }, [view, editorTab, form.id]);
 
   // Check Slug Availability
   const checkSlugCollision = async (slugVal, postId) => {
@@ -271,7 +491,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           title: p.title || '',
           slug: p.slug || '',
           category: p.category || 'Guide',
-          author: p.author || 'Admin KONSTRUCTZ',
+          author: !p.author || p.author.includes('KONSTRUCTZ') ? 'StoneKrusher Editorial Team' : p.author,
           featured_image: p.featured_image || '',
           cover_image_alt: parsedData.cover_image_alt || '',
           excerpt: p.excerpt || '',
@@ -339,7 +559,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const resText = await res.text();
+      let data = {};
+      try {
+        data = JSON.parse(resText);
+      } catch (jsonErr) {
+        throw new Error(`Server returned unexpected response (status ${res.status}): ${resText.slice(0, 150) || 'Empty response'}`);
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Failed to save article.');
       }
@@ -443,6 +670,184 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       }
     }
     setShowMediaPicker(false);
+  };
+
+  const handleVisualEditorPaste = (e) => {
+    const pasteText = e.clipboardData ? e.clipboardData.getData('text') : '';
+    if (
+      pasteText &&
+      (pasteText.includes('img.miniexcavator.org') ||
+       /!\[.*?\]\((https?:\/\/|\/)/i.test(pasteText) ||
+       /\[https?:\/\/[^\]]+\]\(https?:\/\/[^\)]+\)/i.test(pasteText) ||
+       pasteText.includes('.webp') ||
+       pasteText.includes('.png') ||
+       pasteText.includes('.jpg'))
+    ) {
+      e.preventDefault();
+      const parsed = processSmartBlogContent(pasteText, form);
+      if (parsed) {
+        setForm(prev => ({
+          ...prev,
+          title: parsed.title || prev.title,
+          slug: parsed.slug || prev.slug,
+          featured_image: parsed.featured_image || prev.featured_image,
+          cover_image_alt: parsed.cover_image_alt || prev.cover_image_alt,
+          content: parsed.content
+        }));
+        if (visualEditorRef.current) {
+          visualEditorRef.current.innerHTML = parsed.content;
+        }
+        setHasUnsavedChanges(true);
+        setToastNotice(`⚡ Auto-Detected! Title & Featured Cover Image filled, ${parsed.imagesConvertedCount} gallery images formatted with captions.`);
+        setTimeout(() => setToastNotice(''), 6000);
+      }
+    }
+  };
+
+  const handleVisualEditorClick = (e) => {
+    const target = e.target;
+    if (target && target.tagName === 'IMG') {
+      const figure = target.closest('figure');
+      const captionEl = figure ? figure.querySelector('figcaption') : null;
+      const linkEl = target.closest('a');
+      setSelectedImageModal({
+        targetImg: target,
+        figureEl: figure,
+        linkEl: linkEl
+      });
+      setSelectedImageSrc(target.getAttribute('src') || '');
+      setSelectedImageAlt(target.getAttribute('alt') || '');
+      setSelectedImageCaption(captionEl ? (captionEl.innerText || captionEl.textContent || '') : '');
+      setSelectedImageLink(linkEl ? (linkEl.getAttribute('href') || '') : '');
+      setSelectedImageNewTab(linkEl ? (linkEl.getAttribute('target') === '_blank') : true);
+    }
+  };
+
+  const handleSaveImageModal = () => {
+    if (!selectedImageModal || !selectedImageModal.targetImg) return;
+    const { targetImg, figureEl } = selectedImageModal;
+
+    targetImg.setAttribute('src', selectedImageSrc);
+    targetImg.setAttribute('alt', selectedImageAlt || 'StoneKrusher equipment');
+
+    // Handle Link wrapper around targetImg (or update existing)
+    const currentLink = targetImg.closest('a');
+    const trimmedLink = selectedImageLink.trim();
+    if (trimmedLink) {
+      const isExternal = trimmedLink.startsWith('http') && !trimmedLink.includes('stonekrusher.com');
+      let linkEl = currentLink;
+      if (!linkEl) {
+        linkEl = document.createElement('a');
+        linkEl.style.display = 'inline-block';
+        linkEl.style.textDecoration = 'none';
+        targetImg.parentNode.insertBefore(linkEl, targetImg);
+        linkEl.appendChild(targetImg);
+      }
+      linkEl.setAttribute('href', trimmedLink);
+      if (selectedImageNewTab || isExternal) {
+        linkEl.setAttribute('target', '_blank');
+        linkEl.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        linkEl.removeAttribute('target');
+        linkEl.removeAttribute('rel');
+      }
+    } else if (currentLink) {
+      // Remove link wrapper but keep image
+      currentLink.parentNode.insertBefore(targetImg, currentLink);
+      currentLink.remove();
+    }
+
+    if (figureEl) {
+      let cap = figureEl.querySelector('figcaption');
+      if (selectedImageCaption.trim()) {
+        if (!cap) {
+          cap = document.createElement('figcaption');
+          figureEl.appendChild(cap);
+        }
+        cap.innerText = selectedImageCaption.trim();
+      } else if (cap) {
+        cap.remove();
+      }
+    } else if (selectedImageCaption.trim()) {
+      const fig = document.createElement('figure');
+      fig.className = 'article-image';
+      const wrapTarget = targetImg.closest('a') || targetImg;
+      wrapTarget.parentNode.insertBefore(fig, wrapTarget);
+      fig.appendChild(wrapTarget);
+      const cap = document.createElement('figcaption');
+      cap.innerText = selectedImageCaption.trim();
+      fig.appendChild(cap);
+    }
+
+    if (visualEditorRef.current) {
+      const updatedHtml = visualEditorRef.current.innerHTML;
+      setForm(prev => ({ ...prev, content: updatedHtml }));
+      setHasUnsavedChanges(true);
+    }
+    setSelectedImageModal(null);
+    setToastNotice('Image properties, destination link and caption saved.');
+    setTimeout(() => setToastNotice(''), 3000);
+  };
+
+  const handleSetSelectedAsFeatured = () => {
+    if (selectedImageSrc) {
+      setForm(prev => ({
+        ...prev,
+        featured_image: selectedImageSrc,
+        cover_image_alt: selectedImageAlt || prev.cover_image_alt || (prev.title ? `${prev.title} featured image` : 'StoneKrusher equipment')
+      }));
+      setHasUnsavedChanges(true);
+      setToastNotice('Image set as Featured Cover Image.');
+      setTimeout(() => setToastNotice(''), 4000);
+    }
+  };
+
+  const handleRemoveSelectedImage = () => {
+    if (!selectedImageModal) return;
+    if (selectedImageModal.figureEl) {
+      selectedImageModal.figureEl.remove();
+    } else {
+      const parentLink = selectedImageModal.targetImg ? selectedImageModal.targetImg.closest('a') : null;
+      if (parentLink) {
+        parentLink.remove();
+      } else if (selectedImageModal.targetImg) {
+        selectedImageModal.targetImg.remove();
+      }
+    }
+    if (visualEditorRef.current) {
+      setForm(prev => ({ ...prev, content: visualEditorRef.current.innerHTML }));
+      setHasUnsavedChanges(true);
+    }
+    setSelectedImageModal(null);
+    setToastNotice('Image removed from article.');
+    setTimeout(() => setToastNotice(''), 3000);
+  };
+
+  const handleRunSmartImport = () => {
+    const textToProcess = smartImportText.trim() || form.content || '';
+    if (!textToProcess) {
+      alert('Please paste some blog text or markdown containing title and image links.');
+      return;
+    }
+    const result = processSmartBlogContent(textToProcess, form);
+    if (result) {
+      setForm(prev => ({
+        ...prev,
+        title: result.title || prev.title,
+        slug: result.slug || prev.slug,
+        featured_image: result.featured_image || prev.featured_image,
+        cover_image_alt: result.cover_image_alt || prev.cover_image_alt,
+        content: result.content
+      }));
+      if (visualEditorRef.current) {
+        visualEditorRef.current.innerHTML = result.content;
+      }
+      setHasUnsavedChanges(true);
+      setShowSmartImportModal(false);
+      setSmartImportText('');
+      setToastNotice(`✨ Blog Auto-Detected! Title & Cover Image extracted, ${result.imagesConvertedCount} gallery images converted with captions.`);
+      setTimeout(() => setToastNotice(''), 6000);
+    }
   };
 
   const insertYoutubeEmbed = () => {
@@ -663,6 +1068,20 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                     <button
                       type="button"
                       className="cms-tool-btn cms-tool-highlight"
+                      onClick={() => setShowSmartImportModal(true)}
+                      title="⚡ Auto-Detect Blog: Paste link/content, auto-fill Title, Cover Image, and convert image gallery"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(34, 197, 94, 0.25))',
+                        color: '#4ade80',
+                        borderColor: '#22c55e',
+                        fontWeight: 700
+                      }}
+                    >
+                      ⚡ Smart Import / Paste
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-tool-btn cms-tool-highlight"
                       onClick={() => {
                         setMediaPickerTarget('editor');
                         setShowMediaPicker(true);
@@ -677,8 +1096,9 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       onClick={() => {
                         const url = prompt('Enter direct Image URL (e.g. https://img.miniexcavator.org/...):');
                         if (url) {
-                          const alt = prompt('Enter Image Description / Alt text (optional):') || 'StoneKrusher equipment';
-                          const imgHtml = `<p style="text-align: center; margin: 24px 0;"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></p><p></p>`;
+                          const alt = prompt('Enter Image Description / Alt text (optional):') || (form.title ? `${form.title} photo` : 'StoneKrusher equipment');
+                          const caption = prompt('Enter Image Caption (optional):') || alt;
+                          const imgHtml = `<figure class="article-image"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure><p></p>`;
                           if (editorTab === 'visual') {
                             execFormat('insertHTML', imgHtml);
                           } else {
@@ -687,7 +1107,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                           }
                         }
                       }}
-                      title="Insert Image by direct web URL"
+                      title="Insert Image by direct web URL with Alt and Caption"
                     >
                       🌐 Image URL
                     </button>
@@ -734,6 +1154,8 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       setForm(prev => ({ ...prev, content: e.currentTarget.innerHTML }));
                       setHasUnsavedChanges(true);
                     }}
+                    onPaste={handleVisualEditorPaste}
+                    onClick={handleVisualEditorClick}
                     placeholder="Write detailed machinery reviews, maintenance tips, operator guides, and technical insights..."
                   />
                 )}
@@ -1071,6 +1493,244 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                   isPicker
                   onSelectMedia={(url) => insertMediaIntoEditor(url)}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Smart Auto-Detect & Import Modal */}
+        {showSmartImportModal && (
+          <div className="cms-modal-backdrop" style={{ zIndex: 130 }}>
+            <div className="cms-modal cms-modal-lg">
+              <div className="cms-modal-header">
+                <div>
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#4ade80' }}>⚡</span> Smart Blog Auto-Detect & Quick Import
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--cms-text-muted)' }}>
+                    Paste markdown, copied blog articles, or links from <code>img.miniexcavator.org</code>. The system automatically extracts the title, sets the featured cover image, and converts all images into formatted gallery figures with captions.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="cms-btn-icon cms-btn-secondary"
+                  onClick={() => setShowSmartImportModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="cms-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '0.9rem' }}>
+                    Paste Blog Content or Markdown with image links:
+                  </label>
+                  <textarea
+                    value={smartImportText}
+                    onChange={(e) => setSmartImportText(e.target.value)}
+                    placeholder={`# Your Article Title Here\n\n[https://img.miniexcavator.org/ebay/Blog/class7/1stOct/RollingSpeed-01.webp](https://img.miniexcavator.org/ebay/Blog/class7/1stOct/RollingSpeed-01.webp)\n\nArticle paragraph text goes here...\n\n## Section Heading\n\n[https://img.miniexcavator.org/ebay/Blog/class7/1stOct/RollingSpeed-03.webp](https://img.miniexcavator.org/ebay/Blog/class7/1stOct/RollingSpeed-03.webp)`}
+                    rows={12}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--cms-input-border)',
+                      background: 'var(--cms-input-bg)',
+                      color: 'var(--cms-text)',
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      lineHeight: '1.5'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="cms-btn cms-btn-secondary"
+                    onClick={() => {
+                      if (form.content) {
+                        setSmartImportText(form.content);
+                      }
+                    }}
+                    title="Load whatever is currently written in the article editor into this paste box"
+                  >
+                    Load Current Editor Content
+                  </button>
+                  <button
+                    type="button"
+                    className="cms-btn cms-btn-primary"
+                    onClick={handleRunSmartImport}
+                    style={{ background: 'linear-gradient(135deg, #15803d, #22c55e)', color: '#ffffff', fontWeight: 700 }}
+                  >
+                    ✨ Process & Auto-Fill Blog
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Image Details & Caption Edit Modal */}
+        {selectedImageModal && (
+          <div className="cms-modal-backdrop" style={{ zIndex: 135 }}>
+            <div className="cms-modal cms-modal-md">
+              <div className="cms-modal-header">
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🖼️</span> Image Properties & SEO Caption
+                </h3>
+                <button
+                  type="button"
+                  className="cms-btn-icon cms-btn-secondary"
+                  onClick={() => setSelectedImageModal(null)}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="cms-modal-body">
+                {selectedImageSrc && (
+                  <div style={{ textAlign: 'center', marginBottom: '16px', background: '#0a0d0a', padding: '12px', borderRadius: '8px' }}>
+                    <img
+                      src={selectedImageSrc}
+                      alt={selectedImageAlt || 'Preview'}
+                      style={{ maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '6px' }}
+                    />
+                  </div>
+                )}
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                    Image Source URL:
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedImageSrc}
+                    onChange={(e) => setSelectedImageSrc(e.target.value)}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--cms-input-border)',
+                      background: 'var(--cms-input-bg)',
+                      color: 'var(--cms-text)',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '12px' }}>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                    SEO Alt Description (Crucial for Google search ranking):
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedImageAlt}
+                    onChange={(e) => setSelectedImageAlt(e.target.value)}
+                    placeholder="e.g. Modern excavator compact hydraulic arm operating on jobsite"
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--cms-input-border)',
+                      background: 'var(--cms-input-bg)',
+                      color: 'var(--cms-text)',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                    Public Image Caption (Displayed below image on front-facing blog):
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedImageCaption}
+                    onChange={(e) => setSelectedImageCaption(e.target.value)}
+                    placeholder="e.g. Speed & Roller Passes: Consistent speed keeps every pass predictable"
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--cms-input-border)',
+                      background: 'var(--cms-input-bg)',
+                      color: 'var(--cms-text)',
+                      fontSize: '0.85rem'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '16px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--cms-border)' }}>
+                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                    🔗 Click Destination Link (Optional - Internal page or External URL):
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedImageLink}
+                    onChange={(e) => setSelectedImageLink(e.target.value)}
+                    placeholder="e.g. /equipment/wheel-loaders/ or https://example.com/specs or ?page=contact"
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--cms-input-border)',
+                      background: 'var(--cms-input-bg)',
+                      color: 'var(--cms-text)',
+                      fontSize: '0.85rem',
+                      marginBottom: '8px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--cms-text-muted)' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedImageNewTab}
+                        onChange={(e) => setSelectedImageNewTab(e.target.checked)}
+                      />
+                      <span>Open destination in new tab (<code>target="_blank"</code>)</span>
+                    </label>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--cms-text-muted)', marginTop: '4px' }}>
+                    💡 When visitors click on this image, they will be taken directly to this URL. Leave empty if you don't want a link.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid var(--cms-border)' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="cms-btn cms-btn-secondary"
+                      onClick={handleSetSelectedAsFeatured}
+                      title="Set this image as the main article cover thumbnail"
+                      style={{ fontSize: '0.82rem' }}
+                    >
+                      🌟 Set as Featured Cover
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-btn cms-btn-danger"
+                      onClick={handleRemoveSelectedImage}
+                      style={{ fontSize: '0.82rem' }}
+                    >
+                      🗑️ Delete Image
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="cms-btn cms-btn-secondary"
+                      onClick={() => setSelectedImageModal(null)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="cms-btn cms-btn-primary"
+                      onClick={handleSaveImageModal}
+                      style={{ fontWeight: 700 }}
+                    >
+                      Save & Apply
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

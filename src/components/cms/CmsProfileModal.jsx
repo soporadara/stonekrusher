@@ -42,8 +42,8 @@ const IconEye = ({ off }) => (
   </svg>
 );
 
-export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUpdated, csrfToken }) {
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'google', 'password'
+export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUpdated, csrfToken, initialTab = 'profile' }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'profile'); // 'profile', 'google', 'password'
   
   // Profile Form States (Allows username changing + logo avatar)
   const [username, setUsername] = useState(currentUser?.username || '');
@@ -62,6 +62,12 @@ export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUp
       setAvatarUrl(currentUser.avatar_url || '');
     }
   }, [currentUser, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Password Form States
   const [currentPassword, setCurrentPassword] = useState('');
@@ -144,7 +150,7 @@ export default function CmsProfileModal({ isOpen, onClose, currentUser, onUserUp
       googleBtnRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         type: 'standard',
-        theme: 'filled_blue',
+        theme: 'outline',
         size: 'large',
         text: 'continue_with',
         shape: 'pill',

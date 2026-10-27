@@ -80,11 +80,37 @@ function get_cms_pdo($customPath = null, $forceDriver = null) {
     return $instance;
 }
 
-function ensure_cms_schema_migrated($pdo) {
+if (!defined('CMS_SCHEMA_VERSION')) {
+    define('CMS_SCHEMA_VERSION', '2026_10_27_perf_v2');
+}
+
+function ensure_cms_schema_migrated($pdo, $force = false) {
     if (!$pdo) return;
+
+    static $migratedInstances = [];
+    $pdoKey = spl_object_hash($pdo);
+    if (!$force && isset($migratedInstances[$pdoKey])) {
+        return;
+    }
 
     $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
     $isMysql = ($driver === 'mysql');
+
+    // Quick verification: if schema version matches in cms_settings, skip 50+ DDL & migration queries!
+    if (!$force) {
+        try {
+            $verStmt = $pdo->query("SELECT setting_value FROM cms_settings WHERE setting_key = 'cms_schema_version' LIMIT 1");
+            if ($verStmt) {
+                $currentVer = $verStmt->fetchColumn();
+                if ($currentVer === CMS_SCHEMA_VERSION) {
+                    $migratedInstances[$pdoKey] = true;
+                    return;
+                }
+            }
+        } catch (Exception $e) {
+            // cms_settings table doesn't exist yet, proceed with full migration
+        }
+    }
 
     $idType = "VARCHAR(64) PRIMARY KEY";
     $textType = $isMysql ? "LONGTEXT" : "TEXT";
@@ -265,7 +291,7 @@ function ensure_cms_schema_migrated($pdo) {
 
         $colsToAdd = [
             'category' => "VARCHAR(100) DEFAULT 'Guide'",
-            'author' => "VARCHAR(255) DEFAULT 'Admin KONSTRUCTZ'",
+            'author' => "VARCHAR(255) DEFAULT 'StoneKrusher Editorial Team'",
             'featured_image' => "VARCHAR(1000) DEFAULT ''",
             'excerpt' => "TEXT",
             'content' => $textType,
@@ -285,7 +311,7 @@ function ensure_cms_schema_migrated($pdo) {
 
         // Backfill empty columns from data_json in blog_posts (including published_date)
         try {
-            $unpopulated = $pdo->query("SELECT id, data_json, published_date, category, author, featured_image, excerpt, status FROM blog_posts WHERE published_date IS NULL OR published_date = '' OR category IS NULL OR category = '' OR status IS NULL OR status = ''")->fetchAll();
+            $unpopulated = $pdo->query("SELECT id, data_json, published_date, category, author, featured_image, excerpt, status FROM blog_posts WHERE published_date IS NULL OR published_date = '' OR category IS NULL OR category = '' OR status IS NULL OR status = '' OR author LIKE '%KONSTRUCTZ%'")->fetchAll();
             if (!empty($unpopulated)) {
                 $updateStmt = $pdo->prepare("UPDATE blog_posts SET category = ?, author = ?, featured_image = ?, excerpt = ?, status = ?, published_date = ? WHERE id = ?");
                 foreach ($unpopulated as $row) {
@@ -309,9 +335,13 @@ function ensure_cms_schema_migrated($pdo) {
                         }
                     }
 
+                    $authorVal = !empty($row['author']) && strpos($row['author'], 'KONSTRUCTZ') === false 
+                        ? $row['author'] 
+                        : (!empty($d['author']) && strpos($d['author'], 'KONSTRUCTZ') === false ? $d['author'] : 'StoneKrusher Editorial Team');
+
                     $updateStmt->execute([
                         !empty($row['category']) ? $row['category'] : ($d['category'] ?? 'Guide'),
-                        !empty($row['author']) ? $row['author'] : ($d['author'] ?? 'Admin KONSTRUCTZ'),
+                        $authorVal,
                         !empty($row['featured_image']) ? $row['featured_image'] : ($d['image'] ?? ($d['featuredImage'] ?? '')),
                         !empty($row['excerpt']) ? $row['excerpt'] : ($d['desc'] ?? ($d['excerpt'] ?? '')),
                         !empty($row['status']) ? $row['status'] : ($d['status'] ?? 'Published'),
@@ -321,24 +351,8 @@ function ensure_cms_schema_migrated($pdo) {
                 }
             }
 
-            // Seed realistic CMS views baseline if views are 0
-            $zeroViews = $pdo->query("SELECT id, slug, data_json FROM blog_posts WHERE views IS NULL OR views = 0")->fetchAll();
-            if (!empty($zeroViews)) {
-                $presetViews = [
-                    'road-roller-vs-skid-steer-operating-weight' => 2480,
-                    'how-forklift-positioning-affects-load-stability-during-transport' => 1890,
-                    'why-choose-a-tracked-electric-scissor-lift-for-elevated-work' => 1520,
-                    'why-wheel-loader-engine-power-matters-for-breakout-force' => 1340,
-                    'boost-utility-installation-speed-with-continuous-trenching' => 970,
-                    'how-trenchers-improve-underground-utility-installation' => 840
-                ];
-                $updViewsStmt = $pdo->prepare("UPDATE blog_posts SET views = ? WHERE id = ?");
-                foreach ($zeroViews as $zv) {
-                    $sKey = $zv['slug'] ?? '';
-                    $vVal = $presetViews[$sKey] ?? rand(750, 1950);
-                    $updViewsStmt->execute([$vVal, $zv['id']]);
-                }
-            }
+            // Ensure all NULL views are set to 0 (genuine view tracking from real visitors only)
+            $pdo->exec("UPDATE blog_posts SET views = 0 WHERE views IS NULL");
         } catch (Exception $e) {
             // Non-fatal
         }
@@ -468,29 +482,82 @@ function ensure_cms_schema_migrated($pdo) {
             updated_at BIGINT NOT NULL
         )");
 
-        // Create indexes where appropriate
-        // MySQL does not support IF NOT EXISTS for indexes, so each one is attempted independently
-        $indexStatements = [
-            "CREATE INDEX idx_login_identifier ON cms_login_attempts(identifier)",
-            "CREATE INDEX idx_login_ip ON cms_login_attempts(ip_address)",
-            "CREATE INDEX idx_sessions_user ON cms_sessions(user_id)",
-            "CREATE INDEX idx_audit_created ON cms_audit_logs(created_at)",
-            "CREATE INDEX idx_posts_status ON blog_posts(status)",
-            "CREATE INDEX idx_products_sku ON products(sku)",
-            "CREATE INDEX idx_products_status ON products(status)",
-            "CREATE INDEX idx_comments_post ON blog_comments(post_slug)",
-            "CREATE INDEX idx_comments_status ON blog_comments(moderation_status)",
+        // Create comprehensive performance indexes
+        $indexes = [
+            // Login & Sessions
+            ['cms_login_attempts', 'idx_login_identifier', 'identifier'],
+            ['cms_login_attempts', 'idx_login_ip', 'ip_address'],
+            ['cms_login_attempts', 'idx_login_success_created', 'success, created_at'],
+            ['cms_sessions', 'idx_sessions_user', 'user_id'],
+            ['cms_sessions', 'idx_sessions_revoked_exp', 'is_revoked, expires_at'],
+            ['cms_users', 'idx_users_locked', 'locked_until'],
+            ['cms_users', 'idx_users_role', 'role'],
+
+            // Audit & Security Blocks
+            ['cms_audit_logs', 'idx_audit_created', 'created_at'],
+            ['cms_security_blocks', 'idx_blocks_expires', 'expires_at'],
+
+            // Blog Posts & Revisions
+            ['blog_posts', 'idx_posts_status', 'status'],
+            ['blog_posts', 'idx_posts_status_views', 'status, views'],
+            ['blog_posts', 'idx_posts_status_updated', 'status, updated_at'],
+            ['blog_posts', 'idx_posts_category', 'category'],
+            ['blog_revisions', 'idx_revisions_post', 'post_id'],
+
+            // Machinery Products Catalog
+            ['products', 'idx_products_sku', 'sku'],
+            ['products', 'idx_products_status', 'status'],
+            ['products', 'idx_products_category', 'category'],
+            ['products', 'idx_products_status_updated', 'status, updated_at'],
+
+            // Customer Ops (CRM Inquiries & Support Tickets)
+            ['cms_inquiries', 'idx_inquiries_status', 'status'],
+            ['cms_inquiries', 'idx_inquiries_created', 'created_at'],
+            ['cms_inquiries', 'idx_inquiries_status_created', 'status, created_at'],
+            ['cms_support_tickets', 'idx_tickets_status', 'status'],
+            ['cms_support_tickets', 'idx_tickets_priority', 'priority'],
+            ['cms_support_tickets', 'idx_tickets_created', 'created_at'],
+
+            // Comments & Media
+            ['blog_comments', 'idx_comments_post', 'post_slug'],
+            ['blog_comments', 'idx_comments_status', 'moderation_status'],
+            ['cms_media', 'idx_media_created', 'created_at']
         ];
-        foreach ($indexStatements as $indexSql) {
+
+        foreach ($indexes as $idx) {
+            list($tbl, $idxName, $idxCols) = $idx;
             try {
-                $pdo->exec($indexSql);
-            } catch (Exception $indexError) {
-                // Index already exists or is unsupported; safe to ignore
+                if ($isMysql) {
+                    $chk = $pdo->prepare("SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?");
+                    $chk->execute([$tbl, $idxName]);
+                    if ((int)$chk->fetchColumn() === 0) {
+                        $pdo->exec("CREATE INDEX `{$idxName}` ON `{$tbl}` ({$idxCols})");
+                    }
+                } else {
+                    $pdo->exec("CREATE INDEX IF NOT EXISTS `{$idxName}` ON `{$tbl}` ({$idxCols})");
+                }
+            } catch (Exception $e) {
+                // Non-fatal if index exists or column variation
             }
         }
 
         // Seed Default Roles, Super Admin, Categories, and Products if empty
         seed_cms_defaults($pdo);
+
+        // Record schema version in cms_settings to prevent running DDL on subsequent requests
+        try {
+            if ($isMysql) {
+                $verSave = $pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('cms_schema_version', ?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = VALUES(updated_at)");
+                $verSave->execute([CMS_SCHEMA_VERSION, time()]);
+            } else {
+                $verSave = $pdo->prepare("INSERT OR REPLACE INTO cms_settings (setting_key, setting_value, updated_at) VALUES ('cms_schema_version', ?, ?)");
+                $verSave->execute([CMS_SCHEMA_VERSION, time()]);
+            }
+        } catch (Exception $e) {
+            // Non-fatal
+        }
+
+        $migratedInstances[$pdoKey] = true;
 
     } catch (Exception $e) {
         error_log("Schema migration error: " . $e->getMessage());
@@ -622,7 +689,8 @@ function seed_cms_defaults($pdo) {
             'audit_log_retention_days' => '90',
             'default_theme' => 'dark',
             'enable_2fa' => '0',
-            'posts_per_page' => '10'
+            'posts_per_page' => '10',
+            'google_client_id' => '716874405106-k2np0hhjut85nqncv5m7f3fs2ma6oiii.apps.googleusercontent.com'
         ];
         $stmt = $pdo->prepare("INSERT INTO cms_settings (setting_key, setting_value, updated_at) VALUES (?, ?, ?)");
         foreach ($defaults as $k => $v) {
@@ -670,7 +738,7 @@ function seed_cms_defaults($pdo) {
                     $slug = $p['slug'] ?? ('post-' . uniqid());
                     $title = $p['title'] ?? 'Untitled Article';
                     $cat = $p['category'] ?? 'Guide';
-                    $author = $p['author'] ?? 'Admin KONSTRUCTZ';
+                    $author = $p['author'] ?? 'StoneKrusher Editorial Team';
                     $img = $p['image'] ?? ($p['featuredImage'] ?? '');
                     $desc = $p['desc'] ?? ($p['excerpt'] ?? '');
                     $content = $p['content'] ?? '';

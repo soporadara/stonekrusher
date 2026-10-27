@@ -44,14 +44,11 @@ export default function ProductCard({
   const displayEyebrow = eyebrow || (item.fitmentCategory || item.type === 'Attachment' ? 'A T T A C H M E N T' : 'M A C H I N E R Y');
 
   return (
-    <div className={`product-card ${className}`.trim()} itemScope itemType="https://schema.org/Product">
-      <meta itemProp="name" content={item.name} />
-      {item.image && <meta itemProp="image" content={item.image} />}
+    <div className={`product-card ${className}`.trim()}>
       <a
         href={detailHref}
         className={`card-image-area ${imageClassName}`.trim()}
         onClick={handleView}
-        itemProp="url"
       >
         {badge && <span className="card-image-badge">{badge}</span>}
         {item.image ? (
@@ -62,7 +59,6 @@ export default function ProductCard({
             className="card-image"
             loading="lazy"
             decoding="async"
-            itemProp="image"
           />
         ) : (
           fallback
