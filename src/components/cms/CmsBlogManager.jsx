@@ -94,20 +94,14 @@ function convertSectionsToHtml(sections) {
 }
 
 function makeReadableCaption(rawLabel, url, fallbackTitle) {
-  if (rawLabel && !rawLabel.startsWith('http') && rawLabel.trim().length > 1) {
-    return rawLabel.trim();
-  }
-  try {
-    const pathname = new URL(url).pathname;
-    const filename = pathname.split('/').pop().replace(/\.[a-zA-Z0-9]+$/, '');
-    const readable = filename.replace(/[-_]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
-    if (readable.length > 2) {
-      return readable.charAt(0).toUpperCase() + readable.slice(1);
+  if (rawLabel && typeof rawLabel === 'string' && !rawLabel.startsWith('http') && rawLabel.trim().length > 1) {
+    const clean = rawLabel.replace(/<[^>]+>/g, '').trim();
+    if (clean && !/^(mzvt|dumper|spiderexcavator|skidsteer|trencher|forklift|wheelloader|roller)[\s\-_0-9]+$/i.test(clean)) {
+      return clean;
     }
-  } catch {
-    // URL parsing fallback
   }
-  return fallbackTitle || 'StoneKrusher Heavy Equipment';
+  // Never generate technical filename codes like "MZVT 05" or "Dumper 02" as captions!
+  return '';
 }
 
 function processSmartBlogContent(rawText, currentForm = {}) {
@@ -146,7 +140,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     }
   }
 
-  // 2. EXTRACT FIRST IMAGE AS FEATURED COVER IMAGE
+  // 2. DETECT FIRST IMAGE FOR FEATURED COVER IMAGE
   // Look for any image link (especially img.miniexcavator.org or image extensions)
   const mdLinkRegex = /!?\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)/i;
   const htmlImgRegex = /<img[^>]+src=["'](https?:\/\/(?:img\.miniexcavator\.org\/[^"']+|[^"']+\.(?:webp|png|jpg|jpeg|gif|svg)[^"']*))["'][^>]*>/i;
@@ -209,7 +203,8 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     const caption = makeReadableCaption(label, imgUrl, activeTitle);
     const alt = (label && !label.startsWith('http')) ? label.trim() : '';
     const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
-    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+    const capHtml = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a>${capHtml}</figure>\n\n`;
   });
 
   // B. Standard Markdown images / image links: [url](url), ![alt](url), [caption](url)
@@ -217,7 +212,8 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     imagesConvertedCount++;
     const caption = makeReadableCaption(label, url, activeTitle);
     const alt = (label && !label.startsWith('http')) ? label.trim() : '';
-    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+    const capHtml = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" />${capHtml}</figure>\n\n`;
   });
 
   // C. HTML anchor links pointing to images: <a href="dest"><img src="img" /></a>
@@ -226,7 +222,8 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     const caption = makeReadableCaption(rawAlt, imgUrl, activeTitle);
     const alt = rawAlt ? rawAlt.trim() : '';
     const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
-    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+    const capHtml = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+    return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a>${capHtml}</figure>\n\n`;
   });
 
   // D. HTML anchor links with URL as label: <a href="url">url</a>
@@ -235,7 +232,8 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     const cleanLabel = label.replace(/<[^>]+>/g, '').trim();
     const caption = makeReadableCaption(cleanLabel, url, activeTitle);
     const alt = (cleanLabel && !cleanLabel.startsWith('http')) ? cleanLabel : '';
-    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+    const capHtml = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" />${capHtml}</figure>\n\n`;
   });
 
   // E. Bare URLs to img.miniexcavator.org or image extensions
@@ -243,7 +241,8 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     imagesConvertedCount++;
     const caption = makeReadableCaption('', url, activeTitle);
     const alt = '';
-    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
+    const capHtml = caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : '';
+    return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" />${capHtml}</figure>\n\n`;
   });
 
   // 4. PARSE MARKDOWN TO HTML (IF MARKDOWN)
@@ -493,14 +492,14 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
           category: p.category || 'Guide',
           author: !p.author || p.author.includes('KONSTRUCTZ') ? 'StoneKrusher Editorial Team' : p.author,
           featured_image: p.featured_image || '',
-          cover_image_alt: parsedData.cover_image_alt || '',
-          excerpt: p.excerpt || '',
+          cover_image_alt: parsedData.cover_image_alt || parsedData.coverImageAlt || parsedData.imageAlt || '',
+          excerpt: p.excerpt || parsedData.excerpt || parsedData.desc || '',
           content: contentVal,
           status: p.status || 'Draft',
           scheduled_at: safeIsoDate(p.scheduled_at),
           video_url: parsedData.video_url || '',
-          meta_title: parsedData.meta_title || '',
-          meta_description: parsedData.meta_description || '',
+          meta_title: parsedData.meta_title || parsedData.metaTitle || parsedData.seoTitle || '',
+          meta_description: parsedData.meta_description || parsedData.metaDescription || parsedData.seoDescription || '',
           tags: Array.isArray(tagsArr) ? tagsArr.join(', ') : '',
           published_date: p.published_date || parsedData.publishedDate || parsedData.published_date || (parsedData.date && !isNaN(Date.parse(parsedData.date)) ? new Date(parsedData.date).toISOString().split('T')[0] : (p.updated_at ? new Date(typeof p.updated_at === 'number' && p.updated_at < 1e11 ? p.updated_at * 1000 : Number(p.updated_at)).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]))
         });

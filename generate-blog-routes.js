@@ -122,7 +122,7 @@ const blogCardsHtml = publishedPosts.map(post => `
       <h2 style="font-size:20px;line-height:1.35;margin:0 0 12px;color:#f7f7f2;">
         <a href="/blog/${escapeHtml(post.slug)}/" style="color:#f7f7f2;text-decoration:none;">${escapeHtml(post.title)}</a>
       </h2>
-      <p style="color:#aeb5a8;font-size:14px;line-height:1.6;margin:0 0 20px;flex-grow:1;">${escapeHtml(post.desc || post.seoDescription)}</p>
+      <p style="color:#aeb5a8;font-size:14px;line-height:1.6;margin:0 0 20px;flex-grow:1;">${escapeHtml(post.excerpt || post.desc || post.seoDescription || post.meta_description || '')}</p>
       <a href="/blog/${escapeHtml(post.slug)}/" style="display:inline-flex;align-items:center;color:#b8d49a;font-weight:700;text-decoration:none;font-size:15px;">Read Full Guide &rarr;</a>
     </div>
   </article>
@@ -232,9 +232,10 @@ for (const post of publishedPosts) {
   const slug = post.slug;
   const cleanPath = `/blog/${slug}/`;
   const outputDir = path.join(outputRoot, slug);
-  const title = escapeHtml(post.seoTitle || `${post.title} | STONEKRUSHER`);
-  const description = escapeHtml(post.seoDescription || post.desc || '');
-  const image = escapeHtml(post.image || `${siteUrl}/about-machine-panorama-poster.png`);
+  const title = escapeHtml(post.meta_title || post.metaTitle || post.seoTitle || `${post.title} | STONEKRUSHER`);
+  const description = escapeHtml(post.meta_description || post.metaDescription || post.seoDescription || post.excerpt || post.desc || '');
+  const image = escapeHtml(post.image || post.featured_image || `${siteUrl}/about-machine-panorama-poster.png`);
+  const coverAlt = escapeHtml(post.cover_image_alt || post.coverImageAlt || `${post.title} StoneKrusher equipment guide`);
 
   const hasFullContent = typeof post.content === 'string' && post.content.trim().length > 20;
   const articleBodyHtml = hasFullContent
@@ -250,8 +251,8 @@ for (const post of publishedPosts) {
         '@type': 'BlogPosting',
         '@id': `${siteUrl}${cleanPath}#article`,
         headline: post.title,
-        description: post.seoDescription || post.desc || '',
-        image: [post.image || `${siteUrl}/about-machine-panorama-poster.png`],
+        description: post.meta_description || post.metaDescription || post.seoDescription || post.excerpt || post.desc || '',
+        image: [image],
         datePublished: post.publishedDate || '2026-08-15',
         dateModified: post.updatedDate || '2026-08-15',
         author: { '@type': 'Organization', name: 'STONEKRUSHER', url: siteUrl },
@@ -263,7 +264,7 @@ for (const post of publishedPosts) {
         url: image,
         contentUrl: image,
         caption: `Official STONEKRUSHER image for ${post.title}, heavy construction equipment and machinery guide at stonekrusher.com.`,
-        name: `${post.title} STONEKRUSHER equipment photo`
+        name: post.cover_image_alt || post.coverImageAlt || `${post.title} STONEKRUSHER equipment photo`
       },
       {
         '@type': 'BreadcrumbList',
@@ -363,7 +364,7 @@ for (const post of publishedPosts) {
           Published on <strong>${escapeHtml(post.date || post.publishedDate)}</strong> by <strong>StoneKrusher Heavy Equipment Team</strong>
         </div>
 
-        ${post.image ? `<img class="hero-img" src="${escapeHtml(post.image)}" alt="${escapeHtml(`${post.title} StoneKrusher equipment guide`)}" width="900" height="480" loading="eager">` : ''}
+        ${(post.image || post.featured_image) ? `<img class="hero-img" src="${image}" alt="${coverAlt}" width="900" height="480" loading="eager">` : ''}
 
         <div class="article-content">
           ${articleBodyHtml}
