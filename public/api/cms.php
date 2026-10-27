@@ -136,7 +136,7 @@ function convert_html_to_sections($html) {
     // Convert <figure class="article-image"><img ... /><figcaption>...</figcaption></figure> to markdown with alt and caption
     $normalized = preg_replace_callback('/<figure[^>]*>\s*<img[^>]+src=["\']([^"\']+)["\'](?:\s+[^>]*?alt=["\']([^"\']*)["\'])?[^>]*\/?>\s*(?:<figcaption[^>]*>(.*?)<\/figcaption>)?\s*<\/figure>/is', function($m) {
         $src = $m[1];
-        $alt = !empty($m[2]) ? trim($m[2]) : 'StoneKrusher equipment';
+        $alt = !empty($m[2]) ? trim($m[2]) : '';
         $caption = !empty($m[3]) ? trim(strip_tags($m[3])) : '';
         if (!empty($caption)) {
             return "\n\n![" . $alt . "](" . $src . " \"" . $caption . "\")\n\n";
@@ -147,7 +147,7 @@ function convert_html_to_sections($html) {
     // Convert remaining <img> tags with alt preserved
     $normalized = preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\'](?:\s+[^>]*?alt=["\']([^"\']*)["\'])?[^>]*\/?>/i', function($m) {
         $src = $m[1];
-        $alt = !empty($m[2]) ? trim($m[2]) : 'StoneKrusher equipment';
+        $alt = !empty($m[2]) ? trim($m[2]) : '';
         return "\n\n![" . $alt . "](" . $src . ")\n\n";
     }, $normalized);
 
@@ -729,7 +729,7 @@ switch ($action) {
         ]);
         if (!empty($input['meta_title'])) $structuredData['meta_title'] = trim($input['meta_title']);
         if (!empty($input['meta_description'])) $structuredData['meta_description'] = trim($input['meta_description']);
-        if (!empty($input['cover_image_alt'])) $structuredData['cover_image_alt'] = trim($input['cover_image_alt']);
+        $structuredData['cover_image_alt'] = isset($input['cover_image_alt']) ? trim($input['cover_image_alt']) : ($prevData['cover_image_alt'] ?? '');
         if (!empty($input['video_url'])) $structuredData['video_url'] = trim($input['video_url']);
 
         $dataJson = json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

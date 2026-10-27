@@ -57,7 +57,7 @@ function convertSectionsToHtml(sections) {
               parts.push(`<p>${renderedLines.join('<br />')}</p>`);
               renderedLines.length = 0;
             }
-            parts.push(`<figure class="article-image"><img src="${escapeHtml(imgMatch[1])}" alt="${escapeHtml(sec.h2 || 'StoneKrusher machinery')}" loading="lazy" /><figcaption>${escapeHtml(sec.h2 || 'StoneKrusher machinery')}</figcaption></figure>`);
+            parts.push(`<figure class="article-image"><img src="${escapeHtml(imgMatch[1])}" alt="" loading="lazy" /><figcaption>${escapeHtml(sec.h2 || '')}</figcaption></figure>`);
             return;
           }
           // Markdown image ![alt](url "caption") or ![alt](url)
@@ -67,8 +67,8 @@ function convertSectionsToHtml(sections) {
               parts.push(`<p>${renderedLines.join('<br />')}</p>`);
               renderedLines.length = 0;
             }
-            const alt = mdImgMatch[1] || sec.h2 || 'StoneKrusher machinery';
-            const caption = mdImgMatch[3] || alt;
+            const alt = mdImgMatch[1] || '';
+            const caption = mdImgMatch[3] || alt || (sec.h2 || '');
             parts.push(`<figure class="article-image"><img src="${escapeHtml(mdImgMatch[2])}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>`);
             return;
           }
@@ -207,7 +207,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
   text = text.replace(/\[!\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+|\?[^\s\)]+)\)/gi, (match, label, imgUrl, destUrl) => {
     imagesConvertedCount++;
     const caption = makeReadableCaption(label, imgUrl, activeTitle);
-    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const alt = (label && !label.startsWith('http')) ? label.trim() : '';
     const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
     return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
   });
@@ -216,7 +216,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
   text = text.replace(/!?\[([^\]]*)\]\((https?:\/\/(?:img\.miniexcavator\.org\/[^\s\)]+|[^\s\)]+\.(?:webp|png|jpg|jpeg|gif|svg)[^\s\)]*))\)/gi, (match, label, url) => {
     imagesConvertedCount++;
     const caption = makeReadableCaption(label, url, activeTitle);
-    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const alt = (label && !label.startsWith('http')) ? label.trim() : '';
     return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
   });
 
@@ -224,7 +224,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
   text = text.replace(/<a[^>]+href=["'](https?:\/\/[^"']+|\/[^"']+|\?[^"']+)["'][^>]*>\s*<img[^>]+src=["'](https?:\/\/[^"']+)["'][^>]*alt=["']?([^"'>]*)["']?[^>]*\/?>\s*<\/a>/gi, (match, destUrl, imgUrl, rawAlt) => {
     imagesConvertedCount++;
     const caption = makeReadableCaption(rawAlt, imgUrl, activeTitle);
-    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const alt = rawAlt ? rawAlt.trim() : '';
     const isExternal = destUrl.startsWith('http') && !destUrl.includes('stonekrusher.com');
     return `\n\n<figure class="article-image"><a href="${destUrl}" ${isExternal ? 'target="_blank" rel="noopener noreferrer"' : ''} style="display:inline-block;text-decoration:none;"><img src="${imgUrl}" alt="${escapeHtml(alt)}" loading="lazy" /></a><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
   });
@@ -234,7 +234,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     imagesConvertedCount++;
     const cleanLabel = label.replace(/<[^>]+>/g, '').trim();
     const caption = makeReadableCaption(cleanLabel, url, activeTitle);
-    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const alt = (cleanLabel && !cleanLabel.startsWith('http')) ? cleanLabel : '';
     return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
   });
 
@@ -242,7 +242,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
   text = text.replace(/(?:^|\n)(https?:\/\/(?:img\.miniexcavator\.org\/[^\s\<\>"\']+|[^\s\<\>"\']+\.(?:webp|png|jpg|jpeg|gif|svg)))(?:\r?\n|$)/gi, (match, url) => {
     imagesConvertedCount++;
     const caption = makeReadableCaption('', url, activeTitle);
-    const alt = `${caption} - StoneKrusher Heavy Equipment`;
+    const alt = '';
     return `\n\n<figure class="article-image"><img src="${url}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure>\n\n`;
   });
 
@@ -294,7 +294,7 @@ function processSmartBlogContent(rawText, currentForm = {}) {
     title: extractedTitle || currentForm.title || '',
     slug: extractedTitle ? extractedTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : currentForm.slug || '',
     featured_image: extractedFeaturedImage || currentForm.featured_image || '',
-    cover_image_alt: extractedCoverAlt || (extractedTitle ? `${extractedTitle} featured equipment photo` : currentForm.cover_image_alt || ''),
+    cover_image_alt: extractedCoverAlt ? extractedCoverAlt.trim() : (currentForm.cover_image_alt || ''),
     content: finalHtml,
     imagesConvertedCount
   };
@@ -661,7 +661,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       setForm(prev => ({ ...prev, featured_image: url }));
       setHasUnsavedChanges(true);
     } else {
-      const imgHtml = `<figure class="article-image"><img src="${url}" alt="Article illustration" /><figcaption>StoneKrusher Machinery</figcaption></figure><p></p>`;
+      const imgHtml = `<figure class="article-image"><img src="${url}" alt="" /><figcaption></figcaption></figure><p></p>`;
       if (editorTab === 'visual') {
         execFormat('insertHTML', imgHtml);
       } else {
@@ -728,7 +728,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
     const { targetImg, figureEl } = selectedImageModal;
 
     targetImg.setAttribute('src', selectedImageSrc);
-    targetImg.setAttribute('alt', selectedImageAlt || 'StoneKrusher equipment');
+    targetImg.setAttribute('alt', selectedImageAlt ? selectedImageAlt.trim() : '');
 
     // Handle Link wrapper around targetImg (or update existing)
     const currentLink = targetImg.closest('a');
@@ -794,7 +794,7 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
       setForm(prev => ({
         ...prev,
         featured_image: selectedImageSrc,
-        cover_image_alt: selectedImageAlt || prev.cover_image_alt || (prev.title ? `${prev.title} featured image` : 'StoneKrusher equipment')
+        cover_image_alt: selectedImageAlt ? selectedImageAlt.trim() : (prev.cover_image_alt || '')
       }));
       setHasUnsavedChanges(true);
       setToastNotice('Image set as Featured Cover Image.');
@@ -1096,8 +1096,8 @@ export default function CmsBlogManager({ csrfToken, editingPostId, onClearEditin
                       onClick={() => {
                         const url = prompt('Enter direct Image URL (e.g. https://img.miniexcavator.org/...):');
                         if (url) {
-                          const alt = prompt('Enter Image Description / Alt text (optional):') || (form.title ? `${form.title} photo` : 'StoneKrusher equipment');
-                          const caption = prompt('Enter Image Caption (optional):') || alt;
+                          const alt = prompt('Enter Image Description / Alt text (optional):') || '';
+                          const caption = prompt('Enter Image Caption (optional):') || '';
                           const imgHtml = `<figure class="article-image"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" /><figcaption>${escapeHtml(caption)}</figcaption></figure><p></p>`;
                           if (editorTab === 'visual') {
                             execFormat('insertHTML', imgHtml);
